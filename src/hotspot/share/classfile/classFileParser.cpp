@@ -1439,6 +1439,7 @@ class ClassFileParser::FieldAllocationCount : public ResourceObj {
   }
 };
 
+// jxh: 解析属性
 // Side-effects: populates the _fields, _fields_annotations,
 // _fields_type_annotations fields
 void ClassFileParser::parse_fields(const ClassFileStream* const cfs,
@@ -1458,6 +1459,7 @@ void ClassFileParser::parse_fields(const ClassFileStream* const cfs,
   assert(nullptr == _fields_type_annotations, "invariant");
 
   cfs->guarantee_more(2, CHECK);  // length
+  // jxh: 解析属性个数
   const u2 length = cfs->get_u2_fast();
   *java_fields_count_ptr = length;
 
@@ -1471,16 +1473,20 @@ void ClassFileParser::parse_fields(const ClassFileStream* const cfs,
   _temp_field_info = new GrowableArray<FieldInfo>(total_fields);
 
   ResourceMark rm(THREAD);
+
+  // jxh: 遍历解析属性
   for (int n = 0; n < length; n++) {
     // access_flags, name_index, descriptor_index, attributes_count
     cfs->guarantee_more(8, CHECK);
 
+    // jxh: 读取属性访问标识符
     AccessFlags access_flags;
     const jint flags = cfs->get_u2_fast() & JVM_RECOGNIZED_FIELD_MODIFIERS;
     verify_legal_field_modifiers(flags, is_interface, CHECK);
     access_flags.set_flags(flags);
     FieldInfo::FieldFlags fieldFlags(0);
 
+    // jxh: 读取变量名的常量池索引
     const u2 name_index = cfs->get_u2_fast();
     check_property(valid_symbol_at(name_index),
       "Invalid constant pool index %u for field name in class file %s",
@@ -1488,6 +1494,7 @@ void ClassFileParser::parse_fields(const ClassFileStream* const cfs,
     const Symbol* const name = cp->symbol_at(name_index);
     verify_legal_field_name(name, CHECK);
 
+    // jxh: 读取变量类型的常量池索引
     const u2 signature_index = cfs->get_u2_fast();
     check_property(valid_symbol_at(signature_index),
       "Invalid constant pool index %u for field signature in class file %s",
@@ -2205,24 +2212,24 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
   // access_flags, name_index, descriptor_index, attributes_count
   cfs->guarantee_more(8, CHECK_NULL);
 
-  int flags = cfs->get_u2_fast();
-  const u2 name_index = cfs->get_u2_fast();
+  int flags = cfs->get_u2_fast();   // jxh: 获取方法访问标识符
+  const u2 name_index = cfs->get_u2_fast(); // jxh: 获取方法名称常量池索引
   const int cp_size = cp->length();
   check_property(
     valid_symbol_at(name_index),
     "Illegal constant pool index %u for method name in class file %s",
     name_index, CHECK_NULL);
-  const Symbol* const name = cp->symbol_at(name_index);
+  const Symbol* const name = cp->symbol_at(name_index); // jxh: 获取方法名称字符串
   verify_legal_method_name(name, CHECK_NULL);
 
-  const u2 signature_index = cfs->get_u2_fast();
+  const u2 signature_index = cfs->get_u2_fast();    // jxh: 获取方法签名常量池索引
   guarantee_property(
     valid_symbol_at(signature_index),
     "Illegal constant pool index %u for method signature in class file %s",
     signature_index, CHECK_NULL);
-  const Symbol* const signature = cp->symbol_at(signature_index);
+  const Symbol* const signature = cp->symbol_at(signature_index);   // jxh: 获取方法签名
 
-  if (name == vmSymbols::class_initializer_name()) {
+  if (name == vmSymbols::class_initializer_name()) {    // jxh: <clinit>，类初始化方法
     // We ignore the other access flags for a valid class initializer.
     // (JVM Spec 2nd ed., chapter 4.6)
     if (_major_version < 51) { // backward compatibility
@@ -2237,7 +2244,7 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
     verify_legal_method_modifiers(flags, is_interface, name, CHECK_NULL);
   }
 
-  if (name == vmSymbols::object_initializer_name() && is_interface) {
+  if (name == vmSymbols::object_initializer_name() && is_interface) {   // jxh: <init>，对象初始化方法
     classfile_parse_error("Interface cannot have a method named <init>, class file %s", THREAD);
     return nullptr;
   }
@@ -2256,11 +2263,11 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
   AccessFlags access_flags(flags & JVM_RECOGNIZED_METHOD_MODIFIERS);
 
   // Default values for code and exceptions attribute elements
-  u2 max_stack = 0;
-  u2 max_locals = 0;
-  u4 code_length = 0;
+  u2 max_stack = 0; // jxh: 最大栈数量
+  u2 max_locals = 0;    // jxh: 最大局部变量数量
+  u4 code_length = 0;   // jxh: 操作数长度
   const u1* code_start = nullptr;
-  u2 exception_table_length = 0;
+  u2 exception_table_length = 0;    // jxh: 异常表长度
   const unsafe_u2* exception_table_start = nullptr; // (potentially unaligned) pointer to array of u2 elements
   Array<int>* exception_handlers = Universe::the_empty_int_array();
   u2 checked_exceptions_length = 0;
@@ -2655,6 +2662,7 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
       annotation_default_length,
       0);
 
+  // jxh: 为方法分配内存
   Method* const m = Method::allocate(_loader_data,
                                      code_length,
                                      access_flags,
@@ -2665,6 +2673,7 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
 
   ClassLoadingService::add_class_method_size(m->size()*wordSize);
 
+  // jxh: 填充方法信息
   // Fill in information from fixed part (access_flags already set)
   m->set_constants(_cp);
   m->set_name_index(name_index);
@@ -2765,7 +2774,7 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
   return m;
 }
 
-
+// jxh: 解析方法
 // Side-effects: populates the _methods field in the parser
 void ClassFileParser::parse_methods(const ClassFileStream* const cfs,
                                     bool is_interface,
@@ -2781,15 +2790,17 @@ void ClassFileParser::parse_methods(const ClassFileStream* const cfs,
   assert(nullptr == _methods, "invariant");
 
   cfs->guarantee_more(2, CHECK);  // length
-  const u2 length = cfs->get_u2_fast();
+  const u2 length = cfs->get_u2_fast(); // jxh: 获取方法数量
   if (length == 0) {
-    _methods = Universe::the_empty_method_array();
+    _methods = Universe::the_empty_method_array(); // jxh: 创建空方法数组
   } else {
-    _methods = MetadataFactory::new_array<Method*>(_loader_data,
+      // jxh: 创建方法数组
+      _methods = MetadataFactory::new_array<Method*>(_loader_data,
                                                    length,
                                                    nullptr,
                                                    CHECK);
 
+    // jxh: 遍历解析方法
     for (int index = 0; index < length; index++) {
       Method* method = parse_method(cfs,
                                     is_interface,
@@ -5542,6 +5553,7 @@ ClassFileParser::~ClassFileParser() {
   }
 }
 
+// 解析字节码文件
 void ClassFileParser::parse_stream(const ClassFileStream* const stream,
                                    TRAPS) {
 
@@ -5550,13 +5562,13 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
 
   // BEGIN STREAM PARSING
   stream->guarantee_more(8, CHECK);  // magic, major, minor
-  // Magic value
+  // Magic value 校验魔数
   const u4 magic = stream->get_u4_fast();
   guarantee_property(magic == JAVA_CLASSFILE_MAGIC,
                      "Incompatible magic value %u in class file %s",
                      magic, CHECK);
 
-  // Version numbers
+  // Version numbers 校验版本好
   _minor_version = stream->get_u2_fast();
   _major_version = stream->get_u2_fast();
 
@@ -5564,6 +5576,8 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
   verify_class_version(_major_version, _minor_version, _class_name, CHECK);
 
   stream->guarantee_more(3, CHECK); // length, first cp tag
+
+  // 读取常量池数据数量
   u2 cp_size = stream->get_u2_fast();
 
   guarantee_property(
@@ -5575,12 +5589,13 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
     cp_size++;
   }
 
+  // 初始化常量池
   _cp = ConstantPool::allocate(_loader_data,
                                cp_size,
                                CHECK);
 
   ConstantPool* const cp = _cp;
-
+  // 解析常量池数据
   parse_constant_pool(stream, cp, _orig_cp_size, CHECK);
 
   assert(cp_size == (u2)cp->length(), "invariant");
@@ -5588,7 +5603,7 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
   // ACCESS FLAGS
   stream->guarantee_more(8, CHECK);  // flags, this_class, super_class, infs_len
 
-  // Access flags
+  // Access flags 解析访问标识符
   jint flags;
   // JVM_ACC_MODULE is defined in JDK-9 and later.
   if (_major_version >= JAVA_9_VERSION) {
@@ -5614,7 +5629,7 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
 
   _access_flags.set_flags(flags);
 
-  // This class and superclass
+  // This class and superclass 解析类名
   _this_class_index = stream->get_u2_fast();
   check_property(
     valid_cp_range(_this_class_index, cp_size) &&
@@ -5689,14 +5704,14 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
     }
   }
 
-  // SUPERKLASS
+  // SUPERKLASS 解析父类名
   _super_class_index = stream->get_u2_fast();
   _super_klass = parse_super_class(cp,
                                    _super_class_index,
                                    _need_verify,
                                    CHECK);
 
-  // Interfaces
+  // Interfaces 解析接口
   _itfs_len = stream->get_u2_fast();
   parse_interfaces(stream,
                    _itfs_len,
@@ -5706,6 +5721,7 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
 
   assert(_local_interfaces != nullptr, "invariant");
 
+  // jxh: 解析属性
   // Fields (offsets are filled in later)
   _fac = new FieldAllocationCount();
   parse_fields(stream,
@@ -5718,7 +5734,7 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
 
   assert(_temp_field_info != nullptr, "invariant");
 
-  // Methods
+  // Methods 解析方法
   parse_methods(stream,
                 _access_flags.is_interface(),
                 &_has_localvariable_table,
@@ -5732,7 +5748,7 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
     _has_nonstatic_concrete_methods = true;
   }
 
-  // Additional attributes/annotations
+  // Additional attributes/annotations 解析额外属性/注解信息
   _parsed_annotations = new ClassAnnotationCollector();
   parse_classfile_attributes(stream, cp, _parsed_annotations, CHECK);
 

@@ -270,6 +270,7 @@ static void post_vm_operation_event(EventExecuteVMOperation* event, VM_Operation
   event->commit();
 }
 
+// jxh: 评估虚拟机操作
 void VMThread::evaluate_operation(VM_Operation* op) {
   ResourceMark rm;
 
@@ -380,6 +381,7 @@ static void self_destruct_if_needed() {
   }
 }
 
+// jxh: 执行虚拟机操作
 void VMThread::inner_execute(VM_Operation* op) {
   assert(Thread::current()->is_VM_thread(), "Must be the VM thread");
 
@@ -519,9 +521,11 @@ class SkipGCALot : public StackObj {
 #endif
 };
 
+// jxh: 执行虚拟机操作（例如：VM_GC_Sync_Operation为gc）
 void VMThread::execute(VM_Operation* op) {
   Thread* t = Thread::current();
 
+  // jxh: 如果是虚拟机线程，内部执行
   if (t->is_VM_thread()) {
     op->set_calling_thread(t);
     ((VMThread*)t)->inner_execute(op);
@@ -531,7 +535,7 @@ void VMThread::execute(VM_Operation* op) {
   // Avoid re-entrant attempts to gc-a-lot
   SkipGCALot sgcalot(t);
 
-  // JavaThread or WatcherThread
+  // JavaThread or WatcherThread // jxh: 如果是Java线程，等待有效安全点
   if (t->is_Java_thread()) {
     JavaThread::cast(t)->check_for_valid_safepoint_state();
   }
@@ -543,6 +547,7 @@ void VMThread::execute(VM_Operation* op) {
 
   op->set_calling_thread(t);
 
+  // jxh: 将操作入队列，等待虚拟机线程执行完毕
   wait_until_executed(op);
 
   op->doit_epilogue();

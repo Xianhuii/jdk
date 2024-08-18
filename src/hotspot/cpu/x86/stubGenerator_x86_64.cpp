@@ -184,6 +184,7 @@ enum call_stub_layout {
 };
 #endif // _WIN64
 
+// jxh: 函数入口
 address StubGenerator::generate_call_stub(address& return_address) {
 
   assert((int)frame::entry_frame_after_call_words == -(int)rsp_after_call_off + 1 &&

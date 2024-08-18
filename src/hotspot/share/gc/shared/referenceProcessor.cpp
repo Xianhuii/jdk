@@ -179,6 +179,7 @@ void ReferenceProcessor::verify_total_count_zero(DiscoveredList lists[], const c
 }
 #endif
 
+// jxh: 垃圾回收引用处理
 ReferenceProcessorStats ReferenceProcessor::process_discovered_references(RefProcProxyTask& proxy_task,
                                                                           ReferenceProcessorPhaseTimes& phase_times) {
 
@@ -198,7 +199,7 @@ ReferenceProcessorStats ReferenceProcessor::process_discovered_references(RefPro
 
   {
     RefProcTotalPhaseTimesTracker tt(SoftWeakFinalRefsPhase, &phase_times);
-    process_soft_weak_final_refs(proxy_task, phase_times);
+    process_soft_weak_final_refs(proxy_task, phase_times); // jxh: 处理软、弱、final引用
   }
 
   {
@@ -208,7 +209,7 @@ ReferenceProcessorStats ReferenceProcessor::process_discovered_references(RefPro
 
   {
     RefProcTotalPhaseTimesTracker tt(PhantomRefsPhase, &phase_times);
-    process_phantom_refs(proxy_task, phase_times);
+    process_phantom_refs(proxy_task, phase_times); // jxh: 处理虚引用
   }
 
   phase_times.set_total_time_ms((os::elapsedTime() - start_time) * 1000);
@@ -325,6 +326,7 @@ inline void log_enqueued_ref(const DiscoveredListIterator& iter, const char* rea
   assert(oopDesc::is_oop(iter.obj()), "Adding a bad reference");
 }
 
+// jxh: 处理已发现的引用
 size_t ReferenceProcessor::process_discovered_list_work(DiscoveredList&    refs_list,
                                                         BoolObjectClosure* is_alive,
                                                         OopClosure*        keep_alive,
@@ -440,6 +442,7 @@ size_t ReferenceProcessor::total_reference_count(ReferenceType type) const {
   return total_count(list);
 }
 
+// jxh: 处理发现的引用
 void RefProcTask::process_discovered_list(uint worker_id,
                                           ReferenceType ref_type,
                                           BoolObjectClosure* is_alive,

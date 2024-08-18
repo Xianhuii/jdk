@@ -39,17 +39,20 @@
 
 //
 // A Klass provides:
-//  1: language level class object (method dictionary etc.)
-//  2: provide vm dispatch behavior for the object
-// Both functions are combined into one C++ class.
+//  1: language level class object (method dictionary etc.) 语言级别类对象（方法、字典等）
+//  2: provide vm dispatch behavior for the object 为对象提供 VM 调度行为
+// Both functions are combined into one C++ class. 这两个功能合并在一个 C++ 类
 
-// One reason for the oop/klass dichotomy in the implementation is
-// that we don't want a C++ vtbl pointer in every object.  Thus,
-// normal oops don't have any virtual functions.  Instead, they
-// forward all "virtual" functions to their klass, which does have
+// One reason for the oop/klass dichotomy in the implementation is that we don't want a C++ vtbl pointer in every object.
+// 实现中 oopklass 二分法的一个原因是我们不希望每个对象中都有一个 C++ vtbl 指针
+// Thus, normal oops don't have any virtual functions.
+// 因此，普通的 oops 没有任何虚拟函数。
+// Instead, they forward all "virtual" functions to their klass, which does have
 // a vtbl and does the C++ dispatch depending on the object's
 // actual type.  (See oop.inline.hpp for some of the forwarding code.)
+// 取而代之的是，他们将所有“虚拟”函数转发到他们的 klass，该函数确实有一个 vtbl，并根据对象的实际类型执行 C++ 调度。（请参阅 oop.inline.hpp 了解一些转发代码。
 // ALL FUNCTIONS IMPLEMENTING THIS DISPATCH ARE PREFIXED WITH "oop_"!
+// 实现此调度的所有函数都以“oop_”为前缀！
 
 // Forward declarations.
 template <class T> class Array;
@@ -67,15 +70,15 @@ class Klass : public Metadata {
   friend class VMStructs;
   friend class JVMCIVMStructs;
  public:
-  // Klass Kinds for all subclasses of Klass
+  // Klass Kinds for all subclasses of Klass Klass 的所有子类的 Klass 种类
   enum KlassKind {
-    InstanceKlassKind,
-    InstanceRefKlassKind,
-    InstanceMirrorKlassKind,
-    InstanceClassLoaderKlassKind,
+    InstanceKlassKind, // 普通Java类
+    InstanceRefKlassKind, // Reference及其子类
+    InstanceMirrorKlassKind, // java.lang.Class类
+    InstanceClassLoaderKlassKind, // ClassLoader类
     InstanceStackChunkKlassKind,
-    TypeArrayKlassKind,
-    ObjArrayKlassKind,
+    TypeArrayKlassKind, // 类型数组类型
+    ObjArrayKlassKind, // 对象数组类型
     UnknownKlassKind
   };
 
@@ -89,10 +92,10 @@ class Klass : public Metadata {
   // for better cache behavior (may not make much of a difference but sure won't hurt)
   enum { _primary_super_limit = 8 };
 
-  // The "layout helper" is a combined descriptor of object layout.
-  // For klasses which are neither instance nor array, the value is zero.
+  // The "layout helper" is a combined descriptor of object layout. _layout_helper是对象布局的组合描述符。
+  // For klasses which are neither instance nor array, the value is zero. 对于既不是实例也不是数组的 klass，该值为零。
   //
-  // For instances, layout helper is a positive number, the instance size.
+  // For instances, layout helper is a positive number, the instance size. 实例为正数
   // This size is already passed through align_object_size and scaled to bytes.
   // The low order bit is set if instances of this class cannot be
   // allocated using the fastpath.
@@ -115,15 +118,15 @@ class Klass : public Metadata {
   //
   // Final note:  This comes first, immediately after C++ vtable,
   // because it is frequently queried.
-  jint        _layout_helper;
+  jint        _layout_helper; // jxh: 对象布局的组合描述符
 
-  // Klass kind used to resolve the runtime type of the instance.
+  // Klass kind used to resolve the runtime type of the instance. _kind用Klass实例的运行时类型
   //  - Used to implement devirtualized oop closure dispatching.
   //  - Various type checking in the JVM
-  const KlassKind _kind;
+  const KlassKind _kind; // jxh: Klass实现类的具体类型
 
-  // Processed access flags, for use by Class.getModifiers.
-  jint        _modifier_flags;
+  // Processed access flags, for use by Class.getModifiers. 访问修饰符
+  jint        _modifier_flags; // jxh: 访问修饰符
 
   // The fields _super_check_offset, _secondary_super_cache, _secondary_supers
   // and _primary_supers all help make fast subtype checks.  See big discussion
@@ -135,29 +138,29 @@ class Klass : public Metadata {
 
   // Class name.  Instance classes: java/lang/String, etc.  Array classes: [I,
   // [Ljava/lang/String;, etc.  Set to zero for all other kinds of classes.
-  Symbol*     _name;
+  Symbol*     _name; // jxh: 类名
 
   // Cache of last observed secondary supertype
   Klass*      _secondary_super_cache;
   // Array of all secondary supertypes
-  Array<Klass*>* _secondary_supers;
+  Array<Klass*>* _secondary_supers; // jxh: 父类列表
   // Ordered list of all primary supertypes
-  Klass*      _primary_supers[_primary_super_limit];
+  Klass*      _primary_supers[_primary_super_limit]; // jxh: 父类列表
   // java/lang/Class instance mirroring this class
-  OopHandle   _java_mirror;
+  OopHandle   _java_mirror; // jxh: java.lang.Class对象的句柄
   // Superclass
-  Klass*      _super;
+  Klass*      _super; // jxh: 父类
   // First subclass (null if none); _subklass->next_sibling() is next one
-  Klass* volatile _subklass;
+  Klass* volatile _subklass; // jxh: 当前类的第一个子类
   // Sibling link (or null); links all subklasses of a klass
-  Klass* volatile _next_sibling;
+  Klass* volatile _next_sibling; // jxh: 同一个父类对应的子类链表
 
   // All klasses loaded by a class loader are chained through these links
-  Klass*      _next_link;
+  Klass*      _next_link; // jxh: 同一个类加载器加载的类链表
 
   // The VM's representation of the ClassLoader used to load this class.
   // Provide access the corresponding instance java.lang.ClassLoader.
-  ClassLoaderData* _class_loader_data;
+  ClassLoaderData* _class_loader_data; // jxh: 类加载器
 
 
   int _vtable_len;              // vtable length. This field may be read very often when we
@@ -201,6 +204,7 @@ protected:
   Klass(KlassKind kind);
   Klass();
 
+  // jxh: 重写new关键字，实例化，在元空间中分配空间
   void* operator new(size_t size, ClassLoaderData* loader_data, size_t word_size, TRAPS) throw();
 
  public:

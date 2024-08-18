@@ -242,7 +242,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
     char *what = NULL;
     char *main_class = NULL;
     int ret;
-    InvocationFunctions ifn;
+    InvocationFunctions ifn; // jxh: 触发函数
     jlong start = 0, end = 0;
     char jvmpath[MAXPATHLEN];
     char jrepath[MAXPATHLEN];
@@ -281,10 +281,11 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
      */
     SelectVersion(argc, argv, &main_class);
 
+    // jxh: 创建执行环境，如".../jdk/bin/java”
     CreateExecutionEnvironment(&argc, &argv,
-                               jrepath, sizeof(jrepath),
-                               jvmpath, sizeof(jvmpath),
-                               jvmcfg,  sizeof(jvmcfg));
+                               jrepath, sizeof(jrepath), // jxh: D:\JDK-8\jre\bin
+                               jvmpath, sizeof(jvmpath), // jxh: D:\jdk-17.0.8\lib
+                               jvmcfg,  sizeof(jvmcfg)); // jxh: D:\jdk-17.0.8\lib\jvm.cfg
 
     ifn.CreateJavaVM = 0;
     ifn.GetDefaultJavaVMInitArgs = 0;
@@ -293,6 +294,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
         start = CurrentTimeMicros();
     }
 
+    // jxh: 加载JVM动态链接函数
     if (!LoadJavaVM(jvmpath, &ifn)) {
         return(6);
     }
@@ -475,6 +477,7 @@ invokeInstanceMainWithoutArgs(JNIEnv *env, jclass mainClass) {
     return 1; // method was invoked
 }
 
+// jxh: 启动Java main()函数
 int
 JavaMain(void* _args)
 {
@@ -501,6 +504,7 @@ JavaMain(void* _args)
     RegisterThread();
 
     /* Initialize the virtual machine */
+    // jxh: 初始化虚拟机
     start = CurrentTimeMicros();
     if (!InitializeJVM(&vm, &env, &ifn)) {
         JLI_ReportErrorMessage(JVM_ERROR1);
@@ -600,7 +604,7 @@ JavaMain(void* _args)
      * This method also correctly handles launching existing JavaFX
      * applications that may or may not have a Main-Class manifest entry.
      */
-    mainClass = LoadMainClass(env, mode, what);
+    mainClass = LoadMainClass(env, mode, what); // jxh: 获取主类
     CHECK_EXCEPTION_NULL_LEAVE(mainClass);
     /*
      * In some cases when launching an application that needs a helper, e.g., a
@@ -608,11 +612,11 @@ JavaMain(void* _args)
      * applications own main class but rather a helper class. To keep things
      * consistent in the UI we need to track and report the application main class.
      */
-    appClass = GetApplicationClass(env);
+    appClass = GetApplicationClass(env); // jxh: 获取应用辅助类
     CHECK_EXCEPTION_NULL_LEAVE(appClass);
 
     /* Build platform specific argument array */
-    mainArgs = CreateApplicationArgs(env, argv, argc);
+    mainArgs = CreateApplicationArgs(env, argv, argc); // jxh: 创建main参数
     CHECK_EXCEPTION_NULL_LEAVE(mainArgs);
 
     if (dryRun) {
@@ -627,7 +631,7 @@ JavaMain(void* _args)
      * instead of mainClass as that may be a launcher or helper class instead
      * of the application class.
      */
-    PostJVMInit(env, appClass, vm);
+    PostJVMInit(env, appClass, vm); // jxh: 虚拟机初始化后处理
     CHECK_EXCEPTION_LEAVE(1);
 
     /*
@@ -635,7 +639,7 @@ JavaMain(void* _args)
      * the application stack trace.
      */
 
-    helperClass = GetLauncherHelperClass(env);
+    helperClass = GetLauncherHelperClass(env); // jxh: 获取sun/launcher/LauncherHelper
     isStaticMainField = (*env)->GetStaticFieldID(env, helperClass, "isStaticMain", "Z");
     CHECK_EXCEPTION_NULL_LEAVE(isStaticMainField);
     isStaticMain = (*env)->GetStaticBooleanField(env, helperClass, isStaticMainField);
@@ -644,6 +648,7 @@ JavaMain(void* _args)
     CHECK_EXCEPTION_NULL_LEAVE(noArgMainField);
     noArgMain = (*env)->GetStaticBooleanField(env, helperClass, noArgMainField);
 
+    // jxh: 执行main()函数
     if (isStaticMain) {
         if (noArgMain) {
             ret = invokeStaticMainWithoutArgs(env, mainClass);
@@ -1565,6 +1570,7 @@ ParseArguments(int *pargc, char ***pargv,
  * Initializes the Java Virtual Machine. Also frees options array when
  * finished.
  */
+// jxh: 初始化JVM
 static jboolean
 InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn)
 {
@@ -2382,6 +2388,7 @@ IsWildCardEnabled()
     return _wc_enabled;
 }
 
+// jxh: 开启新线程，创建JVM，执行main()方法
 int
 ContinueInNewThread(InvocationFunctions* ifn, jlong threadStackSize,
                     int argc, char **argv,

@@ -617,6 +617,7 @@ void TemplateInterpreterGenerator::lock_method() {
   __ lock_object(lockreg);
 }
 
+// jxh: 创建JVM栈帧
 // Generate a fixed interpreter frame. This is identical setup for
 // interpreted methods and for native methods hence the shared code.
 //
@@ -1337,6 +1338,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   // rbcp: sender sp (set in InterpreterMacroAssembler::prepare_to_jump_from_interpreted / generate_call_stub)
   address entry_point = __ pc();
 
+  // jxh: 定义寄存器变量
   const Address constMethod(rbx, Method::const_offset());
   const Address access_flags(rbx, Method::access_flags_offset());
   const Address size_of_parameters(rdx,
@@ -1346,12 +1348,13 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 
   // get parameter size (always needed)
   __ movptr(rdx, constMethod);
+  // jxh: 获取Java方法入参数量
   __ load_unsigned_short(rcx, size_of_parameters);
 
   // rbx: Method*
   // rcx: size of parameters
   // rbcp: sender_sp (could differ from sp+wordSize if we were called via c2i )
-
+  // jxh: 获取Java方法入参局部变量数量
   __ load_unsigned_short(rdx, size_of_locals); // get size of locals in words
   __ subl(rdx, rcx); // rdx = no. of additional locals
 
@@ -1362,12 +1365,15 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   // see if we've got enough room on the stack for locals plus overhead.
   generate_stack_overflow_check();
 
+  // jxh: 获取返回地址
   // get return address
   __ pop(rax);
 
+  // jxh: 计算Java方法第一个入参在堆栈中的地址
   // compute beginning of parameters
   __ lea(rlocals, Address(rsp, rcx, Interpreter::stackElementScale(), -wordSize));
 
+  // jxh: 为局部变量slot（不包含Java方法入参）分配堆栈空间，初始化为0
   // rdx - # of additional locals
   // allocate space for locals
   // explicitly initialize locals
@@ -1382,6 +1388,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
     __ bind(exit);
   }
 
+  // jxh: 创建栈帧
   // initialize fixed part of activation frame
   generate_fixed_frame(false);
 
@@ -1417,6 +1424,8 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   __ movbool(do_not_unlock_if_synchronized, true);
 
   __ profile_parameters_type(rax, rcx, rdx);
+
+  // jxh: 引用计数
   // increment invocation count & check for overflow
   Label invocation_counter_overflow;
   if (inc_counter) {
@@ -1453,6 +1462,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 #endif
   }
 
+  // jxh: 开始执行Java方法的第一个字节码
   // start execution
 #ifdef ASSERT
   {
@@ -1471,6 +1481,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   // jvmti support
   __ notify_method_entry();
 
+  // jxh: 进入Java方法的第一条字节码
   __ dispatch_next(vtos);
 
   // invocation counter overflow

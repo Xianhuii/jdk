@@ -55,6 +55,7 @@ class GCMemoryManager;
 class ContiguousSpace;
 class OopClosure;
 
+// jxh: 分代回收算法抽象基类
 class Generation: public CHeapObj<mtGC> {
   friend class VMStructs;
  private:

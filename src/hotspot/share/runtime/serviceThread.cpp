@@ -79,6 +79,7 @@ static void cleanup_oopstorages() {
   }
 }
 
+// jxh: 服务线程，执行虚拟机后台任务
 void ServiceThread::service_thread_entry(JavaThread* jt, TRAPS) {
   while (true) {
     bool has_jvmti_events = false;

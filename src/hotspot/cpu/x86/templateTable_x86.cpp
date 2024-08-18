@@ -4027,6 +4027,7 @@ void TemplateTable::invokedynamic(int byte_no) {
 //-----------------------------------------------------------------------------
 // Allocation
 
+// jxh: 创建对象 new
 void TemplateTable::_new() {
   transition(vtos, atos);
   __ get_unsigned_2_byte_index_at_bcp(rdx, 1);
@@ -4044,11 +4045,11 @@ void TemplateTable::_new() {
   __ cmpb(Address(rax, rdx, Address::times_1, tags_offset), JVM_CONSTANT_Class);
   __ jcc(Assembler::notEqual, slow_case_no_pop);
 
-  // get InstanceKlass
+  // get InstanceKlass 获取InstanceKlass
   __ load_resolved_klass_at_index(rcx, rcx, rdx);
   __ push(rcx);  // save the contexts of klass for initializing the header
 
-  // make sure klass is initialized
+  // make sure klass is initialized 初始化InstanceKlass
 #ifdef _LP64
   assert(VM_Version::supports_fast_class_init_checks(), "must support fast class initialization checks");
   __ clinit_barrier(rcx, r15_thread, nullptr /*L_fast_path*/, &slow_case);
@@ -4057,13 +4058,13 @@ void TemplateTable::_new() {
   __ jcc(Assembler::notEqual, slow_case);
 #endif
 
-  // get instance_size in InstanceKlass (scaled to a count of bytes)
+  // get instance_size in InstanceKlass (scaled to a count of bytes) 获取InstanceKlass实例大小
   __ movl(rdx, Address(rcx, Klass::layout_helper_offset()));
   // test to see if it is malformed in some way
   __ testl(rdx, Klass::_lh_instance_slow_path_bit);
   __ jcc(Assembler::notZero, slow_case);
 
-  // Allocate the instance:
+  // Allocate the instance: 分配对象
   //  If TLAB is enabled:
   //    Try to allocate in the TLAB.
   //    If fails, go to the slow path.
@@ -4151,6 +4152,7 @@ void TemplateTable::_new() {
   __ bind(done);
 }
 
+// jxh: 创建数组
 void TemplateTable::newarray() {
   transition(itos, atos);
   Register rarg1 = LP64_ONLY(c_rarg1) NOT_LP64(rdx);
@@ -4360,6 +4362,7 @@ void TemplateTable::athrow() {
 // [frame data   ] <--- monitor block bot
 // ...
 // [saved rbp    ] <--- rbp
+// jxh: synchronize入口
 void TemplateTable::monitorenter() {
   transition(atos, vtos);
 

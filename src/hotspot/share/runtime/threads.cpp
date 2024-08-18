@@ -332,6 +332,7 @@ static void call_initPhase3(TRAPS) {
                                          vmSymbols::void_method_signature(), CHECK);
 }
 
+// jxh: 初始化java.lang.*常用类
 void Threads::initialize_java_lang_classes(JavaThread* main_thread, TRAPS) {
   TraceTime timer("Initialize java.lang classes", TRACETIME_LOG(Info, startuptime));
 
@@ -417,7 +418,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   if (!is_supported_jni_version(args->version)) return JNI_EVERSION;
 
   // Initialize library-based TLS
-  ThreadLocalStorage::init();
+  ThreadLocalStorage::init(); // jxh: 初始化线程本地变量
 
   // Initialize the output stream module
   ostream_init();
@@ -434,7 +435,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   TraceVmCreationTime create_vm_timer;
   create_vm_timer.start();
 
-  // Initialize system properties.
+  // Initialize system properties. // jxh: 初始化系统参数
   Arguments::init_system_properties();
 
   // So that JDK version can be used as a discriminator when parsing arguments
@@ -505,7 +506,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   _number_of_threads = 0;
   _number_of_non_daemon_threads = 0;
 
-  // Initialize global data structures and create system classes in heap
+  // Initialize global data structures and create system classes in heap // jxh: 初始化虚拟机全局数据结构，创建系统类
   vm_init_globals();
 
 #if INCLUDE_JVMCI
@@ -542,12 +543,12 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   // crash Linux VM, see notes in os_linux.cpp.
   main_thread->stack_overflow_state()->create_stack_guard_pages();
 
-  // Initialize Java-Level synchronization subsystem
+  // Initialize Java-Level synchronization subsystem // jxh: 初始化Java级别synchronize子系统
   ObjectMonitor::Initialize();
   ObjectSynchronizer::initialize();
 
   // Initialize global modules
-  jint status = init_globals();
+  jint status = init_globals(); // jxh: 初始化全局模块
   if (status != JNI_OK) {
     main_thread->smr_delete();
     *canTryAgain = false; // don't let caller call JNI_CreateJavaVM again
@@ -640,7 +641,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
     JvmtiAgentList::load_xrun_agents();
   }
 
-  initialize_java_lang_classes(main_thread, CHECK_JNI_ERR);
+  initialize_java_lang_classes(main_thread, CHECK_JNI_ERR); // jxh: 初始化java.lang.*常用类
 
   quicken_jni_functions();
 
@@ -665,7 +666,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   log_info(os)("Initialized VM with process ID %d", os::current_process_id());
 
   // Signal Dispatcher needs to be started before VMInit event is posted
-  os::initialize_jdk_signal_support(CHECK_JNI_ERR);
+  os::initialize_jdk_signal_support(CHECK_JNI_ERR); // jxh: 初始化JDK信号通知机制
 
   // Start Attach Listener if +StartAttachListener or it can't be started lazily
   if (!DisableAttachMechanism) {
@@ -685,7 +686,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   // Start the service thread
   // The service thread enqueues JVMTI deferred events and does various hashtable
   // and other cleanups.  Needs to start before the compilers start posting events.
-  ServiceThread::initialize();
+  ServiceThread::initialize(); // jxh: 初始化虚拟机后台服务线程
 
   // Start the monitor deflation thread:
   MonitorDeflationThread::initialize();
@@ -745,7 +746,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   call_initPhase3(CHECK_JNI_ERR);
 
   // cache the system and platform class loaders
-  SystemDictionary::compute_java_loaders(CHECK_JNI_ERR);
+  SystemDictionary::compute_java_loaders(CHECK_JNI_ERR); // jxh: 初始化系统类加载器和平台类加载器
 
   if (Continuations::enabled()) {
     // Initialize Continuation class now so that failure to create enterSpecial/doYield

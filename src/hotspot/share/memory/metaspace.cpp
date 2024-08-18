@@ -685,6 +685,7 @@ void Metaspace::ergo_initialize() {
 
 }
 
+// jxh: 初始化元空间
 void Metaspace::global_initialize() {
   MetaspaceGC::initialize(); // <- since we do not prealloc init chunks anymore is this still needed?
 

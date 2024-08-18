@@ -133,6 +133,7 @@ oop SystemDictionary::java_platform_loader() {
   return _java_platform_loader.resolve();
 }
 
+// jxh: 初始化系统类加载器和平台类加载器
 void SystemDictionary::compute_java_loaders(TRAPS) {
   if (_java_system_loader.is_empty()) {
     oop system_loader = get_system_class_loader_impl(CHECK);
@@ -161,6 +162,7 @@ void SystemDictionary::compute_java_loaders(TRAPS) {
   }
 }
 
+// jxh: 初始化系统类加载器
 oop SystemDictionary::get_system_class_loader_impl(TRAPS) {
   JavaValue result(T_OBJECT);
   InstanceKlass* class_loader_klass = vmClasses::ClassLoader_klass();
@@ -172,6 +174,7 @@ oop SystemDictionary::get_system_class_loader_impl(TRAPS) {
   return result.get_oop();
 }
 
+// jxh: 初始化平台类加载器
 oop SystemDictionary::get_platform_class_loader_impl(TRAPS) {
   JavaValue result(T_OBJECT);
   InstanceKlass* class_loader_klass = vmClasses::ClassLoader_klass();
@@ -188,6 +191,7 @@ inline ClassLoaderData* class_loader_data(Handle class_loader) {
   return ClassLoaderData::class_loader_data(class_loader());
 }
 
+// jxh: 注册/获取类加载器
 ClassLoaderData* SystemDictionary::register_loader(Handle class_loader, bool create_mirror_cld) {
   if (create_mirror_cld) {
     // Add a new class loader data to the graph.
@@ -257,6 +261,7 @@ Handle SystemDictionary::get_loader_lock_or_null(Handle class_loader) {
 // ----------------------------------------------------------------------------
 // Resolving of classes
 
+// jxh: 解析类名
 Symbol* SystemDictionary::class_name_symbol(const char* name, Symbol* exception, TRAPS) {
   if (name == nullptr) {
     THROW_MSG_NULL(exception, "No class name given");
@@ -346,7 +351,7 @@ Klass* SystemDictionary::resolve_or_null(Symbol* class_name, Handle class_loader
 }
 
 // Forwards to resolve_instance_class_or_null
-
+// jxh: 加载数组类型
 Klass* SystemDictionary::resolve_array_class_or_null(Symbol* class_name,
                                                      Handle class_loader,
                                                      Handle protection_domain,
@@ -566,6 +571,7 @@ void SystemDictionary::post_class_load_event(EventClassLoad* event, const Instan
   event->commit();
 }
 
+// jxh: 加载类
 // SystemDictionary::resolve_instance_class_or_null is the main function for class name resolution.
 // After checking if the InstanceKlass already exists, it checks for ClassCircularityError and
 // whether the thread must wait for loading in parallel.  It eventually calls load_instance_class,
@@ -746,6 +752,7 @@ InstanceKlass* SystemDictionary::resolve_instance_class_or_null(Symbol* name,
 // Dictionary is read here, so the caller will not see
 // the new entry.
 
+// jxh: 从指定类加载器中查找指定类
 InstanceKlass* SystemDictionary::find_instance_klass(Thread* current,
                                                      Symbol* class_name,
                                                      Handle class_loader,
@@ -769,6 +776,7 @@ InstanceKlass* SystemDictionary::find_instance_klass(Thread* current,
 
 // Look for a loaded instance or array klass by name.  Do not do any loading.
 // return null in case of error.
+// jxh: 查找数组类型
 Klass* SystemDictionary::find_instance_or_array_klass(Thread* current,
                                                       Symbol* class_name,
                                                       Handle class_loader,
@@ -851,6 +859,7 @@ InstanceKlass* SystemDictionary::resolve_hidden_class_from_stream(
   return k;
 }
 
+// jxh: 根据类文件流加载类
 // Add a klass to the system from a stream (called by jni_DefineClass and
 // JVM_DefineClass).
 // Note: class_name can be null. In that case we do not know the name of
@@ -1196,6 +1205,7 @@ void SystemDictionary::load_shared_class_misc(InstanceKlass* ik, ClassLoaderData
 
 #endif // INCLUDE_CDS
 
+// jxh: 加载类
 InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Handle class_loader, TRAPS) {
 
   if (class_loader.is_null()) {
@@ -1338,6 +1348,7 @@ InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Ha
   }
 }
 
+// jxh: 加载类
 InstanceKlass* SystemDictionary::load_instance_class(Symbol* name,
                                                      Handle class_loader,
                                                      TRAPS) {
@@ -1605,7 +1616,7 @@ void SystemDictionary::methods_do(void f(Method*)) {
 
 // ----------------------------------------------------------------------------
 // Initialization
-
+// jxh: 初始化SystemDictionary
 void SystemDictionary::initialize(TRAPS) {
   _invoke_method_intrinsic_table = new (mtClass) InvokeMethodIntrinsicTable();
   _invoke_method_type_table = new (mtClass) InvokeMethodTypeTable();
@@ -1689,6 +1700,7 @@ void SystemDictionary::check_constraints(InstanceKlass* k,
 
 // Update class loader data dictionary - done after check_constraint and add_to_hierarchy
 // have been called.
+// jxh: 更新类加载器中的类
 void SystemDictionary::update_dictionary(JavaThread* current,
                                          InstanceKlass* k,
                                          ClassLoaderData* loader_data) {
@@ -2052,6 +2064,7 @@ static Method* unpack_method_and_appendix(Handle mname,
   THROW_MSG_NULL(vmSymbols::java_lang_LinkageError(), "bad value from MethodHandleNatives");
 }
 
+// jxh: 查找执行方法
 Method* SystemDictionary::find_method_handle_invoker(Klass* klass,
                                                      Symbol* name,
                                                      Symbol* signature,
@@ -2110,6 +2123,7 @@ static bool is_always_visible_class(oop mirror) {
           InstanceKlass::cast(klass)->is_same_class_package(vmClasses::MethodHandle_klass()));  // java.lang.invoke
 }
 
+// jxh: 查找或创建类对应的java.lang.Class实例
 // Find or construct the Java mirror (java.lang.Class instance) for
 // the given field type signature, as interpreted relative to the
 // given class loader.  Handles primitives, void, references, arrays,

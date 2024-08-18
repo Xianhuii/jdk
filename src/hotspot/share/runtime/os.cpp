@@ -367,7 +367,7 @@ bool os::dll_locate_lib(char *buffer, size_t buflen,
 
 // sigexitnum_pd is a platform-specific special signal used for terminating the Signal thread.
 
-
+// jxh: 操作系统信号监听
 static void signal_thread_entry(JavaThread* thread, TRAPS) {
   os::set_priority(thread, NearMaxPriority);
   while (true) {

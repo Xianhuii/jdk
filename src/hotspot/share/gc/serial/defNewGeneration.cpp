@@ -588,6 +588,7 @@ void DefNewGeneration::adjust_desired_tenuring_threshold() {
   age_table()->print_age_table();
 }
 
+// jxh: 垃圾收集
 bool DefNewGeneration::collect(bool clear_all_soft_refs) {
   SerialHeap* heap = SerialHeap::heap();
 
@@ -629,12 +630,14 @@ bool DefNewGeneration::collect(bool clear_all_soft_refs) {
                                   false /* keepalive_nmethods */);
 
     HeapWord* saved_top_in_old_gen = _old_gen->space()->top();
+    // jxh: 扫描根节点
     heap->process_roots(SerialHeap::SO_ScavengeCodeCache,
                         &root_cl,
                         &cld_cl,
                         &cld_cl,
                         &code_cl);
 
+    // jxh: 扫描老年代对年轻代的引用
     _old_gen->scan_old_to_young_refs(saved_top_in_old_gen);
   }
 
@@ -870,6 +873,7 @@ HeapWord* DefNewGeneration::allocate(size_t word_size) {
   return result;
 }
 
+// jxh: 为对象分配内存
 HeapWord* DefNewGeneration::par_allocate(size_t word_size) {
   return eden()->par_allocate(word_size);
 }

@@ -78,6 +78,7 @@ class GCLocker: public AllStatic {
   static bool needs_gc()       { return _needs_gc;                        }
 
   // Shorthand
+  // jxh: 是否需要gc
   static bool is_active_and_needs_gc() {
     // Use is_active_internal since _needs_gc can change from true to
     // false outside of a safepoint, triggering the assert in

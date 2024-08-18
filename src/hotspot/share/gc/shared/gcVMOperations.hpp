@@ -84,6 +84,7 @@
 //   - creates the CDS archive
 //
 
+// jxh: gc操作
 class VM_GC_Sync_Operation : public VM_Operation {
 public:
 

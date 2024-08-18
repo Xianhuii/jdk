@@ -833,6 +833,7 @@ static void initialize_global_behaviours() {
   CompiledICProtectionBehaviour::set_current(protection_behavior);
 }
 
+// jxh: 初始化Universe
 jint universe_init() {
   assert(!Universe::_fully_initialized, "called after initialize_vtables");
   guarantee(1 << LogHeapWordSize == sizeof(HeapWord),
@@ -856,14 +857,14 @@ jint universe_init() {
 
   GCConfig::arguments()->initialize_heap_sizes();
 
-  jint status = Universe::initialize_heap();
+  jint status = Universe::initialize_heap(); // jxh: 初始化堆
   if (status != JNI_OK) {
     return status;
   }
 
-  Universe::initialize_tlab();
+  Universe::initialize_tlab(); // jxh: 初始化tlab
 
-  Metaspace::global_initialize();
+  Metaspace::global_initialize(); // jxh: 初始化元空间
 
   // Initialize performance counters for metaspaces
   MetaspaceCounters::initialize_performance_counters();
@@ -899,6 +900,7 @@ jint universe_init() {
   return JNI_OK;
 }
 
+// jxh: 初始化Java堆
 jint Universe::initialize_heap() {
   assert(_collectedHeap == nullptr, "Heap already created");
   _collectedHeap = GCConfig::arguments()->create_heap();
@@ -907,6 +909,7 @@ jint Universe::initialize_heap() {
   return _collectedHeap->initialize();
 }
 
+// jxh: 初始化tlab
 void Universe::initialize_tlab() {
   ThreadLocalAllocBuffer::set_max_size(Universe::heap()->max_tlab_size());
   PLAB::startup_initialization();
@@ -915,6 +918,7 @@ void Universe::initialize_tlab() {
   }
 }
 
+// jxh: 分配堆内存
 ReservedHeapSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
 
   assert(alignment <= Arguments::conservative_max_heap_alignment(),

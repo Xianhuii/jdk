@@ -4405,6 +4405,7 @@ static void check_pax(void) {
 }
 
 // this is called _before_ most of the global arguments have been parsed
+// jxh: 初始化os模块
 void os::init(void) {
   char dummy;   // used to get a guess on initial stack address
 

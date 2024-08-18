@@ -172,6 +172,7 @@ void SerialHeap::unpin_object(JavaThread* thread, oop obj) {
   GCLocker::unlock_critical(thread);
 }
 
+// jxh: 初始化SerialHeap
 jint SerialHeap::initialize() {
   // Allocate space for the heap.
 
@@ -185,8 +186,8 @@ jint SerialHeap::initialize() {
 
   initialize_reserved_region(heap_rs);
 
-  ReservedSpace young_rs = heap_rs.first_part(MaxNewSize);
-  ReservedSpace old_rs = heap_rs.last_part(MaxNewSize);
+  ReservedSpace young_rs = heap_rs.first_part(MaxNewSize); // jxh: 分配年轻代堆内存
+  ReservedSpace old_rs = heap_rs.last_part(MaxNewSize); // jxh: 分配老年代堆内存
 
   _rem_set = new CardTableRS(heap_rs.region());
   _rem_set->initialize(young_rs.base(), old_rs.base());
@@ -195,14 +196,15 @@ jint SerialHeap::initialize() {
   bs->initialize();
   BarrierSet::set_barrier_set(bs);
 
-  _young_gen = new DefNewGeneration(young_rs, NewSize, MinNewSize, MaxNewSize);
-  _old_gen = new TenuredGeneration(old_rs, OldSize, MinOldSize, MaxOldSize, rem_set());
+  _young_gen = new DefNewGeneration(young_rs, NewSize, MinNewSize, MaxNewSize); // jxh: 封装年轻代垃圾收集算法
+  _old_gen = new TenuredGeneration(old_rs, OldSize, MinOldSize, MaxOldSize, rem_set()); // jxh: 封装老年代垃圾收集算法
 
   GCInitLogger::print();
 
   return JNI_OK;
 }
 
+// jxh: 申请堆内存
 ReservedHeapSpace SerialHeap::allocate(size_t alignment) {
   // Now figure out the total size.
   const size_t pageSize = UseLargePages ? os::large_page_size() : os::vm_page_size();
@@ -283,19 +285,21 @@ size_t SerialHeap::max_capacity() const {
 // . heap memory is tight -- the most recent previous collection
 //   was a full collection because a partial collection (would
 //   have) failed and is likely to fail again
+// jxh: 是否尝试老年代分配内存
 bool SerialHeap::should_try_older_generation_allocation(size_t word_size) const {
   size_t young_capacity = _young_gen->capacity_before_gc();
   return    (word_size > heap_word_size(young_capacity))
          || GCLocker::is_active_and_needs_gc();
 }
 
+// jxh: 扩展堆内存&分配
 HeapWord* SerialHeap::expand_heap_and_allocate(size_t size, bool is_tlab) {
   HeapWord* result = nullptr;
-  if (_old_gen->should_allocate(size, is_tlab)) {
+  if (_old_gen->should_allocate(size, is_tlab)) { // jxh: 老年代分配
     result = _old_gen->expand_and_allocate(size);
   }
   if (result == nullptr) {
-    if (_young_gen->should_allocate(size, is_tlab)) {
+    if (_young_gen->should_allocate(size, is_tlab)) { // jxh: 年轻代分配
       // Young-gen is not expanded.
       result = _young_gen->allocate(size);
     }
@@ -304,6 +308,7 @@ HeapWord* SerialHeap::expand_heap_and_allocate(size_t size, bool is_tlab) {
   return result;
 }
 
+// jxh: 为对象分配内存
 HeapWord* SerialHeap::mem_allocate_work(size_t size,
                                         bool is_tlab) {
 
@@ -312,7 +317,7 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size,
   // Loop until the allocation is satisfied, or unsatisfied after GC.
   for (uint try_count = 1, gclocker_stalled_count = 0; /* return or throw */; try_count += 1) {
 
-    // First allocation attempt is lock-free.
+    // First allocation attempt is lock-free. // jxh: 尝试年轻代无锁分配内存
     DefNewGeneration *young = _young_gen;
     if (young->should_allocate(size, is_tlab)) {
       result = young->par_allocate(size);
@@ -321,7 +326,7 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size,
         return result;
       }
     }
-    uint gc_count_before;  // Read inside the Heap_lock locked region.
+    uint gc_count_before;  // Read inside the Heap_lock locked region. // jxh: 年轻代加锁分配内存
     {
       MutexLocker ml(Heap_lock);
       log_trace(gc, alloc)("SerialHeap::mem_allocate_work: attempting locked slow path allocation");
@@ -329,18 +334,18 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size,
       // allocated in later generations.
       bool first_only = !should_try_older_generation_allocation(size);
 
-      result = attempt_allocation(size, is_tlab, first_only);
+      result = attempt_allocation(size, is_tlab, first_only); // jxh: 年轻代或老年代分配内存
       if (result != nullptr) {
         assert(is_in_reserved(result), "result not in heap");
         return result;
       }
 
-      if (GCLocker::is_active_and_needs_gc()) {
+      if (GCLocker::is_active_and_needs_gc()) { // jxh: 正在gc
         if (is_tlab) {
           return nullptr;  // Caller will retry allocating individual object.
         }
         if (!is_maximal_no_gc()) {
-          // Try and expand heap to satisfy request.
+          // Try and expand heap to satisfy request. // jxh: 扩展堆内存&分配对象
           result = expand_heap_and_allocate(size, is_tlab);
           // Result could be null if we are out of space.
           if (result != nullptr) {
@@ -379,7 +384,7 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size,
     }
 
     VM_SerialCollectForAllocation op(size, is_tlab, gc_count_before);
-    VMThread::execute(&op);
+    VMThread::execute(&op); // jxh: 执行串行垃圾收集操作
     if (op.prologue_succeeded()) {
       result = op.result();
       if (op.gc_locked()) {
@@ -406,6 +411,7 @@ HeapWord* SerialHeap::attempt_allocation(size_t size,
                                          bool first_only) {
   HeapWord* res = nullptr;
 
+  // jxh: 年轻态分配内存
   if (_young_gen->should_allocate(size, is_tlab)) {
     res = _young_gen->allocate(size);
     if (res != nullptr || first_only) {
@@ -413,6 +419,7 @@ HeapWord* SerialHeap::attempt_allocation(size_t size,
     }
   }
 
+  // jxh: 老年代分配内存
   if (_old_gen->should_allocate(size, is_tlab)) {
     res = _old_gen->allocate(size);
   }
@@ -420,6 +427,7 @@ HeapWord* SerialHeap::attempt_allocation(size_t size,
   return res;
 }
 
+// jxh: 为对象分配内存
 HeapWord* SerialHeap::mem_allocate(size_t size,
                                    bool* gc_overhead_limit_was_exceeded) {
   return mem_allocate_work(size,
@@ -438,6 +446,7 @@ bool SerialHeap::is_young_gc_safe() const {
   return _old_gen->promotion_attempt_is_safe(_young_gen->used());
 }
 
+// jxh: 年轻代gc
 bool SerialHeap::do_young_collection(bool clear_soft_refs) {
   if (!is_young_gc_safe()) {
     return false;
@@ -575,14 +584,16 @@ void SerialHeap::process_roots(ScanningOption so,
                                NMethodToOopClosure* code_roots) {
   // General roots.
   assert(code_roots != nullptr, "code root closure should always be set");
-
+  // jxh: 扫描CLD中根节点，如类静态属性引用的对象、常量引用的对象
   ClassLoaderDataGraph::roots_cld_do(strong_cld_closure, weak_cld_closure);
 
   // Only process code roots from thread stacks if we aren't visiting the entire CodeCache anyway
   NMethodToOopClosure* roots_from_code_p = (so & SO_AllCodeCache) ? nullptr : code_roots;
 
+  // jxh: 扫描在虚拟机栈（栈帧中的本地变量表）中引用的对象
   Threads::oops_do(strong_roots, roots_from_code_p);
 
+  // jxh:
   OopStorageSet::strong_oops_do(strong_roots);
 
   if (so & SO_ScavengeCodeCache) {
@@ -618,6 +629,7 @@ static void oop_iterate_from(OopClosureType* blk, ContiguousSpace* space, HeapWo
   *from = space->top();
 }
 
+// jxh: 扫描存活对象
 void SerialHeap::scan_evacuated_objs(YoungGenScanClosure* young_cl,
                                      OldGenScanClosure* old_cl) {
   ContiguousSpace* to_space = young_gen()->to();

@@ -39,6 +39,7 @@ class ReservedSpace;
 
 ////////////////// Metaspace ///////////////////////
 
+// jxh: 元空间
 // Namespace for important central static functions
 // (auxiliary stuff goes into MetaspaceUtils)
 class Metaspace : public AllStatic {

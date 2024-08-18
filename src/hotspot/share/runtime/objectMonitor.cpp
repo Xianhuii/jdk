@@ -362,17 +362,20 @@ bool ObjectMonitor::enter_for(JavaThread* locking_thread) {
   return success;
 }
 
+// jxh: 重量级锁-加锁
 bool ObjectMonitor::enter(JavaThread* current) {
   assert(current == JavaThread::current(), "must be");
   // The following code is ordered to check the most common cases first
   // and to reduce RTS->RTO cache line upgrades on SPARC and IA32 processors.
 
   void* cur = try_set_owner_from(nullptr, current);
+  // jxh: 不加锁
   if (cur == nullptr) {
     assert(_recursions == 0, "invariant");
     return true;
   }
 
+  // jxh: 重入锁
   if (cur == current) {
     // TODO-FIXME: check for integer overflow!  BUGID 6557169.
     _recursions++;
@@ -521,7 +524,7 @@ bool ObjectMonitor::enter(JavaThread* current) {
 
 // Caveat: TryLock() is not necessarily serializing if it returns failure.
 // Callers must compensate as needed.
-
+// jxh: 尝试加锁，cas设置_owner
 ObjectMonitor::TryLockResult ObjectMonitor::TryLock(JavaThread* current) {
   void* own = owner_raw();
   if (own != nullptr) return TryLockResult::HasOwner;
@@ -529,7 +532,7 @@ ObjectMonitor::TryLockResult ObjectMonitor::TryLock(JavaThread* current) {
     assert(_recursions == 0, "invariant");
     return TryLockResult::Success;
   }
-  // The lock had been free momentarily, but we lost the race to the lock.
+  // The lock had been free momentarily, but we lost the race tos the lock.
   // Interference -- the CAS failed.
   // We can either return -1 or retry.
   // Retry doesn't make as much sense because the lock was just acquired.
@@ -706,6 +709,7 @@ const char* ObjectMonitor::is_busy_to_string(stringStream* ss) {
 
 #define MAX_RECHECK_INTERVAL 1000
 
+// jxh: 加锁，失败后添加到等待队列，阻塞线程
 void ObjectMonitor::EnterI(JavaThread* current) {
   assert(current->thread_state() == _thread_blocked, "invariant");
 
@@ -775,7 +779,7 @@ void ObjectMonitor::EnterI(JavaThread* current) {
   // Note that spinning tends to reduce the rate at which threads
   // enqueue and dequeue on EntryList|cxq.
   ObjectWaiter* nxt;
-  for (;;) {
+  for (;;) { // jxh: 添加到阻塞队列
     node._next = nxt = _cxq;
     if (Atomic::cmpxchg(&_cxq, nxt, &node) == nxt) break;
 
@@ -833,12 +837,13 @@ void ObjectMonitor::EnterI(JavaThread* current) {
 
   for (;;) {
 
+    // jxh: 唤醒后尝试加锁
     if (TryLock(current) == TryLockResult::Success) {
       break;
     }
     assert(owner_raw() != current, "invariant");
 
-    // park self
+    // park self 阻塞当前线程
     if (_Responsible == current) {
       current->_ParkEvent->park((jlong) recheckInterval);
       // Increase the recheckInterval, but clamp the value.
@@ -1172,7 +1177,7 @@ void ObjectMonitor::UnlinkAfterAcquire(JavaThread* current, ObjectWaiter* curren
 // then wake a thread unnecessarily. This is benign, and we've
 // structured the code so the windows are short and the frequency
 // of such futile wakups is low.
-
+// jxh: 解锁
 void ObjectMonitor::exit(JavaThread* current, bool not_suspended) {
   void* cur = owner_raw();
   if (current != cur) {
@@ -1352,6 +1357,7 @@ void ObjectMonitor::exit(JavaThread* current, bool not_suspended) {
   }
 }
 
+// jxh: 唤醒阻塞线程
 void ObjectMonitor::ExitEpilog(JavaThread* current, ObjectWaiter* Wakee) {
   assert(owner_raw() == current, "invariant");
 
@@ -1905,6 +1911,7 @@ bool ObjectMonitor::short_fixed_spin(JavaThread* current, int spin_count, bool a
 }
 
 // Spinning: Fixed frequency (100%), vary duration
+// jxh: 自旋锁
 bool ObjectMonitor::TrySpin(JavaThread* current) {
 
   // Dumb, brutal spin.  Good for comparative measurements against adaptive spinning.

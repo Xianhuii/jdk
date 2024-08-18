@@ -341,6 +341,7 @@ HeapWord* MemAllocator::mem_allocate(Allocation& allocation) const {
   return mem_allocate_outside_tlab(allocation);
 }
 
+// jxh: 对象初始化，内存分配
 oop MemAllocator::allocate() const {
   oop obj = nullptr;
   {

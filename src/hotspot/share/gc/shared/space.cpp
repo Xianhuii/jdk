@@ -123,10 +123,10 @@ inline HeapWord* ContiguousSpace::allocate_impl(size_t size) {
 // This version is lock-free.
 inline HeapWord* ContiguousSpace::par_allocate_impl(size_t size) {
   do {
-    HeapWord* obj = top();
+    HeapWord* obj = top(); // jxh: 内存头部位置
     if (pointer_delta(end(), obj) >= size) {
-      HeapWord* new_top = obj + size;
-      HeapWord* result = Atomic::cmpxchg(top_addr(), obj, new_top);
+      HeapWord* new_top = obj + size; // jxh: 分配后新头部位置
+      HeapWord* result = Atomic::cmpxchg(top_addr(), obj, new_top); // jxh: cas设置top位置
       // result can be one of two:
       //  the old top value: the exchange succeeded
       //  otherwise: the new value of the top is returned.

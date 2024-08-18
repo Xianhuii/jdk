@@ -74,6 +74,7 @@ void ZeroInterpreterGenerator::generate_all() {
 #undef method_entry
 }
 
+// jxh: 生成方法入口
 // Generate method entries
 address ZeroInterpreterGenerator::generate_method_entry(
                                         AbstractInterpreter::MethodKind kind) {

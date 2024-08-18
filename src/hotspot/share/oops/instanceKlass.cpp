@@ -437,6 +437,7 @@ const char* InstanceKlass::nest_host_error() {
   }
 }
 
+// jxh: 根据字节码文件实例化（类加载）
 InstanceKlass* InstanceKlass::allocate_instance_klass(const ClassFileParser& parser, TRAPS) {
   const int size = InstanceKlass::size(parser.vtable_size(),
                                        parser.itable_size(),
@@ -504,6 +505,7 @@ InstanceKlass::InstanceKlass() {
   assert(CDSConfig::is_dumping_static_archive() || CDSConfig::is_using_archive(), "only for CDS");
 }
 
+// jxh: 实例化
 InstanceKlass::InstanceKlass(const ClassFileParser& parser, KlassKind kind, ReferenceType reference_type) :
   Klass(kind),
   _nest_members(nullptr),
@@ -768,6 +770,7 @@ void InstanceKlass::fence_and_clear_init_lock() {
 // See "The Virtual Machine Specification" section 2.16.5 for a detailed explanation of the class initialization
 // process. The step comments refers to the procedure described in that section.
 // Note: implementation moved to static method to expose the this pointer.
+// jxh: 初始化类
 void InstanceKlass::initialize(TRAPS) {
   if (this->should_be_initialized()) {
     initialize_impl(CHECK);

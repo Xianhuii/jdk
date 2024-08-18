@@ -47,8 +47,8 @@ class klassItable;
 class Monitor;
 class RecordComponent;
 
-// An InstanceKlass is the VM level representation of a Java class.
-// It contains all information needed for at class at execution runtime.
+// An InstanceKlass is the VM level representation of a Java class. (InstanceKlass 是 Java 类的 VM 级别表示形式。)
+// It contains all information needed for at class at execution runtime. (它包含在执行运行时的类所需的所有信息。)
 
 //  InstanceKlass embedded field layout (after declared fields):
 //    [EMBEDDED Java vtable             ] size in words = vtable_len
@@ -92,7 +92,7 @@ class FieldPrinter: public FieldClosure {
    void do_field(fieldDescriptor* fd);
 };
 
-// Describes where oops are located in instances of this klass.
+// Describes where oops are located in instances of this klass. (描述此 klass 的实例中 oops 的位置。)
 class OopMapBlock {
  public:
   // Byte offset of the first oop mapped by this block.
@@ -166,13 +166,13 @@ class InstanceKlass: public Klass {
   // must add this field to InstanceKlass::metaspace_pointers_do().
 
   // Annotations for this class
-  Annotations*    _annotations;
+  Annotations*    _annotations; // jxh: 注解列表
   // Package this class is defined in
-  PackageEntry*   _package_entry;
+  PackageEntry*   _package_entry; // jxh: 所在包信息
   // Array classes holding elements of this class.
-  ObjArrayKlass* volatile _array_klasses;
+  ObjArrayKlass* volatile _array_klasses; // jxh: 包含此类型的数组Klass列表
   // Constant pool for this class.
-  ConstantPool* _constants;
+  ConstantPool* _constants; // jxh: 这个类的常量池
   // The InnerClasses attribute and EnclosingMethod attribute. The
   // _inner_classes is an array of shorts. If the class has InnerClasses
   // attribute, then the _inner_classes array begins with 4-tuples of shorts
@@ -184,7 +184,7 @@ class InstanceKlass: public Klass {
   // number_of_inner_classes * 4. If the class has both InnerClasses
   // and EnclosingMethod attributes the _inner_classes array length is
   // number_of_inner_classes * 4 + enclosing_method_attribute_size.
-  Array<jushort>* _inner_classes;
+  Array<jushort>* _inner_classes; // jxh: 内部类信息
 
   // The NestMembers attribute. An array of shorts, where each is a
   // class info index for the class that is a nest member. This data
@@ -212,7 +212,7 @@ class InstanceKlass: public Klass {
 
   // Number of heapOopSize words used by non-static fields in this klass
   // (including inherited fields but after header_size()).
-  int             _nonstatic_field_size;
+  int             _nonstatic_field_size; // jxh: 非static属性数量
   int             _static_field_size;       // number words used by static fields (oop and non-oop) in this klass
   int             _nonstatic_oop_map_size;  // size in words of nonstatic oop map blocks
   int             _itable_len;              // length of Java itable (in words)

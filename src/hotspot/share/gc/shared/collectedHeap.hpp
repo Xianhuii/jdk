@@ -79,7 +79,7 @@ public:
   void object_iterate(ObjectClosure* cl, uint worker_id);
 };
 
-//
+// jxh: Java堆抽象基类
 // CollectedHeap
 //   SerialHeap
 //   G1CollectedHeap

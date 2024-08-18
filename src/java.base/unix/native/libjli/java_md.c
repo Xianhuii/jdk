@@ -311,7 +311,7 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
 #endif  /* SETENV_REQUIRED */
 
     /* Compute/set the name of the executable */
-    SetExecname(*pargv);
+    SetExecname(*pargv); // jxh: 设置执行文件
 
     /* Check to see if the jvmpath exists */
     /* Find out where the JRE is that we will be using. */
@@ -449,6 +449,7 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
         (void) fflush(stdout);
         (void) fflush(stderr);
 #ifdef SETENV_REQUIRED
+        // jxh: 调用系统函数exec，启动进程，如".../jdk/bin/java”
         if (mustsetenv) {
             execve(newexec, argv, newenvp);
         } else {
@@ -532,6 +533,7 @@ GetJREPath(char *path, jint pathsize, jboolean speculative)
     return JNI_FALSE;
 }
 
+// jxh: 加载Java虚拟机
 jboolean
 LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
 {
@@ -539,6 +541,7 @@ LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
 
     JLI_TraceLauncher("JVM path is %s\n", jvmpath);
 
+    // jxh: 打开jvm动态链接库
     libjvm = dlopen(jvmpath, RTLD_NOW + RTLD_GLOBAL);
     if (libjvm == NULL) {
         JLI_ReportErrorMessage(DLL_ERROR1, __LINE__);
@@ -546,6 +549,7 @@ LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
         return JNI_FALSE;
     }
 
+    // jxh: 获取JNI_CreateJavaVM动态链接函数
     ifn->CreateJavaVM = (CreateJavaVM_t)
         dlsym(libjvm, "JNI_CreateJavaVM");
     if (ifn->CreateJavaVM == NULL) {
@@ -553,6 +557,7 @@ LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
         return JNI_FALSE;
     }
 
+    // jxh: 获取JNI_GetDefaultJavaVMInitArgs动态链接函数
     ifn->GetDefaultJavaVMInitArgs = (GetDefaultJavaVMInitArgs_t)
         dlsym(libjvm, "JNI_GetDefaultJavaVMInitArgs");
     if (ifn->GetDefaultJavaVMInitArgs == NULL) {
@@ -560,6 +565,7 @@ LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
         return JNI_FALSE;
     }
 
+    // jxh: 获取JNI_GetCreatedJavaVMs动态链接函数
     ifn->GetCreatedJavaVMs = (GetCreatedJavaVMs_t)
         dlsym(libjvm, "JNI_GetCreatedJavaVMs");
     if (ifn->GetCreatedJavaVMs == NULL) {
@@ -649,6 +655,7 @@ void* SplashProcAddress(const char* name) {
 /*
  * Signature adapter for pthread_create() or thr_create().
  */
+// jxh: Java main()函数入口
 static void* ThreadJavaMain(void* args) {
     return (void*)(intptr_t)JavaMain(args);
 }
@@ -670,6 +677,7 @@ static size_t adjustStackSize(size_t stack_size) {
 /*
  * Block current thread and continue execution in a new thread.
  */
+// jxh: 开启新线程，创建JVM，执行main()方法
 int
 CallJavaMainInNewThread(jlong stack_size, void* args) {
     int rslt;
@@ -691,9 +699,10 @@ CallJavaMainInNewThread(jlong stack_size, void* args) {
     }
     pthread_attr_setguardsize(&attr, 0); // no pthread guard page on java threads
 
+    // jxh: 创建线程
     if (pthread_create(&tid, &attr, ThreadJavaMain, args) == 0) {
         void* tmp;
-        pthread_join(tid, &tmp);
+        pthread_join(tid, &tmp); // jxh: 阻塞主线程
         rslt = (int)(intptr_t)tmp;
     } else {
        /*
@@ -712,6 +721,7 @@ CallJavaMainInNewThread(jlong stack_size, void* args) {
 /* Coarse estimation of number of digits assuming the worst case is a 64-bit pid. */
 #define MAX_PID_STR_SZ   20
 
+// jxh: 初始化虚拟机
 int
 JVMInit(InvocationFunctions* ifn, jlong threadStackSize,
         int argc, char **argv,

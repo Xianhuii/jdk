@@ -56,6 +56,7 @@ class AbstractInterpreter: AllStatic {
   friend class ZeroInterpreterGenerator;
   friend class TemplateInterpreterGenerator;
  public:
+    // jxh: JVM支持的方法入口
   enum MethodKind {
     zerolocals,                                                 // method needs locals initialization
     zerolocals_synchronized,                                    // method needs locals initialization & is synchronized

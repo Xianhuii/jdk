@@ -111,7 +111,7 @@ void vm_init_globals() {
   ExternalsRecorder_init(); // After mutex_init() and before CodeCache_init
 }
 
-
+// jxh: 全局初始化
 jint init_globals() {
   management_init();
   JvmtiExport::initialize_oop_storage();
@@ -122,11 +122,11 @@ jint init_globals() {
   }
 #endif
   bytecodes_init();
-  classLoader_init1();
+  classLoader_init1(); // jxh: 初始化类加载器
   compilationPolicy_init();
   codeCache_init();
   VM_Version_init();              // depends on codeCache_init for emitting code
-  initial_stubs_init();
+  initial_stubs_init(); // jxh: 初始化stub
   jint status = universe_init();  // dependent on codeCache_init and
                                   // initial_stubs_init and metaspace_init.
   if (status != JNI_OK)
@@ -144,7 +144,7 @@ jint init_globals() {
   gc_barrier_stubs_init();   // depends on universe_init, must be before interpreter_init
   continuations_init();      // must precede continuation stub generation
   continuation_stubs_init(); // depends on continuations_init
-  interpreter_init_stub();   // before methods get loaded
+  interpreter_init_stub();   // before methods get loaded // jxh: 初始化解释器
   accessFlags_init();
   InterfaceSupport_init();
   VMRegImpl::set_regName();  // need this before generate_stubs (for printing oop maps).

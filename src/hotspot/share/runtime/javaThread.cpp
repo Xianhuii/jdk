@@ -702,7 +702,7 @@ void JavaThread::pre_run() {
 // by subclasses, instead different subclasses define a different "entry_point"
 // which defines the actual logic for that kind of thread.
 void JavaThread::run() {
-  // initialize thread-local alloc buffer related fields
+  // initialize thread-local alloc buffer related fields 初始化tlab
   initialize_tlab();
 
   _stack_overflow_state.create_stack_guard_pages();
@@ -754,7 +754,7 @@ void JavaThread::thread_main_inner() {
       this->set_native_thread_name(this->name());
     }
     HandleMark hm(this);
-    this->entry_point()(this, this);
+    this->entry_point()(this, this); // jxh: 执行Java级别run()方法
   }
 
   DTRACE_THREAD_PROBE(stop, this);

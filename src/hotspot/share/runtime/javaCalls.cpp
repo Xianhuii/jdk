@@ -320,7 +320,7 @@ Handle JavaCalls::construct_new_instance(InstanceKlass* klass, Symbol* construct
 // -------------------------------------------------
 // Implementation of JavaCalls (low level)
 
-
+// jxh: 执行Java方法
 void JavaCalls::call(JavaValue* result, const methodHandle& method, JavaCallArguments* args, TRAPS) {
   // Check if we need to wrap a potential OS exception handler around thread.
   // This is used for e.g. Win32 structured exception handlers.

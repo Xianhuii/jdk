@@ -325,6 +325,7 @@ class StubRoutines: AllStatic {
     TRAPS
   );
 
+  // jxh: 函数入口
   static CallStub call_stub()                              { return CAST_TO_FN_PTR(CallStub, _call_stub_entry); }
 
   // Exceptions

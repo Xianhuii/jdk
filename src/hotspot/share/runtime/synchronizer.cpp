@@ -540,15 +540,17 @@ void ObjectSynchronizer::enter_for(Handle obj, BasicLock* lock, JavaThread* lock
   }
 }
 
+// jxh: 对象加锁
 void ObjectSynchronizer::enter(Handle obj, BasicLock* lock, JavaThread* current) {
   assert(current == Thread::current(), "must be");
-  if (!enter_fast_impl(obj, lock, current)) {
+  if (!enter_fast_impl(obj, lock, current)) { // jxh: 轻量级锁
     // Inflated ObjectMonitor::enter is required
 
     // An async deflation can race after the inflate() call and before
     // enter() can make the ObjectMonitor busy. enter() returns false if
     // we have lost the race to async deflation and we simply try again.
     while (true) {
+      // jxh: 锁膨胀
       ObjectMonitor* monitor = inflate(current, obj(), inflate_cause_monitor_enter);
       if (monitor->enter(current)) {
         return;
@@ -569,10 +571,10 @@ bool ObjectSynchronizer::enter_fast_impl(Handle obj, BasicLock* lock, JavaThread
   locking_thread->inc_held_monitor_count();
 
   if (!useHeavyMonitors()) {
-    if (LockingMode == LM_LIGHTWEIGHT) {
+    if (LockingMode == LM_LIGHTWEIGHT) { // jxh: 轻量级锁，lock_stack + lock_mask_in_place
       // Fast-locking does not use the 'lock' argument.
       LockStack& lock_stack = locking_thread->lock_stack();
-      if (lock_stack.is_full()) {
+      if (lock_stack.is_full()) { // jxh: 最多8个
         // We unconditionally make room on the lock stack by inflating
         // the least recently locked object on the lock stack.
 
@@ -606,7 +608,7 @@ bool ObjectSynchronizer::enter_fast_impl(Handle obj, BasicLock* lock, JavaThread
         // Retry until a lock state change has been observed. cas_set_mark() may collide with non lock bits modifications.
         // Try to swing into 'fast-locked' state.
         assert(!lock_stack.contains(obj()), "thread must not already hold the lock");
-        const markWord locked_mark = mark.set_fast_locked();
+        const markWord locked_mark = mark.set_fast_locked(); // jxh: 设置lock_mask_in_place
         const markWord old_mark = obj()->cas_set_mark(locked_mark, mark);
         if (old_mark == mark) {
           // Successfully fast-locked, push object to lock-stack and return.
@@ -733,8 +735,10 @@ void ObjectSynchronizer::exit(oop object, BasicLock* lock, JavaThread* current) 
   // We have to take the slow-path of possible inflation and then exit.
   // The ObjectMonitor* can't be async deflated until ownership is
   // dropped inside exit() and the ObjectMonitor* must be !is_busy().
+  // jxh: 锁膨胀
   ObjectMonitor* monitor = inflate(current, object, inflate_cause_vm_internal);
   assert(!monitor->is_owner_anonymous(), "must not be");
+  // jxh: 解锁
   monitor->exit(current);
 }
 
@@ -1399,6 +1403,7 @@ void ObjectSynchronizer::inflate_helper(oop obj) {
   (void)inflate(Thread::current(), obj, inflate_cause_vm_internal);
 }
 
+// jxh: 锁膨胀
 ObjectMonitor* ObjectSynchronizer::inflate(Thread* current, oop obj, const InflateCause cause) {
   assert(current == Thread::current(), "must be");
   if (LockingMode == LM_LIGHTWEIGHT && current->is_Java_thread()) {
@@ -1412,6 +1417,7 @@ ObjectMonitor* ObjectSynchronizer::inflate_for(JavaThread* thread, oop obj, cons
   return inflate_impl(thread, obj, cause);
 }
 
+// jxh: 锁膨胀
 ObjectMonitor* ObjectSynchronizer::inflate_impl(JavaThread* inflating_thread, oop object, const InflateCause cause) {
   // The JavaThread* inflating_thread parameter is only used by LM_LIGHTWEIGHT and requires
   // that the inflating_thread == Thread::current() or is suspended throughout the call by

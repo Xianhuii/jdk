@@ -36,6 +36,7 @@
 #include "utilities/align.hpp"
 #include "utilities/macros.hpp"
 
+// jxh: 表示空间是连接的，这样就能支持快速地进行内存分配和压缩操作
 // A space is an abstraction for the "storage units" backing
 // up the generation abstraction. It includes specific
 // implementations for keeping track of free and used space,

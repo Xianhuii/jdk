@@ -28,7 +28,7 @@
 #include "runtime/os.hpp"
 
 // os::Linux defines the interface to Linux operating systems
-
+// jxh: 操作系统接口
 class os::Linux {
   friend class CgroupSubsystem;
   friend class os;

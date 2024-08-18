@@ -867,7 +867,7 @@ enum JNICallType {
 };
 
 
-
+// jxh: 执行静态方法
 static void jni_invoke_static(JNIEnv *env, JavaValue* result, jobject receiver, JNICallType call_type, jmethodID method_id, JNI_ArgumentPusher *args, TRAPS) {
   methodHandle method(THREAD, Method::resolve_jmethod_id(method_id));
 
@@ -884,7 +884,7 @@ static void jni_invoke_static(JNIEnv *env, JavaValue* result, jobject receiver, 
   // Initialize result type
   result->set_type(args->return_type());
 
-  // Invoke the method. Result is returned as oop.
+  // Invoke the method. Result is returned as oop. // jxh: 执行函数
   JavaCalls::call(result, method, &java_args, CHECK);
 
   // Convert result
@@ -1718,7 +1718,7 @@ JNI_ENTRY(void, jni_CallStaticVoidMethod(JNIEnv *env, jclass cls, jmethodID meth
   va_end(args);
 JNI_END
 
-
+// jxh: 静态函数入口
 JNI_ENTRY(void, jni_CallStaticVoidMethodV(JNIEnv *env, jclass cls, jmethodID methodID, va_list args))
   HOTSPOT_JNI_CALLSTATICVOIDMETHODV_ENTRY(env, cls, (uintptr_t) methodID);
   DT_VOID_RETURN_MARK(CallStaticVoidMethodV);
@@ -3578,6 +3578,7 @@ static jint JNI_CreateJavaVM_inner(JavaVM **vm, void **penv, void *args) {
    */
   bool can_try_again = true;
 
+  // jxh: 创建虚拟机
   result = Threads::create_vm((JavaVMInitArgs*) args, &can_try_again);
   if (result == JNI_OK) {
     JavaThread *thread = JavaThread::current();

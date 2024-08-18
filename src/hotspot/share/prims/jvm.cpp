@@ -2902,7 +2902,7 @@ void jio_print(const char* s, size_t len) {
 // rule are when operating on the current thread, or if the monitor of
 // the target java.lang.Thread is locked at the Java level - in both
 // cases the target cannot exit.
-
+// jxh: 设置java.lang.Thread#run()方法为线程入口点
 static void thread_entry(JavaThread* thread, TRAPS) {
   HandleMark hm(THREAD);
   Handle obj(THREAD, thread->threadObj());
@@ -2958,6 +2958,7 @@ JVM_ENTRY(void, JVM_StartThread(JNIEnv* env, jobject jthread))
     // (with its JavaThread set) and the update to its threadStatus, so we
     // have to check for this
     if (java_lang_Thread::thread(JNIHandles::resolve_non_null(jthread)) != nullptr) {
+      // jxh: 如果重复执行java.lang.Thread#start()方法，报错
       throw_illegal_thread_state = true;
     } else {
       jlong size =

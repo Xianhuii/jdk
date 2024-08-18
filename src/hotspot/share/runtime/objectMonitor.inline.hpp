@@ -155,6 +155,7 @@ inline void ObjectMonitor::set_owner_from_BasicLock(void* basic_lock_p, JavaThre
 // Try to set _owner field to new_value if the current value matches
 // old_value. Otherwise, does not change the _owner field. Returns
 // the prior value of the _owner field.
+// jxh: cas设置_owner
 inline void* ObjectMonitor::try_set_owner_from(void* old_value, void* new_value) {
   void* prev = Atomic::cmpxchg(&_owner, old_value, new_value);
   if (prev == old_value) {

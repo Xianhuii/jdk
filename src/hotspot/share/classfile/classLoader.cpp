@@ -1114,6 +1114,7 @@ ClassFileStream* ClassLoader::search_module_entries(JavaThread* current,
   return nullptr;
 }
 
+// jxh: boot类加载器加载
 // Called by the boot classloader to load classes
 InstanceKlass* ClassLoader::load_class(Symbol* name, PackageEntry* pkg_entry, bool search_append_only, TRAPS) {
   assert(name != nullptr, "invariant");

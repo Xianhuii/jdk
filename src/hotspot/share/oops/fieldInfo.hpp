@@ -46,6 +46,7 @@ struct ArrayHelper {
   // auto set = [&](ARR a, OFF i, uint8_t x){ a[i] = x; };
 };
 
+// jxh: InstanceKlass的属性列表
 // This class represents the field information contained in the fields
 // array of an InstanceKlass.  Currently it's laid on top an array of
 // Java shorts but in the future it could simply be used as a real

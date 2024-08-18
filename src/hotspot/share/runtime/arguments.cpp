@@ -333,7 +333,7 @@ bool Arguments::is_internal_module_property(const char* property) {
   return false;
 }
 
-// Process java launcher properties.
+// Process java launcher properties. 处理Java加载配置信息
 void Arguments::process_sun_java_launcher_properties(JavaVMInitArgs* args) {
   // See if sun.java.launcher or sun.java.launcher.is_altjvm is defined.
   // Must do this before setting up other system properties,

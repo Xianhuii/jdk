@@ -39,6 +39,7 @@ extern "C" void restore_thread_pointer(void* p) {
   ThreadLocalStorage::set_thread((Thread*) p);
 }
 
+// jxh: 初始化线程本地变量
 void ThreadLocalStorage::init() {
   assert(!_initialized, "initializing TLS more than once!");
   int rslt = pthread_key_create(&_thread_key, restore_thread_pointer);

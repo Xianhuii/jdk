@@ -192,6 +192,7 @@ class ChunkPoolCleaner : public PeriodicTask {
    }
 };
 
+// jxh: 内存清理任务
 void Arena::start_chunk_pool_cleaner_task() {
 #ifdef ASSERT
   static bool task_created = false;
