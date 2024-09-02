@@ -48,6 +48,7 @@ public class Main {
      *  @throws Exception only if an uncaught internal exception occurs;
      *      just retained for historical compatibility
      */
+    // jxh: javac启动入口
     public static void main(String[] args) throws Exception {
         System.exit(compile(args));
     }
@@ -61,8 +62,10 @@ public class Main {
      * javac, see the man page for details.
      */
     public static int compile(String[] args) {
+        // jxh: 创建编译器
         com.sun.tools.javac.main.Main compiler =
             new com.sun.tools.javac.main.Main("javac");
+        // jxh: 编译
         return compiler.compile(args).exitCode;
     }
 

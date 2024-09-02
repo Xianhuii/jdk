@@ -765,6 +765,7 @@ public class JavaCompiler {
      *                containing this class.
      *  @param cdef   The class definition from which code is generated.
      */
+    // jxh: 生成字节码
     JavaFileObject genCode(Env<AttrContext> env, JCClassDecl cdef) throws IOException {
         try {
             if (gen.genClass(env, cdef) && (errorCount() == 0))
@@ -907,6 +908,7 @@ public class JavaCompiler {
      * @param addModules additional root modules to be used during
      * module resolution.
      */
+    // jxh: 编译Java源文件
     public void compile(Collection<JavaFileObject> sourceFileObjects,
                         Collection<String> classnames,
                         Iterable<? extends Processor> processors,
@@ -930,6 +932,7 @@ public class JavaCompiler {
         start_msec = now();
 
         try {
+            // jxh: 准备过程，初始化插入式注解处理器
             initProcessAnnotations(processors, sourceFileObjects, classnames);
 
             for (String className : classnames) {
@@ -944,10 +947,16 @@ public class JavaCompiler {
             }
 
             // These method calls must be chained to avoid memory leaks
-            processAnnotations(
-                enterTrees(
+            processAnnotations( // jxh: 执行注解处理
+                enterTrees( // jxh: 输入到符号表
                         stopIfError(CompileState.ENTER,
-                                initModules(stopIfError(CompileState.ENTER, parseFiles(sourceFileObjects))))
+                                initModules(
+                                        stopIfError(
+                                                CompileState.ENTER,
+                                                parseFiles(sourceFileObjects) // jxh: 词法分析、语法分析
+                                        )
+                                )
+                        )
                 ),
                 classnames
             );
@@ -974,7 +983,14 @@ public class JavaCompiler {
 
                 case BY_TODO:
                     while (!todo.isEmpty())
-                        generate(desugar(flow(attribute(todo.remove()))));
+                        // jxh: 分析及字节码生成
+                        generate( // jxh: 生成字节码
+                                desugar( // jxh: 解语法糖
+                                        flow( // jxh: 数据流分析
+                                                attribute(todo.remove()) // jxh: 标注
+                                        )
+                                )
+                        );
                     break;
 
                 default:

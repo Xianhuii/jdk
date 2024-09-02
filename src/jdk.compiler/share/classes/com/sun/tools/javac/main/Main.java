@@ -172,6 +172,7 @@ public class Main {
      * @param args  the command line parameters
      * @return the result of the compilation
      */
+    // jxh: 编译Java源文件
     public Result compile(String[] args) {
         Context context = new Context();
         JavacFileManager.preRegister(context); // can't create it until Log has been set up
@@ -204,7 +205,7 @@ public class Main {
 
         log = Log.instance(context);
 
-        if (argv.length == 0) {
+        if (argv.length == 0) { // jxh: 如果没有传参数，默认为-help
             OptionHelper h = new OptionHelper.GrumpyHelper(log) {
                 @Override
                 public String getOwnName() { return ownName; }

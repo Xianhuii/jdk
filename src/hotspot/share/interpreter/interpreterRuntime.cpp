@@ -212,7 +212,7 @@ JRT_END
 
 //------------------------------------------------------------------------------------------------------------------------
 // Allocation
-
+// jxh: 创建对象
 JRT_ENTRY(void, InterpreterRuntime::_new(JavaThread* current, ConstantPool* pool, int index))
   Klass* k = pool->klass_at(index, CHECK);
   InstanceKlass* klass = InstanceKlass::cast(k);
@@ -223,7 +223,7 @@ JRT_ENTRY(void, InterpreterRuntime::_new(JavaThread* current, ConstantPool* pool
   // Make sure klass is initialized
   klass->initialize(CHECK);
 
-  oop obj = klass->allocate_instance(CHECK);
+  oop obj = klass->allocate_instance(CHECK); // jxh: 创建对象
   current->set_vm_result(obj);
 JRT_END
 

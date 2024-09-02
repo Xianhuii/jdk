@@ -591,16 +591,16 @@ InstanceKlass* SystemDictionary::resolve_instance_class_or_null(Symbol* name,
   HandleMark hm(THREAD);
 
   // Fix for 4474172; see evaluation for more details
-  class_loader = Handle(THREAD, java_lang_ClassLoader::non_reflection_class_loader(class_loader()));
-  ClassLoaderData* loader_data = register_loader(class_loader);
-  Dictionary* dictionary = loader_data->dictionary();
+  class_loader = Handle(THREAD, java_lang_ClassLoader::non_reflection_class_loader(class_loader())); // jxh: 获取类加载器
+  ClassLoaderData* loader_data = register_loader(class_loader); // jxh: 获取CLD
+  Dictionary* dictionary = loader_data->dictionary(); // jxh: 获取加载类缓存
 
   // Do lookup to see if class already exists and the protection domain
   // has the right access.
   // This call uses find which checks protection domain already matches
   // All subsequent calls use find_class, and set loaded_class so that
   // before we return a result, we call out to java to check for valid protection domain.
-  InstanceKlass* probe = dictionary->find(THREAD, name, protection_domain);
+  InstanceKlass* probe = dictionary->find(THREAD, name, protection_domain); // jxh: 查找是否已加载
   if (probe != nullptr) return probe;
 
   // Non-bootstrap class loaders will call out to class loader and
@@ -643,7 +643,7 @@ InstanceKlass* SystemDictionary::resolve_instance_class_or_null(Symbol* name,
 
   // If the class is in the placeholder table with super_class set,
   // handle superclass loading in progress.
-  if (circularity_detection_in_progress) {
+  if (circularity_detection_in_progress) { // jxh: 并行加载父类
     handle_parallel_super_load(name, superclassname,
                                class_loader,
                                protection_domain,
@@ -706,7 +706,7 @@ InstanceKlass* SystemDictionary::resolve_instance_class_or_null(Symbol* name,
     // So be careful to not exit with a CHECK_ macro between these calls.
 
     if (loaded_class == nullptr) {
-      // Do actual loading
+      // Do actual loading // jxh: 加载类
       loaded_class = load_instance_class(name, class_loader, THREAD);
     }
 
@@ -1370,7 +1370,7 @@ InstanceKlass* SystemDictionary::load_instance_class(Symbol* name,
     // before references to the initiating class loader.
     loader_data->record_dependency(loaded_class);
 
-    update_dictionary(THREAD, loaded_class, loader_data);
+    update_dictionary(THREAD, loaded_class, loader_data); // jxh: 保存已加载类
 
     if (JvmtiExport::should_post_class_load()) {
       JvmtiExport::post_class_load(THREAD, loaded_class);

@@ -805,6 +805,7 @@ bool InstanceKlass::link_class_or_fail(TRAPS) {
   return is_linked();
 }
 
+// jxh: 类加载-链接
 bool InstanceKlass::link_class_impl(TRAPS) {
   if (CDSConfig::is_dumping_static_archive() && SystemDictionaryShared::has_class_failed_verification(this)) {
     // This is for CDS static dump only -- we use the in_error_state to indicate that
@@ -846,7 +847,7 @@ bool InstanceKlass::link_class_impl(TRAPS) {
     }
 
     InstanceKlass* ik_super = InstanceKlass::cast(super_klass);
-    ik_super->link_class_impl(CHECK_false);
+    ik_super->link_class_impl(CHECK_false); // jxh: 链接父类
   }
 
   // link all interfaces implemented by this class before linking this class
@@ -854,7 +855,7 @@ bool InstanceKlass::link_class_impl(TRAPS) {
   int num_interfaces = interfaces->length();
   for (int index = 0; index < num_interfaces; index++) {
     InstanceKlass* interk = interfaces->at(index);
-    interk->link_class_impl(CHECK_false);
+    interk->link_class_impl(CHECK_false); // jxh: 链接接口
   }
 
   // in case the class is linked in the process of linking its superclasses
@@ -887,7 +888,7 @@ bool InstanceKlass::link_class_impl(TRAPS) {
           assert(!verified_at_dump_time(), "must be");
         }
         {
-          bool verify_ok = verify_code(THREAD);
+          bool verify_ok = verify_code(THREAD); // jxh: 验证字节码
           if (!verify_ok) {
             return false;
           }
@@ -901,13 +902,13 @@ bool InstanceKlass::link_class_impl(TRAPS) {
         }
 
         // also sets rewritten
-        rewrite_class(CHECK_false);
+        rewrite_class(CHECK_false); // jxh: 重写字节码
       } else if (is_shared()) {
         SystemDictionaryShared::check_verification_constraints(this, CHECK_false);
       }
 
       // relocate jsrs and link methods after they are all rewritten
-      link_methods(CHECK_false);
+      link_methods(CHECK_false); // jxh: 链接方法
 
       // Initialize the vtable and interface table after
       // methods have been rewritten since rewrite may
@@ -1069,6 +1070,7 @@ void InstanceKlass::clean_initialization_error_table() {
   }
 }
 
+// jxh: 类初始哈
 void InstanceKlass::initialize_impl(TRAPS) {
   HandleMark hm(THREAD);
 
@@ -1088,13 +1090,13 @@ void InstanceKlass::initialize_impl(TRAPS) {
   // Step 1
   {
     Handle h_init_lock(THREAD, init_lock());
-    ObjectLocker ol(h_init_lock, jt);
+    ObjectLocker ol(h_init_lock, jt); // jxh: 加锁
 
     // Step 2
     // If we were to use wait() instead of waitInterruptibly() then
     // we might end up throwing IE from link/symbol resolution sites
     // that aren't expected to throw.  This would wreak havoc.  See 6320309.
-    while (is_being_initialized() && !is_reentrant_initialization(jt)) {
+    while (is_being_initialized() && !is_reentrant_initialization(jt)) { // jxh: 正在其他线程初始化，等待
       if (debug_logging_enabled) {
         ResourceMark rm(jt);
         log_debug(class, init)("Thread \"%s\" waiting for initialization of %s by thread \"%s\"",
@@ -1167,14 +1169,14 @@ void InstanceKlass::initialize_impl(TRAPS) {
   if (!is_interface()) {
     Klass* super_klass = super();
     if (super_klass != nullptr && super_klass->should_be_initialized()) {
-      super_klass->initialize(THREAD);
+      super_klass->initialize(THREAD); // jxh: 初始化父类
     }
     // If C implements any interface that declares a non-static, concrete method,
     // the initialization of C triggers initialization of its super interfaces.
     // Only need to recurse if has_nonstatic_concrete_methods which includes declaring and
     // having a superinterface that declares, non-static, concrete methods
     if (!HAS_PENDING_EXCEPTION && has_nonstatic_concrete_methods()) {
-      initialize_super_interfaces(THREAD);
+      initialize_super_interfaces(THREAD); // jxh: 初始化接口
     }
 
     // If any exceptions, complete abruptly, throwing the same exception as above.
@@ -1483,6 +1485,7 @@ instanceOop InstanceKlass::register_finalizer(instanceOop i, TRAPS) {
   return h_i();
 }
 
+// jxh: 实例化
 instanceOop InstanceKlass::allocate_instance(TRAPS) {
   assert(!is_abstract() && !is_interface(), "Should not create this object");
   size_t size = size_helper();  // Query before forming handle.
@@ -1587,7 +1590,7 @@ void InstanceKlass::call_class_initializer(TRAPS) {
   }
 #endif
 
-  methodHandle h_method(THREAD, class_initializer());
+  methodHandle h_method(THREAD, class_initializer()); // jxh: <clinit>
   assert(!is_initialized(), "we cannot initialize twice");
   LogTarget(Info, class, init) lt;
   if (lt.is_enabled()) {
@@ -1602,7 +1605,7 @@ void InstanceKlass::call_class_initializer(TRAPS) {
   if (h_method() != nullptr) {
     JavaCallArguments args; // No arguments
     JavaValue result(T_VOID);
-    JavaCalls::call(&result, h_method, &args, CHECK); // Static call (no args)
+    JavaCalls::call(&result, h_method, &args, CHECK); // Static call (no args) // jxh: 调用<clinit>方法
   }
 }
 

@@ -2476,6 +2476,7 @@ public class Gen extends JCTree.Visitor {
      *  @param cdef  The tree representing the class definition.
      *  @return      True if code is generated with no errors.
      */
+    // jxh: 生成字节码
     public boolean genClass(Env<AttrContext> env, JCClassDecl cdef) {
         try {
             attrEnv = env;
