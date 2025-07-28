@@ -238,6 +238,7 @@ void MemAllocator::Allocation::notify_allocation() {
 
 HeapWord* MemAllocator::mem_allocate_outside_tlab(Allocation& allocation) const {
   allocation._allocated_outside_tlab = true;
+  // 直接在堆中分配
   HeapWord* mem = Universe::heap()->mem_allocate(_word_size, &allocation._overhead_limit_exceeded);
   if (mem == nullptr) {
     return mem;
@@ -288,7 +289,7 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
   tlab.record_refill_waste();
 
   // Retire the current TLAB
-  _thread->retire_tlab();
+  _thread->retire_tlab(); // 回收TLAB
 
   // To minimize fragmentation, the last TLAB may be smaller than the rest.
   size_t new_tlab_size = tlab.compute_size(_word_size);
@@ -300,6 +301,7 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
   // Allocate a new TLAB requesting new_tlab_size. Any size
   // between minimal and new_tlab_size is accepted.
   size_t min_tlab_size = ThreadLocalAllocBuffer::compute_min_size(_word_size);
+  // 在堆中分配新的TLAB内存
   mem = Universe::heap()->allocate_new_tlab(min_tlab_size, new_tlab_size, &allocation._allocated_tlab_size);
   if (mem == nullptr) {
     assert(allocation._allocated_tlab_size == 0,
@@ -323,31 +325,33 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
     Copy::fill_to_words(mem + hdr_size, allocation._allocated_tlab_size - hdr_size, badHeapWordVal);
   }
 
+  // 将分配好的内存填充到TLAB
   _thread->fill_tlab(mem, _word_size, allocation._allocated_tlab_size);
 
   return mem;
 }
 
+// 分配内存的入口
 HeapWord* MemAllocator::mem_allocate(Allocation& allocation) const {
-  if (UseTLAB) {
-    // Try allocating from an existing TLAB.
+  if (UseTLAB) { // 开启TLAB
+    // Try allocating from an existing TLAB. 从TLAB中分配内存
     HeapWord* mem = mem_allocate_inside_tlab_fast();
     if (mem != nullptr) {
       return mem;
     }
   }
 
-  // Allocation of an oop can always invoke a safepoint.
+  // Allocation of an oop can always invoke a safepoint. 检查线程安全点
   DEBUG_ONLY(allocation._thread->check_for_valid_safepoint_state());
 
-  if (UseTLAB) {
+  if (UseTLAB) { // 开启TLAB
     // Try refilling the TLAB and allocating the object in it.
     HeapWord* mem = mem_allocate_inside_tlab_slow(allocation);
     if (mem != nullptr) {
       return mem;
     }
   }
-
+  // 在TLAB外进行内存分配，例如：对象太大
   return mem_allocate_outside_tlab(allocation);
 }
 

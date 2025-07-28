@@ -148,12 +148,14 @@ address Thread::stack_base() const {
 }
 #endif
 
+// 初始化TLAB
 void Thread::initialize_tlab() {
   if (UseTLAB) {
     tlab().initialize();
   }
 }
 
+// 回收TLAB
 void Thread::retire_tlab(ThreadLocalAllocStats* stats) {
   // Sampling and serviceability support
   if (tlab().end() != nullptr) {
@@ -165,6 +167,7 @@ void Thread::retire_tlab(ThreadLocalAllocStats* stats) {
   tlab().retire(stats);
 }
 
+// 将分配好的内存填充到TLAB
 void Thread::fill_tlab(HeapWord* start, size_t pre_reserved, size_t new_size) {
   // Thread allocation sampling support
   heap_sampler().set_tlab_top_at_sample_start(start);

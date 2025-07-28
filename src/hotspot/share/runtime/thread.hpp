@@ -401,11 +401,11 @@ class Thread: public ThreadShadow {
   GrowableArray<Metadata*>* metadata_handles() const          { return _metadata_handles; }
   void set_metadata_handles(GrowableArray<Metadata*>* handles){ _metadata_handles = handles; }
 
-  // Thread-Local Allocation Buffer (TLAB) support
+  // Thread-Local Allocation Buffer (TLAB) support 线程本地分配缓存
   ThreadLocalAllocBuffer& tlab()                 { return _tlab; }
-  void initialize_tlab();
-  void retire_tlab(ThreadLocalAllocStats* stats = nullptr);
-  void fill_tlab(HeapWord* start, size_t pre_reserved, size_t new_size);
+  void initialize_tlab(); // 初始化TLAB，还没有分配内存
+  void retire_tlab(ThreadLocalAllocStats* stats = nullptr); // 回收TLAB的内存
+  void fill_tlab(HeapWord* start, size_t pre_reserved, size_t new_size); // 将分配好的内存填充到TLAB
 
   jlong allocated_bytes()               { return _allocated_bytes; }
   void set_allocated_bytes(jlong value) { _allocated_bytes = value; }

@@ -117,7 +117,7 @@ void ThreadLocalAllocBuffer::accumulate_and_reset_statistics(ThreadLocalAllocSta
 void ThreadLocalAllocBuffer::insert_filler() {
   assert(end() != nullptr, "Must not be retired");
   if (top() < hard_end()) {
-    Universe::heap()->fill_with_dummy_object(top(), hard_end(), true);
+    Universe::heap()->fill_with_dummy_object(top(), hard_end(), true); // 未使用的存储空间使用虚拟对象填充
   }
 }
 
@@ -135,8 +135,8 @@ void ThreadLocalAllocBuffer::retire(ThreadLocalAllocStats* stats) {
 
   if (end() != nullptr) {
     invariants();
-    insert_filler();
-    initialize(nullptr, nullptr, nullptr);
+    insert_filler(); // 未使用的存储空间使用虚拟对象填充
+    initialize(nullptr, nullptr, nullptr); // 清除TLAB对堆内存的地址引用
   }
 }
 
@@ -172,6 +172,7 @@ void ThreadLocalAllocBuffer::reset_statistics() {
   _allocated_size    = 0;
 }
 
+// 将分配好的内存填充到TLAB
 void ThreadLocalAllocBuffer::fill(HeapWord* start,
                                   HeapWord* top,
                                   size_t    new_size) {
@@ -197,12 +198,13 @@ void ThreadLocalAllocBuffer::initialize(HeapWord* start,
   invariants();
 }
 
+// 初始化TLAB
 void ThreadLocalAllocBuffer::initialize() {
   initialize(nullptr,                    // start
              nullptr,                    // top
              nullptr);                   // end
 
-  set_desired_size(initial_desired_size());
+  set_desired_size(initial_desired_size()); // 设置初始化大小
 
   size_t capacity = Universe::heap()->tlab_capacity(thread()) / HeapWordSize;
   if (capacity > 0) {

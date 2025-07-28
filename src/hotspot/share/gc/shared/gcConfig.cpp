@@ -138,6 +138,7 @@ bool GCConfig::is_exactly_one_gc_selected() {
   return selected != CollectedHeap::None;
 }
 
+// JVM启动时选择使用的垃圾收集器
 GCArguments* GCConfig::select_gc() {
   // Fail immediately if an unsupported GC is selected
   fail_if_non_included_gc_is_selected();

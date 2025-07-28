@@ -1,0 +1,20 @@
+# HotSpot JVM GC 目录结构与导航
+
+- `src/hotspot/share/gc` 是 JVM 垃圾收集器（GC）实现的核心目录，包含所有 GC 相关的基础设施和各类具体 GC 的实现。
+- 主要子目录：
+  - `shared/`：GC 通用基础设施（内存分配、屏障、统计、并发、弱引用、Root 管理等，详见 [HotSpot_GC_Shared_Module_Analysis.md](mdc:HotSpot_GC_Shared_Module_Analysis.md)）
+  - `g1/`：G1 GC 实现
+  - `parallel/`：Parallel Scavenge/Parallel Old GC 实现
+  - `serial/`：Serial GC 实现
+  - `z/`：ZGC 实现
+  - `shenandoah/`：Shenandoah GC 实现
+  - `epsilon/`：Epsilon（空实现）GC
+  - `cms/`（部分版本）：CMS GC 实现（已废弃）
+- 还包含全局 GC 配置、参数、统计、辅助工具等（如 gcConfig、gcCause、gcTrace、workerPolicy 等）。
+- 参考文档：[HotSpot_GC_Module_Overview.md](mdc:HotSpot_GC_Module_Overview.md)
+
+如需深入理解某个 GC 或基础设施模块，可查阅上述文档或指定子模块进一步分析。
+description:
+globs:
+alwaysApply: false
+---
