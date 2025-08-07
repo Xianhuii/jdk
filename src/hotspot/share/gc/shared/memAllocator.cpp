@@ -42,15 +42,15 @@
 #include "utilities/copy.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-class MemAllocator::Allocation: StackObj {
+class MemAllocator::Allocation: StackObj { // 内存分配的请求参数封装
   friend class MemAllocator;
 
-  const MemAllocator& _allocator;
-  JavaThread*         _thread;
-  oop*                _obj_ptr;
+  const MemAllocator& _allocator; // 内存分配器
+  JavaThread*         _thread; // 当前线程
+  oop*                _obj_ptr; // 对象指针
   bool                _overhead_limit_exceeded;
   bool                _allocated_outside_tlab;
-  size_t              _allocated_tlab_size;
+  size_t              _allocated_tlab_size; // 已分配的TLAB容量
 
   bool check_out_of_memory();
   void verify_before();
@@ -88,7 +88,7 @@ public:
   oop obj() const { return *_obj_ptr; }
 };
 
-class MemAllocator::Allocation::PreserveObj: StackObj {
+class MemAllocator::Allocation::PreserveObj: StackObj { // GC时保留关键对象，防止其被错误回收
   HandleMark _handle_mark;
   Handle     _handle;
   oop* const _obj_ptr;
@@ -278,7 +278,7 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
 
   // Retain tlab and allocate object in shared space if
   // the amount free in the tlab is too large to discard.
-  if (tlab.free() > tlab.refill_waste_limit()) {
+  if (tlab.free() > tlab.refill_waste_limit()) { // TLAB还有剩余空间，但是不满足请求大小，需要直接在堆中分配内存
     tlab.record_slow_allocation(_word_size);
     return nullptr;
   }
@@ -315,9 +315,9 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
          p2i(mem), min_tlab_size, new_tlab_size);
 
   // ...and clear or zap just allocated TLAB, if needed.
-  if (ZeroTLAB) {
+  if (ZeroTLAB) { // 用0填充，防止历史数据对新分配对象的影响
     Copy::zero_to_words(mem, allocation._allocated_tlab_size);
-  } else if (ZapTLAB) {
+  } else if (ZapTLAB) { // 填充TLAB未使用区域，在回收时GC可以对其进行回收
     // Skip mangling the space corresponding to the object header to
     // ensure that the returned space is not considered parsable by
     // any concurrent GC thread.
@@ -331,7 +331,6 @@ HeapWord* MemAllocator::mem_allocate_inside_tlab_slow(Allocation& allocation) co
   return mem;
 }
 
-// 分配内存的入口
 HeapWord* MemAllocator::mem_allocate(Allocation& allocation) const {
   if (UseTLAB) { // 开启TLAB
     // Try allocating from an existing TLAB. 从TLAB中分配内存
@@ -355,12 +354,17 @@ HeapWord* MemAllocator::mem_allocate(Allocation& allocation) const {
   return mem_allocate_outside_tlab(allocation);
 }
 
+// 分配内存的入口
 oop MemAllocator::allocate() const {
+  // 声明对象
   oop obj = nullptr;
   {
+    // 实例化Allocation，作为内存分配的请求上下文
     Allocation allocation(*this, &obj);
+    // 内存分配
     HeapWord* mem = mem_allocate(allocation);
     if (mem != nullptr) {
+      // 实例化
       obj = initialize(mem);
     } else {
       // The unhandled oop detector will poison local variable obj,
@@ -371,6 +375,7 @@ oop MemAllocator::allocate() const {
   return obj;
 }
 
+// 使用0填充，重置内存
 void MemAllocator::mem_clear(HeapWord* mem) const {
   assert(mem != nullptr, "cannot initialize null object");
   const size_t hs = oopDesc::header_size();
@@ -381,37 +386,41 @@ void MemAllocator::mem_clear(HeapWord* mem) const {
   Copy::fill_to_aligned_words(mem + hs, _word_size - hs);
 }
 
+// 主要用来设置klass的引用
 oop MemAllocator::finish(HeapWord* mem) const {
   assert(mem != nullptr, "null object pointer");
   // Need a release store to ensure array/class length, mark word, and
   // object zeroing are visible before setting the klass non-null, for
   // concurrent collectors.
+  // 设置对象对klass的引用
   if (UseCompactObjectHeaders) {
     oopDesc::release_set_mark(mem, _klass->prototype_header());
   } else {
     oopDesc::set_mark(mem, markWord::prototype());
     oopDesc::release_set_klass(mem, _klass);
   }
-  return cast_to_oop(mem);
+  return cast_to_oop(mem); // 类型转换
 }
 
+// 实例化普通对象
 oop ObjAllocator::initialize(HeapWord* mem) const {
   mem_clear(mem);
   return finish(mem);
 }
 
+// 实例化对象数组
 oop ObjArrayAllocator::initialize(HeapWord* mem) const {
   // Set array length before setting the _klass field because a
   // non-null klass field indicates that the object is parsable by
   // concurrent GC.
   assert(_length >= 0, "length should be non-negative");
-  if (_do_zero) {
+  if (_do_zero) { // 重置数据
     mem_clear(mem);
     mem_zap_start_padding(mem);
     mem_zap_end_padding(mem);
   }
-  arrayOopDesc::set_length(mem, _length);
-  return finish(mem);
+  arrayOopDesc::set_length(mem, _length); // 设置数组长度
+  return finish(mem); // 设置klass引用
 }
 
 #ifndef PRODUCT
@@ -446,6 +455,7 @@ void ObjArrayAllocator::mem_zap_end_padding(HeapWord* mem) const {
 }
 #endif
 
+// 类对象初始化
 oop ClassAllocator::initialize(HeapWord* mem) const {
   // Set oop_size field before setting the _klass field because a
   // non-null _klass field indicates that the object is parsable by
