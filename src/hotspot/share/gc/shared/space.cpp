@@ -104,7 +104,7 @@ void ContiguousSpace::object_iterate(ObjectClosure* blk) {
   }
 }
 
-// This version requires locking.
+// This version requires locking. 需要外部加锁
 inline HeapWord* ContiguousSpace::allocate_impl(size_t size) {
   assert(Heap_lock->owned_by_self() ||
          (SafepointSynchronize::is_at_safepoint() && Thread::current()->is_VM_thread()),
@@ -124,17 +124,17 @@ inline HeapWord* ContiguousSpace::allocate_impl(size_t size) {
 inline HeapWord* ContiguousSpace::par_allocate_impl(size_t size) {
   do {
     HeapWord* obj = top();
-    if (pointer_delta(end(), obj) >= size) {
+    if (pointer_delta(end(), obj) >= size) { // 容量足够，尝试进行分配
       HeapWord* new_top = obj + size;
-      HeapWord* result = Atomic::cmpxchg(top_addr(), obj, new_top);
+      HeapWord* result = Atomic::cmpxchg(top_addr(), obj, new_top); // cas更新top位置，返回旧top
       // result can be one of two:
       //  the old top value: the exchange succeeded
       //  otherwise: the new value of the top is returned.
-      if (result == obj) {
+      if (result == obj) { // 更新成功，返回obj
         assert(is_object_aligned(obj) && is_object_aligned(new_top), "checking alignment");
         return obj;
       }
-    } else {
+    } else { // 容量不够，返回空指针
       return nullptr;
     }
   } while (true);

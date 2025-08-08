@@ -75,17 +75,17 @@ class SerialHeap : public CollectedHeap {
   friend class VM_PopulateDumpSharedSpace;
 
 private:
-  DefNewGeneration* _young_gen;
-  TenuredGeneration* _old_gen;
-  HeapWord* _young_gen_saved_top;
-  HeapWord* _old_gen_saved_top;
+  DefNewGeneration* _young_gen; // 年轻代
+  TenuredGeneration* _old_gen; // 年老代
+  HeapWord* _young_gen_saved_top; // 年轻代空闲位置
+  HeapWord* _old_gen_saved_top; // 年老代空闲位置
 
   // The singleton CardTable Remembered Set.
-  CardTableRS* _rem_set;
+  CardTableRS* _rem_set; // 卡表实现的记忆集，用来记录年老代对年轻代的引用
 
   GCPolicyCounters* _gc_policy_counters;
 
-  bool do_young_collection(bool clear_soft_refs);
+  bool do_young_collection(bool clear_soft_refs); // 执行youngGC
 
   // Reserve aligned space for the heap as needed by the contained generations.
   ReservedHeapSpace allocate(size_t alignment);

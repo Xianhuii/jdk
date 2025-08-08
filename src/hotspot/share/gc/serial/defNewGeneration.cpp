@@ -235,9 +235,9 @@ DefNewGeneration::DefNewGeneration(ReservedSpace rs,
 
   gch->rem_set()->resize_covered_region(cmr);
 
-  _eden_space = new ContiguousSpace();
-  _from_space = new ContiguousSpace();
-  _to_space   = new ContiguousSpace();
+  _eden_space = new ContiguousSpace(); // 创建eden区
+  _from_space = new ContiguousSpace(); // 创建from_space
+  _to_space   = new ContiguousSpace(); // 创建to_space
 
   // Compute the maximum eden and survivor space sizes. These sizes
   // are computed assuming the entire reserved space is committed.
@@ -846,7 +846,9 @@ HeapWord* DefNewGeneration::allocate(size_t word_size) {
   return result;
 }
 
+// 年轻代分配内存（Lock-free）
 HeapWord* DefNewGeneration::par_allocate(size_t word_size) {
+  // 在eden区分配内存
   return eden()->par_allocate(word_size);
 }
 

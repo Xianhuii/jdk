@@ -305,15 +305,17 @@ HeapWord* SerialHeap::expand_heap_and_allocate(size_t size, bool is_tlab) {
   return result;
 }
 
+// 堆内存分配
 HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
   HeapWord* result = nullptr;
 
   // Loop until the allocation is satisfied, or unsatisfied after GC.
   for (uint try_count = 1; /* return or throw */; try_count += 1) {
     // First allocation attempt is lock-free.
+    // 校验对象大小，如果年轻代可以分配内存，优先在年轻代eden区分配
     DefNewGeneration *young = _young_gen;
     if (young->should_allocate(size, is_tlab)) {
-      result = young->par_allocate(size);
+      result = young->par_allocate(size); // 尝试Lock-free方式分配内存
       if (result != nullptr) {
         assert(is_in_reserved(result), "result not in heap");
         return result;
@@ -321,12 +323,13 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
     }
     uint gc_count_before;  // Read inside the Heap_lock locked region.
     {
+      // 对象创建时自动对Heap_lock（堆的全局锁）互斥锁加锁，离开作用域时，对象销毁执行析构函数进行解锁
       MutexLocker ml(Heap_lock);
       log_trace(gc, alloc)("SerialHeap::mem_allocate_work: attempting locked slow path allocation");
       // Note that only large objects get a shot at being
       // allocated in later generations.
       bool first_only = !should_try_older_generation_allocation(size);
-
+      // 尝试从年轻代eden区/年老代分配内存
       result = attempt_allocation(size, is_tlab, first_only);
       if (result != nullptr) {
         assert(is_in_reserved(result), "result not in heap");
@@ -336,7 +339,7 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
       // Read the gc count while the heap lock is held.
       gc_count_before = total_collections();
     }
-
+    // 创建序列化垃圾收集操作，并执行垃圾收集任务
     VM_SerialCollectForAllocation op(size, is_tlab, gc_count_before);
     VMThread::execute(&op);
     if (op.gc_succeeded()) {
@@ -356,13 +359,14 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
   }
 }
 
+// 尝试从年轻代/年老代分配内存
 HeapWord* SerialHeap::attempt_allocation(size_t size,
                                          bool is_tlab,
                                          bool first_only) {
   HeapWord* res = nullptr;
 
   if (_young_gen->should_allocate(size, is_tlab)) {
-    res = _young_gen->allocate(size);
+    res = _young_gen->allocate(size); // 实际上也是Lock-free
     if (res != nullptr || first_only) {
       return res;
     }
@@ -375,6 +379,7 @@ HeapWord* SerialHeap::attempt_allocation(size_t size,
   return res;
 }
 
+// 堆内存分配的入口
 HeapWord* SerialHeap::mem_allocate(size_t size,
                                    bool* gc_overhead_limit_was_exceeded) {
   return mem_allocate_work(size,

@@ -47,11 +47,11 @@ class STWGCTimer;
 
 // DefNewGeneration is a young generation containing eden, from- and
 // to-space.
-
+// 年轻代
 class DefNewGeneration: public Generation {
   friend class VMStructs;
 
-  TenuredGeneration* _old_gen;
+  TenuredGeneration* _old_gen; // 老年代的指针
 
   uint        _tenuring_threshold;   // Tenuring threshold for next collection.
   AgeTable    _age_table;

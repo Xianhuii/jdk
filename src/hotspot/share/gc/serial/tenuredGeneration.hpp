@@ -39,7 +39,7 @@ class ContiguousSpace;
 // contained in a single contiguous space. This generation is covered by a card
 // table, and uses a card-size block-offset array to implement block_start.
 // Garbage collection is performed using mark-compact.
-
+// 年老代
 class TenuredGeneration: public Generation {
   friend class VMStructs;
   // Abstractly, this is a subtype that gets access to protected fields.
@@ -65,7 +65,7 @@ class TenuredGeneration: public Generation {
 
   void assert_correct_size_change_locking();
 
-  ContiguousSpace*    _the_space;       // Actual space holding objects
+  ContiguousSpace*    _the_space;       // Actual space holding objects 实际存放对象的内存空间
 
   GenerationCounters* _gen_counters;
   CSpaceCounters*     _space_counters;
