@@ -29,7 +29,17 @@
 #include "memory/memRegion.hpp"
 #include "oops/oopsHierarchy.hpp"
 #include "utilities/align.hpp"
-
+/**
+* 卡表：将老年代按照一定大小（例如512字节）划分为不同区域，映射到数组中，每个数组位置记录该内存区域是否存在堆年轻代的引用。
+* 运行流程：
+*    1. 老年代对象写屏障
+*      1.1 如果新引用是年轻代对象，根据老年代对象地址计算卡表数组索引，将该索引位置标记为dirty
+*      1.2 如果新引用不是年轻代对象，不做处理
+*    2. 触发Minor GC时
+*      2.1 扫描root对象，进行常规可达性分析
+*      2.2 遍历卡表中所有dirty位置，转换为老年代内存地址，扫描这些地址中的所有对象，进行可达性分析
+*      2.3 Minor GC结束时，将已处理的卡表索引位置标记为干净，等待下次处理
+*/
 class CardTable: public CHeapObj<mtGC> {
   friend class VMStructs;
 public:
@@ -43,10 +53,16 @@ public:
 protected:
   // The declaration order of these const fields is important; see the
   // constructor before changing.
+
+  // 卡表覆盖的内存区域（老年代）
   const MemRegion _whole_heap;       // the region covered by the card table
-  const size_t    _page_size;        // page size used when mapping _byte_map
+  const size_t    _page_size;        // page size used when mapping _byte_map 页大小
   size_t          _byte_map_size;    // in bytes
+
+  // 实际的card数组，每个字节代表一段内存的状态（干净/脏）
   CardValue*      _byte_map;         // the card marking array
+
+  // 经过调整的基址，便于地址到card索引的映射
   CardValue*      _byte_map_base;
 
   // Some barrier sets create tables whose elements correspond to parts of
@@ -62,9 +78,9 @@ protected:
   inline size_t compute_byte_map_size(size_t num_bytes);
 
   enum CardValues {
-    clean_card                  = (CardValue)-1,
+    clean_card                  = (CardValue)-1, // 表示改区域没有跨代引用
 
-    dirty_card                  =  0,
+    dirty_card                  =  0, // 表示改区域包含跨代引用
     CT_MR_BS_last_reserved      =  1
   };
 
@@ -72,7 +88,8 @@ protected:
   static const intptr_t clean_card_row = (intptr_t)(-1);
 
   // CardTable entry size
-  static uint _card_shift;
+  // 每个card覆盖的堆空间大小
+  static uint _card_shift; // 例如，_card_shift=9时表示每个card覆盖的堆空间大小为512字节（即2^9=512）
   static uint _card_size;
   static uint _card_size_in_words;
 
@@ -101,23 +118,29 @@ public:
 
   // Dirty the bytes corresponding to "mr" (not all of which must be
   // covered.)
+  // 将指定内存区域的card标记为脏
   void dirty_MemRegion(MemRegion mr);
 
   // Clear (to clean_card) the bytes entirely contained within "mr" (not
   // all of which must be covered.)
+  // 将指定区域的card标记为干净
   void clear_MemRegion(MemRegion mr);
 
   // Return true if "p" is at the start of a card.
+  // 判断地址是否为card的起始位置
   static bool is_card_aligned(HeapWord* p) {
     return is_aligned(p, card_size());
   }
 
   // Mapping from address to card marking array entry
+  // 将堆地址映射到card数组的索引
   CardValue* byte_for(const void* p) const {
     assert(_whole_heap.contains(p),
            "Attempt to access p = " PTR_FORMAT " out of bounds of "
            " card marking array's _whole_heap = [" PTR_FORMAT "," PTR_FORMAT ")",
            p2i(p), p2i(_whole_heap.start()), p2i(_whole_heap.end()));
+    // uintptr_t(p)：表示将指针 p转换为无符号整数类型 uintptr_t，确保地址值可参与位运算。
+    // >> _card_shift：相当于将地址除以(2^_card_shift)，将地址映射到card数组
     CardValue* result = &_byte_map_base[uintptr_t(p) >> _card_shift];
     assert(result >= _byte_map && result < _byte_map + _byte_map_size,
            "out of bounds accessor for card marking array");
@@ -140,6 +163,7 @@ public:
   }
 
   // Mapping from card marking array entry to address of first word
+  // 将card索引映射回堆内存地址
   HeapWord* addr_for(const CardValue* p) const {
     assert(p >= _byte_map && p < _byte_map + _byte_map_size,
            "out of bounds access to card marking array. p: " PTR_FORMAT
@@ -170,6 +194,7 @@ public:
   }
 
   // Resize one of the regions covered by the remembered set.
+  // 重新调整CardTable覆盖的内存区域
   void resize_covered_region(MemRegion new_region);
 
   // *** Card-table-RemSet-specific things.

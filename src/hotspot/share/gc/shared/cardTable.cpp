@@ -42,6 +42,7 @@ uint CardTable::_card_shift = 0;
 uint CardTable::_card_size = 0;
 uint CardTable::_card_size_in_words = 0;
 
+// 初始化卡表
 void CardTable::initialize_card_size() {
   assert(UseG1GC || UseParallelGC || UseSerialGC || UseShenandoahGC,
          "Initialize card size should only be called by card based collectors.");
@@ -59,6 +60,7 @@ size_t CardTable::compute_byte_map_size(size_t num_bytes) {
   return align_up(num_bytes, MAX2(_page_size, granularity));
 }
 
+// 创建卡表
 CardTable::CardTable(MemRegion whole_heap) :
   _whole_heap(whole_heap),
   _page_size(os::vm_page_size()),
