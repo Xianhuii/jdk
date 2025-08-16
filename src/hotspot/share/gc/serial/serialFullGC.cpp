@@ -144,11 +144,17 @@ public:
 };
 
 // Implement the "compaction" part of the mark-compact GC algorithm.
+/*
+ * 压缩器类，负责对连续空间进行压缩
+ */
 class Compacter {
   // There are four spaces in total, but only the first three can be used after
   // compact. IOW, old and eden/from must be enough for all live objs
   static constexpr uint max_num_spaces = 4;
 
+  /*
+   * 压缩空间结构体
+   */
   struct CompactionSpace {
     ContiguousSpace* _space;
     // Will be the new top after compaction is complete.
@@ -268,8 +274,13 @@ class Compacter {
   }
 
 public:
+  /*
+   * 压缩器构造函数
+   * @param heap 堆对象
+   */
   explicit Compacter(SerialHeap* heap) {
     // In this order so that heap is compacted towards old-gen.
+    // 压缩顺序：老年代 -> 新生代（eden + from）-> 新生代（to）
     _spaces[0].init(heap->old_gen()->space());
     _spaces[1].init(heap->young_gen()->eden());
     _spaces[2].init(heap->young_gen()->from());
@@ -285,84 +296,97 @@ public:
     _old_gen = heap->old_gen();
   }
 
+  /*
+   * 计算存活对象的新地址，并处理死亡空间
+   */
   void phase2_calculate_new_addr() {
+    // 按顺序遍历所有压缩空间
     for (uint i = 0; i < _num_spaces; ++i) {
-      ContiguousSpace* space = get_space(i);
-      HeapWord* cur_addr = space->bottom();
-      HeapWord* top = space->top();
+      ContiguousSpace* space = get_space(i); // 获取当前压缩空间
+      HeapWord* cur_addr = space->bottom(); // 当前遍历地址
+      HeapWord* top = space->top(); // 压缩空间结束地址
 
       bool record_first_dead_done = false;
 
       DeadSpacer dead_spacer(space);
 
+      // 遍历压缩空间，处理存活对象和死亡空间
       while (cur_addr < top) {
-        oop obj = cast_to_oop(cur_addr);
-        size_t obj_size = obj->size();
-        if (obj->is_gc_marked()) {
-          HeapWord* new_addr = alloc(obj_size);
-          forward_obj(obj, new_addr);
-          cur_addr += obj_size;
-        } else {
+        oop obj = cast_to_oop(cur_addr); // 当前对象
+        size_t obj_size = obj->size(); // 当前对象大小
+        if (obj->is_gc_marked()) { // 当前对象已标记
+          HeapWord* new_addr = alloc(obj_size); // 分配新地址
+          forward_obj(obj, new_addr); // 转发对象到新地址
+          cur_addr += obj_size; // 移动到下一个对象
+        } else { // 当前对象未标记
           // Skipping the current known-unmarked obj
-          HeapWord* next_live_addr = find_next_live_addr(cur_addr + obj_size, top);
-          if (dead_spacer.insert_deadspace(cur_addr, next_live_addr)) {
+          HeapWord* next_live_addr = find_next_live_addr(cur_addr + obj_size, top); // 查找下一个存活对象
+          if (dead_spacer.insert_deadspace(cur_addr, next_live_addr)) { // 插入死亡空间
             // Register space for the filler obj
-            alloc(pointer_delta(next_live_addr, cur_addr));
-          } else {
-            if (!record_first_dead_done) {
+            alloc(pointer_delta(next_live_addr, cur_addr)); // 分配填充对象，用于填充死亡空间
+          } else { // 未插入死亡空间
+            if (!record_first_dead_done) { // 记录第一个死亡对象
               record_first_dead(i, cur_addr);
               record_first_dead_done = true;
             }
-            *(HeapWord**)cur_addr = next_live_addr;
+            *(HeapWord**)cur_addr = next_live_addr; // 指向下一个存活对象
           }
           cur_addr = next_live_addr;
         }
       }
 
-      if (!record_first_dead_done) {
-        record_first_dead(i, top);
+      if (!record_first_dead_done) { // 未记录第一个死亡对象
+        record_first_dead(i, top); // 记录最后一个死亡对象
       }
     }
   }
 
+  /*
+   * 调整所有指针以指向对象的新位置
+   */
   void phase3_adjust_pointers() {
+    // 按顺序遍历所有压缩空间
     for (uint i = 0; i < _num_spaces; ++i) {
-      ContiguousSpace* space = get_space(i);
-      HeapWord* cur_addr = space->bottom();
-      HeapWord* const top = space->top();
-      HeapWord* const first_dead = get_first_dead(i);
+      ContiguousSpace* space = get_space(i); // 获取当前压缩空间
+      HeapWord* cur_addr = space->bottom(); // 当前遍历地址
+      HeapWord* const top = space->top(); // 压缩空间结束地址
+      HeapWord* const first_dead = get_first_dead(i); // 第一个死亡对象地址
 
       while (cur_addr < top) {
-        prefetch_write_scan(cur_addr);
-        if (cur_addr < first_dead || cast_to_oop(cur_addr)->is_gc_marked()) {
-          size_t size = cast_to_oop(cur_addr)->oop_iterate_size(&SerialFullGC::adjust_pointer_closure);
+        prefetch_write_scan(cur_addr); // 预取当前地址
+        if (cur_addr < first_dead || cast_to_oop(cur_addr)->is_gc_marked()) { // 当前对象已标记
+          size_t size = cast_to_oop(cur_addr)->oop_iterate_size(&SerialFullGC::adjust_pointer_closure); // 调整指针
           cur_addr += size;
-        } else {
+        } else { // 当前对象未标记
           assert(*(HeapWord**)cur_addr > cur_addr, "forward progress");
-          cur_addr = *(HeapWord**)cur_addr;
+          cur_addr = *(HeapWord**)cur_addr; // 指向下一个存活对象
         }
       }
     }
   }
 
+  /*
+   * 压缩空间，将存活对象移动到连续区域
+   */
   void phase4_compact() {
+    // 按顺序遍历所有压缩空间
     for (uint i = 0; i < _num_spaces; ++i) {
-      ContiguousSpace* space = get_space(i);
-      HeapWord* cur_addr = space->bottom();
-      HeapWord* top = space->top();
+      ContiguousSpace* space = get_space(i); // 获取当前压缩空间
+      HeapWord* cur_addr = space->bottom(); // 当前遍历地址
+      HeapWord* top = space->top(); // 压缩空间结束地址
 
       // Check if the first obj inside this space is forwarded.
-      if (!FullGCForwarding::is_forwarded(cast_to_oop(cur_addr))) {
+      if (!FullGCForwarding::is_forwarded(cast_to_oop(cur_addr))) { // 第一个对象未转发
         // Jump over consecutive (in-place) live-objs-chunk
-        cur_addr = get_first_dead(i);
+        cur_addr = get_first_dead(i); // 跳转到第一个死亡对象
       }
 
       while (cur_addr < top) {
-        if (!FullGCForwarding::is_forwarded(cast_to_oop(cur_addr))) {
-          cur_addr = *(HeapWord**) cur_addr;
+        if (!FullGCForwarding::is_forwarded(cast_to_oop(cur_addr))) { // 当前对象未转发
+          cur_addr = *(HeapWord**) cur_addr; // 指向下一个存活对象
           continue;
         }
-        cur_addr += relocate(cur_addr);
+        cur_addr += relocate(cur_addr); // 压缩当前对象
       }
 
       // Reset top and unused memory
@@ -470,34 +494,40 @@ void SerialFullGC::preserve_mark(oop obj, markWord mark) {
   }
 }
 
+/*
+ * 标记阶段，递归遍历所有存活对象并标记它们
+ */
 void SerialFullGC::phase1_mark(bool clear_all_softrefs) {
   // Recursively traverse all live objects and mark them
   GCTraceTime(Info, gc, phases) tm("Phase 1: Mark live objects", _gc_timer);
 
-  SerialHeap* gch = SerialHeap::heap();
+  SerialHeap* gch = SerialHeap::heap(); // 获取SerialHeap实例
 
-  ClassLoaderDataGraph::verify_claimed_marks_cleared(ClassLoaderData::_claim_stw_fullgc_mark);
+  ClassLoaderDataGraph::verify_claimed_marks_cleared(ClassLoaderData::_claim_stw_fullgc_mark); // 验证ClassLoaderData的标记是否已清除
 
-  ref_processor()->start_discovery(clear_all_softrefs);
+  ref_processor()->start_discovery(clear_all_softrefs); // 开始引用处理
 
+  // 遍历根对象并标记它们
   {
-    StrongRootsScope srs(0);
+    StrongRootsScope srs(0); // 强根对象范围
 
-    CLDClosure* weak_cld_closure = ClassUnloading ? nullptr : &follow_cld_closure;
-    MarkingNMethodClosure mark_code_closure(&follow_root_closure, !NMethodToOopClosure::FixRelocations, true);
+    CLDClosure* weak_cld_closure = ClassUnloading ? nullptr : &follow_cld_closure; // 弱类加载器闭包
+    MarkingNMethodClosure mark_code_closure(&follow_root_closure, !NMethodToOopClosure::FixRelocations, true); // 标记nmethod闭包
     gch->process_roots(SerialHeap::SO_None,
                        &follow_root_closure,
                        &follow_cld_closure,
                        weak_cld_closure,
-                       &mark_code_closure);
+                       &mark_code_closure); // 处理根对象
   }
 
   // Process reference objects found during marking
+  // 处理引用对象
   {
     GCTraceTime(Debug, gc, phases) tm_m("Reference Processing", gc_timer());
 
     ReferenceProcessorPhaseTimes pt(_gc_timer, ref_processor()->max_num_queues());
     SerialGCRefProcProxyTask task(is_alive, keep_alive, follow_stack_closure);
+    // 处理引用对象
     const ReferenceProcessorStats& stats = ref_processor()->process_discovered_references(task, nullptr, pt);
     pt.print_all_references();
     gc_tracer()->report_gc_reference_stats(stats);
@@ -508,6 +538,7 @@ void SerialFullGC::phase1_mark(bool clear_all_softrefs) {
 
   {
     GCTraceTime(Debug, gc, phases) tm_m("Weak Processing", gc_timer());
+    // 处理弱引用对象
     WeakProcessor::weak_oops_do(&is_alive, &do_nothing_cl);
   }
 
@@ -583,6 +614,9 @@ void SerialFullGC::deallocate_stacks() {
   _objarray_stack.clear(true);
 }
 
+/*
+ * 标记对象，处理字符串去重和标记
+ */
 void SerialFullGC::mark_object(oop obj) {
   if (StringDedup::is_enabled() &&
       java_lang_String::is_instance(obj) &&
@@ -602,6 +636,9 @@ void SerialFullGC::mark_object(oop obj) {
   }
 }
 
+/*
+ * 标记并压栈对象
+ */
 template <class T> void SerialFullGC::mark_and_push(T* p) {
   T heap_oop = RawAccess<>::oop_load(p);
   if (!CompressedOops::is_null(heap_oop)) {
@@ -681,28 +718,33 @@ void SerialFullGC::initialize() {
   mark_and_push_closure.set_ref_discoverer(_ref_processor);
 }
 
+/*
+ * SerialFullGC 的入口点，在安全点调用，执行完整的垃圾收集过程
+ * @param clear_all_softrefs 是否清除所有软引用
+ */
 void SerialFullGC::invoke_at_safepoint(bool clear_all_softrefs) {
   assert(SafepointSynchronize::is_at_safepoint(), "must be at a safepoint");
 
-  SerialHeap* gch = SerialHeap::heap();
+  SerialHeap* gch = SerialHeap::heap(); // 获取 SerialHeap 实例
 
-  gch->trace_heap_before_gc(_gc_tracer);
+  gch->trace_heap_before_gc(_gc_tracer); // 跟踪堆状态，记录当前堆状态
 
   // Capture used regions for old-gen to reestablish old-to-young invariant
   // after full-gc.
-  gch->old_gen()->save_used_region();
+  gch->old_gen()->save_used_region(); // 保存旧代已使用区域，用于后续恢复
 
-  allocate_stacks();
+  allocate_stacks(); // 分配栈空间，用于标记和压缩
 
-  phase1_mark(clear_all_softrefs);
+  phase1_mark(clear_all_softrefs); // 标记阶段，标记所有存活对象
 
-  Compacter compacter{gch};
+  Compacter compacter{gch}; // 压缩器，用于压缩对象
 
+  // 计算新对象地址
   {
     // Now all live objects are marked, compute the new object addresses.
     GCTraceTime(Info, gc, phases) tm("Phase 2: Compute new object addresses", _gc_timer);
 
-    compacter.phase2_calculate_new_addr();
+    compacter.phase2_calculate_new_addr(); // 计算新对象地址
   }
 
   // Don't add any more derived pointers during phase3
@@ -711,6 +753,7 @@ void SerialFullGC::invoke_at_safepoint(bool clear_all_softrefs) {
   DerivedPointerTable::set_active(false);
 #endif
 
+  // 调整指针，更新对象引用
   {
     // Adjust the pointers to reflect the new locations
     GCTraceTime(Info, gc, phases) tm("Phase 3: Adjust pointers", gc_timer());
@@ -722,38 +765,39 @@ void SerialFullGC::invoke_at_safepoint(bool clear_all_softrefs) {
                        &adjust_pointer_closure,
                        &adjust_cld_closure,
                        &adjust_cld_closure,
-                       &code_closure);
+                       &code_closure); // 调整代码缓存指针
 
-    WeakProcessor::oops_do(&adjust_pointer_closure);
+    WeakProcessor::oops_do(&adjust_pointer_closure); // 调整弱引用指针
 
-    adjust_marks();
-    compacter.phase3_adjust_pointers();
+    adjust_marks(); // 调整标记，更新对象引用
+    compacter.phase3_adjust_pointers(); // 调整指针，更新对象引用
   }
 
+  // 移动对象
   {
     // All pointers are now adjusted, move objects accordingly
     GCTraceTime(Info, gc, phases) tm("Phase 4: Move objects", _gc_timer);
 
-    compacter.phase4_compact();
+    compacter.phase4_compact(); // 压缩对象
   }
 
-  restore_marks();
+  restore_marks(); // 恢复标记，更新对象引用
 
-  deallocate_stacks();
+  deallocate_stacks(); // 释放栈空间
 
   SerialFullGC::_string_dedup_requests->flush();
 
   bool is_young_gen_empty = (gch->young_gen()->used() == 0);
   gch->rem_set()->maintain_old_to_young_invariant(gch->old_gen(), is_young_gen_empty);
 
-  gch->prune_scavengable_nmethods();
+  gch->prune_scavengable_nmethods(); // 清理可 scavenge 的 nmethod
 
   // Update heap occupancy information which is used as
   // input to soft ref clearing policy at the next gc.
-  Universe::heap()->update_capacity_and_used_at_gc();
+  Universe::heap()->update_capacity_and_used_at_gc(); // 更新堆占用信息
 
   // Signal that we have completed a visit to all live objects.
-  Universe::heap()->record_whole_heap_examined_timestamp();
+  Universe::heap()->record_whole_heap_examined_timestamp(); // 记录堆遍历完成时间戳
 
-  gch->trace_heap_after_gc(_gc_tracer);
+  gch->trace_heap_after_gc(_gc_tracer); // 跟踪堆状态，记录当前堆状态
 }

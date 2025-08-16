@@ -104,11 +104,15 @@ SerialHeap::SerialHeap() :
   GCLocker::initialize();
 }
 
+/*
+ * 初始化服务ability
+ */
 void SerialHeap::initialize_serviceability() {
   DefNewGeneration* young = young_gen();
 
   // Add a memory pool for each space and young gen doesn't
   // support low memory detection as it is expected to get filled up.
+  // 为每个空间添加内存池，而年轻代不支持低内存检测，因为它预计会被填满。
   _eden_pool = new ContiguousSpacePool(young->eden(),
                                        "Eden Space",
                                        young->max_eden_size(),
@@ -118,8 +122,10 @@ void SerialHeap::initialize_serviceability() {
                                                    young->max_survivor_size(),
                                                    false /* support_usage_threshold */);
   TenuredGeneration* old = old_gen();
+  // 为旧代添加内存池
   _old_pool = new TenuredGenerationPool(old, "Tenured Gen", true);
 
+  // 为年轻代和老年代添加内存池
   _young_manager->add_pool(_eden_pool);
   _young_manager->add_pool(_survivor_pool);
   young->set_gc_manager(_young_manager);
@@ -145,12 +151,18 @@ GrowableArray<MemoryPool*> SerialHeap::memory_pools() {
   return memory_pools;
 }
 
+/*
+ * 安全点同步开始
+ */
 void SerialHeap::safepoint_synchronize_begin() {
   if (UseStringDeduplication) {
     SuspendibleThreadSet::synchronize();
   }
 }
 
+/*
+ * 安全点同步结束
+ */
 void SerialHeap::safepoint_synchronize_end() {
   if (UseStringDeduplication) {
     SuspendibleThreadSet::desynchronize();
@@ -167,18 +179,32 @@ void SerialHeap::complete_loaded_archive_space(MemRegion archive_space) {
   old_gen()->complete_loaded_archive_space(archive_space);
 }
 
+/*
+ * 钉住对象
+ * @param thread 线程
+ * @param obj 对象
+ */
 void SerialHeap::pin_object(JavaThread* thread, oop obj) {
   GCLocker::enter(thread);
 }
 
+/*
+ * 取消钉住对象
+ * @param thread 线程
+ * @param obj 对象
+ */
 void SerialHeap::unpin_object(JavaThread* thread, oop obj) {
   GCLocker::exit(thread);
 }
 
+/*
+ * 初始化堆
+ * @return 初始化结果
+ */
 jint SerialHeap::initialize() {
   // Allocate space for the heap.
 
-  ReservedHeapSpace heap_rs = allocate(HeapAlignment);
+  ReservedHeapSpace heap_rs = allocate(HeapAlignment); // 分配堆空间
 
   if (!heap_rs.is_reserved()) {
     vm_shutdown_during_initialization(
@@ -186,20 +212,21 @@ jint SerialHeap::initialize() {
     return JNI_ENOMEM;
   }
 
-  initialize_reserved_region(heap_rs);
+  initialize_reserved_region(heap_rs); // 初始化堆空间
 
+  // 划分年轻代和老年代空间
   ReservedSpace young_rs = heap_rs.first_part(MaxNewSize, SpaceAlignment);
   ReservedSpace old_rs = heap_rs.last_part(MaxNewSize, SpaceAlignment);
 
-  _rem_set = new CardTableRS(_reserved);
+  _rem_set = new CardTableRS(_reserved); // 初始化卡表
   _rem_set->initialize(young_rs.base(), old_rs.base());
 
-  CardTableBarrierSet *bs = new CardTableBarrierSet(_rem_set);
+  CardTableBarrierSet *bs = new CardTableBarrierSet(_rem_set); // 初始化卡表屏障集
   bs->initialize();
-  BarrierSet::set_barrier_set(bs);
+  BarrierSet::set_barrier_set(bs); // 设置屏障集
 
-  _young_gen = new DefNewGeneration(young_rs, NewSize, MinNewSize, MaxNewSize);
-  _old_gen = new TenuredGeneration(old_rs, OldSize, MinOldSize, MaxOldSize, rem_set());
+  _young_gen = new DefNewGeneration(young_rs, NewSize, MinNewSize, MaxNewSize); // 初始化年轻代
+  _old_gen = new TenuredGeneration(old_rs, OldSize, MinOldSize, MaxOldSize, rem_set()); // 初始化老年代
 
   GCInitLogger::print();
 
@@ -208,9 +235,14 @@ jint SerialHeap::initialize() {
   return JNI_OK;
 }
 
+/*
+ * 分配堆空间
+ * @param alignment 对齐方式
+ * @return 堆空间
+ */
 ReservedHeapSpace SerialHeap::allocate(size_t alignment) {
   // Now figure out the total size.
-  const size_t pageSize = UseLargePages ? os::large_page_size() : os::vm_page_size();
+  const size_t pageSize = UseLargePages ? os::large_page_size() : os::vm_page_size(); // 获取页面大小
   assert(alignment % pageSize == 0, "Must be");
 
   // Check for overflow.
@@ -222,17 +254,17 @@ ReservedHeapSpace SerialHeap::allocate(size_t alignment) {
   assert(total_reserved % alignment == 0,
          "Gen size; total_reserved=%zu, alignment=%zu", total_reserved, alignment);
 
-  ReservedHeapSpace heap_rs = Universe::reserve_heap(total_reserved, alignment);
-  size_t used_page_size = heap_rs.page_size();
+  ReservedHeapSpace heap_rs = Universe::reserve_heap(total_reserved, alignment); // 分配堆空间
+  size_t used_page_size = heap_rs.page_size();  // 获取实际使用的页面大小
 
   os::trace_page_sizes("Heap",
                        MinHeapSize,
                        total_reserved,
                        heap_rs.base(),
                        heap_rs.size(),
-                       used_page_size);
+                       used_page_size);  // 打印堆空间信息
 
-  return heap_rs;
+  return heap_rs;  // 返回堆空间
 }
 
 class GenIsScavengable : public BoolObjectClosure {
@@ -251,7 +283,7 @@ void SerialHeap::post_initialize() {
 
   def_new_gen->ref_processor_init();
 
-  SerialFullGC::initialize();
+  SerialFullGC::initialize(); // 初始化Full-GC
 
   ScavengableNMethods::initialize(&_is_scavengable);
 }
@@ -305,16 +337,21 @@ HeapWord* SerialHeap::expand_heap_and_allocate(size_t size, bool is_tlab) {
   return result;
 }
 
-// 堆内存分配
+/*
+ * 分配内存
+ * @param size 内存大小
+ * @param is_tlab 是否是TLAB
+ * @return 内存地址
+ */
 HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
   HeapWord* result = nullptr;
 
   // Loop until the allocation is satisfied, or unsatisfied after GC.
-  for (uint try_count = 1; /* return or throw */; try_count += 1) {
+  for (uint try_count = 1; /* return or throw */; try_count += 1) { // 循环分配内存，直到分配成功或失败
     // First allocation attempt is lock-free.
     // 校验对象大小，如果年轻代可以分配内存，优先在年轻代eden区分配
     DefNewGeneration *young = _young_gen;
-    if (young->should_allocate(size, is_tlab)) {
+    if (young->should_allocate(size, is_tlab)) { // 校验对象大小，如果年轻代可以分配内存，优先在年轻代eden区分配
       result = young->par_allocate(size); // 尝试Lock-free方式分配内存
       if (result != nullptr) {
         assert(is_in_reserved(result), "result not in heap");
@@ -328,9 +365,9 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
       log_trace(gc, alloc)("SerialHeap::mem_allocate_work: attempting locked slow path allocation");
       // Note that only large objects get a shot at being
       // allocated in later generations.
-      bool first_only = !should_try_older_generation_allocation(size);
+      bool first_only = !should_try_older_generation_allocation(size); // 校验对象大小，判断是否可以在老年代分配
       // 尝试从年轻代eden区/年老代分配内存
-      result = attempt_allocation(size, is_tlab, first_only);
+      result = attempt_allocation(size, is_tlab, first_only); // 尝试从年轻代eden区/年老代分配内存
       if (result != nullptr) {
         assert(is_in_reserved(result), "result not in heap");
         return result;
@@ -340,10 +377,10 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
       gc_count_before = total_collections();
     }
     // 创建序列化垃圾收集操作，并执行垃圾收集任务
-    VM_SerialCollectForAllocation op(size, is_tlab, gc_count_before);
-    VMThread::execute(&op);
-    if (op.gc_succeeded()) {
-      result = op.result();
+    VM_SerialCollectForAllocation op(size, is_tlab, gc_count_before); // 创建序列化垃圾收集操作
+    VMThread::execute(&op); // 执行垃圾收集任务
+    if (op.gc_succeeded()) { // 检查垃圾收集是否成功
+      result = op.result(); // 获取分配的内存地址
 
       assert(result == nullptr || is_in_reserved(result),
              "result not in heap");
@@ -351,6 +388,7 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
     }
 
     // Give a warning if we seem to be looping forever.
+    // 打印警告日志，提示分配内存失败
     if ((QueuedAllocationWarningCount > 0) &&
         (try_count % QueuedAllocationWarningCount == 0)) {
       log_warning(gc, ergo)("SerialHeap::mem_allocate_work retries %d times,"
@@ -359,27 +397,38 @@ HeapWord* SerialHeap::mem_allocate_work(size_t size, bool is_tlab) {
   }
 }
 
-// 尝试从年轻代/年老代分配内存
+/*
+ * 尝试从年轻代eden区/年老代分配内存
+ * @param size 内存大小
+ * @param is_tlab 是否是TLAB
+ * @param first_only 是否只尝试一次
+ * @return 内存地址
+ */
 HeapWord* SerialHeap::attempt_allocation(size_t size,
                                          bool is_tlab,
                                          bool first_only) {
   HeapWord* res = nullptr;
 
-  if (_young_gen->should_allocate(size, is_tlab)) {
-    res = _young_gen->allocate(size); // 实际上也是Lock-free
+  if (_young_gen->should_allocate(size, is_tlab)) { // 校验对象大小，是否可以在年轻代分配
+    res = _young_gen->allocate(size); // 尝试从年轻代eden区分配内存
     if (res != nullptr || first_only) {
       return res;
     }
   }
 
-  if (_old_gen->should_allocate(size, is_tlab)) {
-    res = _old_gen->allocate(size);
+  if (_old_gen->should_allocate(size, is_tlab)) { // 校验对象大小，是否可以在老年代分配
+    res = _old_gen->allocate(size); // 尝试从老年代分配内存
   }
 
   return res;
 }
 
-// 堆内存分配的入口
+/*
+ * 分配内存
+ * @param size 内存大小
+ * @param gc_overhead_limit_was_exceeded 是否超过垃圾收集 overhead 限制
+ * @return 内存地址
+ */
 HeapWord* SerialHeap::mem_allocate(size_t size,
                                    bool* gc_overhead_limit_was_exceeded) {
   return mem_allocate_work(size,
@@ -391,6 +440,10 @@ bool SerialHeap::must_clear_all_soft_refs() {
          _gc_cause == GCCause::_wb_full_gc;
 }
 
+/*
+ * 检查是否能够安全执行young-gc：to_space空间足够&老年代担保空间足够
+ * @return 是否能够安全执行young-gc
+ */
 bool SerialHeap::is_young_gc_safe() const {
   if (!_young_gen->to()->is_empty()) {
     return false;
@@ -398,7 +451,13 @@ bool SerialHeap::is_young_gc_safe() const {
   return _old_gen->promotion_attempt_is_safe(_young_gen->used());
 }
 
+/*
+ * 执行young-gc
+ * @param clear_soft_refs 是否清除软引用
+ * @return 是否执行成功
+ */
 bool SerialHeap::do_young_collection(bool clear_soft_refs) {
+  // 是否能够安全执行young-gc：to_space空间足够&老年代担保空间足够
   if (!is_young_gc_safe()) {
     return false;
   }
@@ -418,18 +477,20 @@ bool SerialHeap::do_young_collection(bool clear_soft_refs) {
     prepare_for_verify();
     Universe::verify("Before GC");
   }
-  gc_prologue();
+  gc_prologue(); // 垃圾收集前的准备工作
   COMPILER2_OR_JVMCI_PRESENT(DerivedPointerTable::clear());
 
-  save_marks();
+  save_marks(); // 保存标记位
 
+
+  // 执行年轻代垃圾回收
   bool result = _young_gen->collect(clear_soft_refs);
 
   COMPILER2_OR_JVMCI_PRESENT(DerivedPointerTable::update_pointers());
 
   // Only update stats for successful young-gc
   if (result) {
-    _old_gen->update_promote_stats();
+    _old_gen->update_promote_stats(); // 更新老年代垃圾收集统计信息
   }
 
   if (should_verify && VerifyAfterGC) {
@@ -443,7 +504,7 @@ bool SerialHeap::do_young_collection(bool clear_soft_refs) {
   // Track memory usage and detect low memory after GC finishes
   MemoryService::track_memory_usage();
 
-  gc_epilogue(false);
+  gc_epilogue(false); // 垃圾收集后的清理工作
 
   print_after_gc();
 
@@ -470,21 +531,32 @@ void SerialHeap::prune_unlinked_nmethods() {
   ScavengableNMethods::prune_unlinked_nmethods();
 }
 
+/*
+ * 尝试分配内存失败后的处理
+ * @param size 内存大小
+ * @param is_tlab 是否是TLAB
+ * @return 内存地址
+ */
 HeapWord* SerialHeap::satisfy_failed_allocation(size_t size, bool is_tlab) {
   assert(size != 0, "precondition");
 
   HeapWord* result = nullptr;
 
   // If young-gen can handle this allocation, attempt young-gc firstly.
+  // 校验是否可以在年轻代分配内存
   bool should_run_young_gc = _young_gen->should_allocate(size, is_tlab);
+
+  // 执行垃圾回收
   collect_at_safepoint(!should_run_young_gc);
 
+  // 尝试分配内存
   result = attempt_allocation(size, is_tlab, false /*first_only*/);
   if (result != nullptr) {
     return result;
   }
 
   // OK, collection failed, try expansion.
+  // 垃圾回收失败，进行扩容
   result = expand_heap_and_allocate(size, is_tlab);
   if (result != nullptr) {
     return result;
@@ -495,17 +567,20 @@ HeapWord* SerialHeap::satisfy_failed_allocation(size_t size, bool is_tlab) {
   // a complete compaction of the heap. Any additional methods for finding
   // free memory should be here, especially if they are expensive. If this
   // attempt fails, an OOM exception will be thrown.
+  // 扩容失败，执行full gc
   {
     UIntFlagSetting flag_change(MarkSweepAlwaysCompactCount, 1); // Make sure the heap is fully compacted
     const bool clear_all_soft_refs = true;
     do_full_collection(clear_all_soft_refs);
   }
 
+  // 尝试分配内存
   result = attempt_allocation(size, is_tlab, false /* first_only */);
   if (result != nullptr) {
     return result;
   }
   // The previous full-gc can shrink the heap, so re-expand it.
+  // 防止full-gc时缩容造成分配失败，这里再重新尝试扩容
   result = expand_heap_and_allocate(size, is_tlab);
   if (result != nullptr) {
     return result;
@@ -515,9 +590,18 @@ HeapWord* SerialHeap::satisfy_failed_allocation(size_t size, bool is_tlab) {
   // space available is large enough for the allocation, then a more
   // complete compaction phase than we've tried so far might be
   // appropriate.
+  // 垃圾回收失败
   return nullptr;
 }
 
+/*
+ * 处理根节点
+ * @param so 扫描选项
+ * @param strong_roots 强根节点
+ * @param strong_cld_closure 强类加载器根节点
+ * @param weak_cld_closure 弱类加载器根节点
+ * @param code_roots 代码根节点
+ */
 void SerialHeap::process_roots(ScanningOption so,
                                OopClosure* strong_roots,
                                CLDClosure* strong_cld_closure,
@@ -526,30 +610,36 @@ void SerialHeap::process_roots(ScanningOption so,
   // General roots.
   assert(code_roots != nullptr, "code root closure should always be set");
 
-  ClassLoaderDataGraph::roots_cld_do(strong_cld_closure, weak_cld_closure);
+  ClassLoaderDataGraph::roots_cld_do(strong_cld_closure, weak_cld_closure); // 处理类加载器根节点
 
   // Only process code roots from thread stacks if we aren't visiting the entire CodeCache anyway
-  NMethodToOopClosure* roots_from_code_p = (so & SO_AllCodeCache) ? nullptr : code_roots;
+  NMethodToOopClosure* roots_from_code_p = (so & SO_AllCodeCache) ? nullptr : code_roots; // 处理代码根节点
 
-  Threads::oops_do(strong_roots, roots_from_code_p);
+  Threads::oops_do(strong_roots, roots_from_code_p); // 处理线程根节点
 
-  OopStorageSet::strong_oops_do(strong_roots);
+  OopStorageSet::strong_oops_do(strong_roots); // 处理强根节点
 
   if (so & SO_ScavengeCodeCache) {
     assert(code_roots != nullptr, "must supply closure for code cache");
 
     // We only visit parts of the CodeCache when scavenging.
-    ScavengableNMethods::nmethods_do(code_roots);
+    ScavengableNMethods::nmethods_do(code_roots); // 处理代码根节点
   }
   if (so & SO_AllCodeCache) {
     assert(code_roots != nullptr, "must supply closure for code cache");
 
     // CMSCollector uses this to do intermediate-strength collections.
     // We scan the entire code cache, since CodeCache::do_unloading is not called.
-    CodeCache::nmethods_do(code_roots);
+    CodeCache::nmethods_do(code_roots); // 处理代码根节点
   }
 }
 
+/*
+ * 处理连续空间中的对象
+ * @param blk 闭包
+ * @param space 连续空间
+ * @param from 起始地址
+ */
 template <typename OopClosureType>
 static void oop_iterate_from(OopClosureType* blk, ContiguousSpace* space, HeapWord** from) {
   assert(*from != nullptr, "precondition");
@@ -557,17 +647,23 @@ static void oop_iterate_from(OopClosureType* blk, ContiguousSpace* space, HeapWo
   HeapWord* p = *from;
 
   const intx interval = PrefetchScanIntervalInBytes;
+  // 遍历连续空间中的对象
   do {
-    t = space->top();
-    while (p < t) {
-      Prefetch::write(p, interval);
-      p += cast_to_oop(p)->oop_iterate_size(blk);
+    t = space->top(); // 获取连续空间的顶部地址
+    while (p < t) { // 遍历连续空间中的对象
+      Prefetch::write(p, interval); // 预取对象
+      p += cast_to_oop(p)->oop_iterate_size(blk); // 遍历对象，使用闭包处理对象
     }
-  } while (t < space->top());
+  } while (t < space->top()); // 遍历连续空间中的对象
 
   *from = space->top();
 }
 
+/*
+ * 扫描已疏散的对象
+ * @param young_cl 年轻代扫描闭包
+ * @param old_cl 老年代扫描闭包
+ */
 void SerialHeap::scan_evacuated_objs(YoungGenScanClosure* young_cl,
                                      OldGenScanClosure* old_cl) {
   ContiguousSpace* to_space = young_gen()->to();
@@ -580,21 +676,31 @@ void SerialHeap::scan_evacuated_objs(YoungGenScanClosure* young_cl,
   guarantee(young_gen()->promo_failure_scan_is_complete(), "Failed to finish scan");
 }
 
+/*
+ * 执行垃圾回收
+ * @param full 是否执行full-gc
+ */
 void SerialHeap::collect_at_safepoint(bool full) {
   assert(!GCLocker::is_active(), "precondition");
   bool clear_soft_refs = must_clear_all_soft_refs();
 
   if (!full) {
+    // 执行young-gc
     bool success = do_young_collection(clear_soft_refs);
     if (success) {
       return;
     }
     // Upgrade to Full-GC if young-gc fails
   }
+  // 执行full-gc
   do_full_collection(clear_soft_refs);
 }
 
 // public collection interfaces
+/*
+ * 执行垃圾回收
+ * @param cause 垃圾回收原因
+ */
 void SerialHeap::collect(GCCause::Cause cause) {
   // The caller doesn't have the Heap_lock
   assert(!Heap_lock->owned_by_self(), "this thread should not own the Heap_lock");
@@ -603,22 +709,26 @@ void SerialHeap::collect(GCCause::Cause cause) {
   unsigned int full_gc_count_before;
 
   {
-    MutexLocker ml(Heap_lock);
+    MutexLocker ml(Heap_lock); // 加锁
     // Read the GC count while holding the Heap_lock
-    gc_count_before      = total_collections();
-    full_gc_count_before = total_full_collections();
+    gc_count_before      = total_collections(); // 获取垃圾回收次数
+    full_gc_count_before = total_full_collections(); // 获取full-gc次数
   }
 
   bool should_run_young_gc =  (cause == GCCause::_wb_young_gc)
-                DEBUG_ONLY(|| (cause == GCCause::_scavenge_alot));
+                DEBUG_ONLY(|| (cause == GCCause::_scavenge_alot)); // 判断是否执行young-gc
 
   VM_SerialGCCollect op(!should_run_young_gc,
                         gc_count_before,
                         full_gc_count_before,
-                        cause);
-  VMThread::execute(&op);
+                        cause); // 创建垃圾回收操作
+  VMThread::execute(&op); // 执行垃圾回收操作
 }
 
+/*
+ * 执行full-gc
+ * @param clear_all_soft_refs 是否清除所有软引用
+ */
 void SerialHeap::do_full_collection(bool clear_all_soft_refs) {
   IsSTWGCActiveMark gc_active_mark;
   SvcGCMarker sgcm(SvcGCMarker::FULL);
@@ -652,7 +762,7 @@ void SerialHeap::do_full_collection(bool clear_all_soft_refs) {
 
   pre_full_gc_dump(gc_timer);
 
-  SerialFullGC::invoke_at_safepoint(clear_all_soft_refs);
+  SerialFullGC::invoke_at_safepoint(clear_all_soft_refs); // 执行full-gc
 
   post_full_gc_dump(gc_timer);
 
@@ -702,6 +812,11 @@ bool SerialHeap::is_in_young(const void* p) const {
   return result;
 }
 
+/*
+ * 判断是否需要屏障
+ * @param obj 栈帧对象
+ * @return 是否需要屏障
+ */
 bool SerialHeap::requires_barriers(stackChunkOop obj) const {
   return !is_in_young(obj);
 }
@@ -711,9 +826,13 @@ bool SerialHeap::is_in(const void* p) const {
   return _young_gen->is_in(p) || _old_gen->is_in(p);
 }
 
+/*
+ * 遍历堆中的对象
+ * @param cl 对象闭包
+ */
 void SerialHeap::object_iterate(ObjectClosure* cl) {
-  _young_gen->object_iterate(cl);
-  _old_gen->object_iterate(cl);
+  _young_gen->object_iterate(cl); // 遍历新生代对象
+  _old_gen->object_iterate(cl); // 遍历老年代对象
 }
 
 HeapWord* SerialHeap::block_start(const void* addr) const {
@@ -755,6 +874,13 @@ size_t SerialHeap::unsafe_max_tlab_alloc(Thread* thr) const {
   return _young_gen->unsafe_max_tlab_alloc();
 }
 
+/*
+ * 分配新的TLAB
+ * @param min_size 最小大小
+ * @param requested_size 请求大小
+ * @param actual_size 实际大小
+ * @return 新的TLAB
+ */
 HeapWord* SerialHeap::allocate_new_tlab(size_t min_size,
                                         size_t requested_size,
                                         size_t* actual_size) {
@@ -776,6 +902,10 @@ void SerialHeap::save_marks() {
   _old_gen_saved_top = _old_gen->space()->top();
 }
 
+/*
+ * 验证堆
+ * @param option 验证选项
+ */
 void SerialHeap::verify(VerifyOption option /* ignored */) {
   log_debug(gc, verify)("%s", _old_gen->name());
   _old_gen->verify();
@@ -843,22 +973,30 @@ void SerialHeap::print_heap_change(const PreGenGCValues& pre_gc_values) const {
   MetaspaceUtils::print_metaspace_change(pre_gc_values.metaspace_sizes());
 }
 
+/*
+ * 垃圾收集前准备
+ */
 void SerialHeap::gc_prologue() {
   // Fill TLAB's and such
+  // 填充TLAB和其他数据结构
   ensure_parsability(true);   // retire TLABs
 
-  _old_gen->gc_prologue();
+  _old_gen->gc_prologue(); // 老年代垃圾收集前准备
 };
 
+/*
+ * 垃圾收集后清理
+ * @param full 是否是全收集
+ */
 void SerialHeap::gc_epilogue(bool full) {
 #if COMPILER2_OR_JVMCI
   assert(DerivedPointerTable::is_empty(), "derived pointer present");
 #endif // COMPILER2_OR_JVMCI
 
-  resize_all_tlabs();
+  resize_all_tlabs(); // 调整所有TLAB的大小
 
-  _young_gen->gc_epilogue(full);
-  _old_gen->gc_epilogue();
+  _young_gen->gc_epilogue(full); // 新生代垃圾收集后清理
+  _old_gen->gc_epilogue(); // 老年代垃圾收集后清理
 
   if (_is_heap_almost_full) {
     // Reset the emergency state if eden is empty after a young/full gc

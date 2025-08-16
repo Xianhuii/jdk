@@ -31,9 +31,12 @@ class ContiguousSpace;
 class DefNewGeneration;
 class Generation;
 
+/*
+ * 连续空间内存池
+ */
 class ContiguousSpacePool : public CollectedMemoryPool {
 private:
-  ContiguousSpace* _space;
+  ContiguousSpace* _space; // 被监控的连续空间
 
 public:
   ContiguousSpacePool(ContiguousSpace* space,
@@ -46,9 +49,12 @@ public:
   size_t used_in_bytes();
 };
 
+/*
+ * Survivor连续空间内存池
+ */
 class SurvivorContiguousSpacePool : public CollectedMemoryPool {
 private:
-  DefNewGeneration* _young_gen;
+  DefNewGeneration* _young_gen; // 被监控的新生代
 
 public:
   SurvivorContiguousSpacePool(DefNewGeneration* young_gen,
@@ -62,9 +68,12 @@ public:
   size_t committed_in_bytes();
 };
 
+/*
+ * 老年代连续空间内存池
+ */
 class TenuredGenerationPool : public CollectedMemoryPool {
 private:
-  TenuredGeneration* _gen;
+  TenuredGeneration* _gen; // 被监控的老年代
 public:
   TenuredGenerationPool(TenuredGeneration* gen, const char* name, bool support_usage_threshold);
 

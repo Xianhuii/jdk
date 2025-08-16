@@ -32,32 +32,38 @@
 // A CSpaceCounters is a holder class for performance counters
 // that track a space;
 
+// 连续空间性能计数器
 class CSpaceCounters: public CHeapObj<mtGC> {
   friend class VMStructs;
 
  private:
-  PerfVariable*      _capacity;
-  PerfVariable*      _used;
-  PerfVariable*      _max_capacity;
+  PerfVariable*      _capacity; // 容量
+  PerfVariable*      _used; // 使用量
+  PerfVariable*      _max_capacity; // 最大容量
 
   // Constant PerfData types don't need to retain a reference.
   // However, it's a good idea to document them here.
   // PerfConstant*     _size;
 
-  ContiguousSpace*     _space;
-  char*                _name_space;
+  ContiguousSpace*     _space; // 被监控的连续空间
+  char*                _name_space; // 性能计数器的命名空间
 
  public:
 
+  // 构造函数
   CSpaceCounters(const char* name, int ordinal, size_t max_size,
                  ContiguousSpace* s, GenerationCounters* gc);
 
+  // 析构函数
   ~CSpaceCounters();
 
+  // 更新容量
   void update_capacity();
+  // 更新使用量
   void update_used();
+  // 更新所有性能计数器
   void update_all();
-
+  // 获取性能计数器的命名空间
   const char* name_space() const        { return _name_space; }
 };
 

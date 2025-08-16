@@ -25,6 +25,16 @@
 #ifndef SHARE_GC_SERIAL_SERIAL_GLOBALS_HPP
 #define SHARE_GC_SERIAL_SERIAL_GLOBALS_HPP
 
+// 定义Serial GC的全局参数：ShrinkHeapInSteps
+// 该参数用于控制在Full GC时是否启用逐步缩小堆大小的功能
+// 该参数的默认值为true，即启用逐步缩小堆大小的功能
+// 该参数的作用是：
+//  1. 当启用时，GC会在多个全GC中逐步缩小堆大小，以避免在一次全GC中缩小堆大小导致的性能问题
+//  2. 当禁用时，GC会直接将堆大小缩小到目标大小，而不是逐步缩小
+// 该参数的注意事项是：
+//  1. 该参数仅在Full GC时生效
+//  2. 该参数的默认值为true，即启用逐步缩小堆大小的功能
+//  3. 该参数的作用是优化Full GC的性能，避免在一次Full GC中缩小堆大小导致的性能问题
 #define GC_SERIAL_FLAGS(develop,                                            \
                         develop_pd,                                         \
                         product,                                            \

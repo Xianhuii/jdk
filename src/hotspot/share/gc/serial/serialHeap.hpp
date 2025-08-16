@@ -76,7 +76,7 @@ class SerialHeap : public CollectedHeap {
 
 private:
   DefNewGeneration* _young_gen; // 年轻代
-  TenuredGeneration* _old_gen; // 年老代
+  TenuredGeneration* _old_gen; // 老年代
   HeapWord* _young_gen_saved_top; // 年轻代空闲位置
   HeapWord* _old_gen_saved_top; // 年老代空闲位置
 
@@ -92,6 +92,7 @@ private:
 
   PreGenGCValues get_pre_gc_values() const;
 
+  // 内存管理器，用于管理年轻代和老年代的内存
   GCMemoryManager* _young_manager;
   GCMemoryManager* _old_manager;
 
@@ -100,6 +101,7 @@ private:
   // However, in extreme cases, e.g. young-gen is non-empty after a full gc, we
   // will attempt some uncommon measures, e.g. alllocating small objs in
   // old-gen.
+  // 堆是否几乎或接近满
   bool _is_heap_almost_full;
 
   // Helper functions for allocation
@@ -138,20 +140,40 @@ public:
 
   size_t max_capacity() const override;
 
+  /*
+   * 分配内存
+   * @param size 要分配的内存大小
+   * @param gc_overhead_limit_was_exceeded 指向一个布尔值的指针，用于返回是否超过了GC开销限制
+   * @return 分配的内存地址
+   */
   HeapWord* mem_allocate(size_t size, bool*  gc_overhead_limit_was_exceeded) override;
 
   // Callback from VM_SerialCollectForAllocation operation.
   // This function does everything necessary/possible to satisfy an
   // allocation request that failed in the youngest generation that should
   // have handled it (including collection, expansion, etc.)
+  /*
+   * 满足失败的分配请求
+   * @param size 要分配的内存大小
+   * @param is_tlab 是否是TLAB分配
+   * @return 分配的内存地址
+   */
   HeapWord* satisfy_failed_allocation(size_t size, bool is_tlab);
 
   // Callback from VM_SerialGCCollect.
+  /*
+   * 在安全点执行收集
+   * @param full 是否是全收集
+   */
   void collect_at_safepoint(bool full);
 
   // Perform a full collection of the heap; intended for use in implementing
   // "System.gc". This implies as full a collection as the CollectedHeap
   // supports. Caller does not hold the Heap_lock on entry.
+  /*
+   * 执行收集
+   * @param cause 收集原因
+   */
   void collect(GCCause::Cause cause) override;
 
   // Returns "TRUE" iff "p" points into the committed areas of the heap.
@@ -175,6 +197,10 @@ public:
   void prune_unlinked_nmethods();
 
   // Iteration functions.
+  /*
+   * 遍历堆中的对象
+   * @param cl 对象闭包，用于对每个对象进行操作
+   */
   void object_iterate(ObjectClosure* cl) override;
 
   // A CollectedHeap is divided into a dense sequence of "blocks"; that is,
@@ -202,6 +228,13 @@ public:
   size_t tlab_capacity(Thread* thr) const override;
   size_t tlab_used(Thread* thr) const override;
   size_t unsafe_max_tlab_alloc(Thread* thr) const override;
+  /*
+   * 分配新的TLAB
+   * @param min_size 最小大小
+   * @param requested_size 请求大小
+   * @param actual_size 实际大小
+   * @return 分配的TLAB地址
+   */
   HeapWord* allocate_new_tlab(size_t min_size,
                               size_t requested_size,
                               size_t* actual_size) override;
@@ -233,6 +266,14 @@ public:
 
  public:
   // Apply closures on various roots in Young GC or marking/adjust phases of Full GC.
+  /*
+   * 处理根对象
+   * @param so 扫描选项
+   * @param strong_roots 强根对象闭包
+   * @param strong_cld_closure 强类加载器闭包
+   * @param weak_cld_closure 弱类加载器闭包
+   * @param code_roots 代码根对象闭包
+   */
   void process_roots(ScanningOption so,
                      OopClosure* strong_roots,
                      CLDClosure* strong_cld_closure,

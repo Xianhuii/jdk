@@ -27,6 +27,9 @@
 #include "memory/allStatic.hpp"
 #include "oops/oopsHierarchy.hpp"
 
+/*
+ * 字符串去重
+ */
 class SerialStringDedup : AllStatic {
 public:
 

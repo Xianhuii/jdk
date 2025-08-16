@@ -42,6 +42,11 @@ public:
     return p < _young_gen_end;
   }
 
+  /*
+   * 尝试 scavenge 对象
+   * @param p 对象指针
+   * @param f 回调函数
+   */
   template <typename T, typename Func>
   void try_scavenge(T* p, Func&& f) {
     T heap_oop = RawAccess<>::oop_load(p);
@@ -50,9 +55,9 @@ public:
       oop obj = CompressedOops::decode_not_null(heap_oop);
       if (is_in_young_gen(obj)) {
         assert(!_young_gen->to()->is_in_reserved(obj), "Scanning field twice?");
-        oop new_obj = obj->is_forwarded() ? obj->forwardee()
-                                          : _young_gen->copy_to_survivor_space(obj);
-        RawAccess<IS_NOT_NULL>::oop_store(p, new_obj);
+        oop new_obj = obj->is_forwarded() ? obj->forwardee() // 已被转发，直接获取转发目标
+                                          : _young_gen->copy_to_survivor_space(obj); // 未被转发，复制到survivor空间
+        RawAccess<IS_NOT_NULL>::oop_store(p, new_obj); // 存储新对象指针
 
         // callback
         f(new_obj);

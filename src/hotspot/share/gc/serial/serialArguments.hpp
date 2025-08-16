@@ -29,6 +29,14 @@
 
 class CollectedHeap;
 
+/*
+ * 串行收集器参数类
+ * 该类继承自GenArguments类，用于定义串行收集器的参数
+ * 该类的主要功能是：
+ *  1. 定义串行收集器的参数
+ *  2. 初始化串行收集器的参数
+ *  3. 创建串行收集器
+ */
 class SerialArguments : public GenArguments {
 private:
   virtual void initialize();

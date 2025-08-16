@@ -40,29 +40,34 @@
 // "N" = 2^"LogN".  An array with an entry for each such subregion indicates
 // how far back one must go to find the start of the chunk that includes the
 // first word of the subregion.
+// 串行块偏移表，用于快速查找对象的起始地址
+// 表将堆空间划分为固定大小的卡片（card），每个卡片对应表中的一个条目，记录了从该卡片起始位置向后查找多少距离可以找到对象的起始位置。
 class SerialBlockOffsetTable: public CHeapObj<mtGC> {
   friend class VMStructs;
 
   // The reserved heap (i.e. old-gen) covered by the shared array.
-  MemRegion _reserved;
+  MemRegion _reserved; // 被覆盖的堆空间
 
   // Array for keeping offsets for retrieving object start fast given an
   // address.
-  VirtualSpace _vs;
+  VirtualSpace _vs; // 虚拟空间，用于存储偏移数组
 
   // Biased array-start of BOT array for fast BOT entry translation
-  uint8_t* _offset_base;
+  uint8_t* _offset_base; // 偏移数组的基地址
 
   // Return the number of slots needed for an offset array
   // that covers mem_region_words words.
   static size_t compute_size(size_t mem_region_words);
 
   // Mapping from address to object start array entry.
+  // 映射从地址到对象起始地址数组的条目
   uint8_t* entry_for_addr(const void* const p) const;
 
   // Mapping from object start array entry to address of first word.
+  // 映射从对象起始地址数组的条目到第一个单词的地址
   HeapWord* addr_for_entry(const uint8_t* const p) const;
 
+  // 更新块，将块的起始地址和结束地址转换为偏移数组的条目，并更新偏移数组
   void update_for_block_work(HeapWord* blk_start, HeapWord* blk_end);
 
   static HeapWord* align_up_by_card_size(HeapWord* const addr) {

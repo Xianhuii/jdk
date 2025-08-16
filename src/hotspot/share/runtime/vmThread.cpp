@@ -270,6 +270,7 @@ static void post_vm_operation_event(EventExecuteVMOperation* event, VM_Operation
   event->commit();
 }
 
+// 执行虚拟机操作
 void VMThread::evaluate_operation(VM_Operation* op) {
   ResourceMark rm;
 
@@ -281,6 +282,7 @@ void VMThread::evaluate_operation(VM_Operation* op) {
 
     EventExecuteVMOperation event;
     VMThreadCPUTimeScope CPUTimeScope(this, op->is_gc_operation());
+    // 触发evaluate方法，执行具体任务
     op->evaluate();
     if (event.should_commit()) {
       post_vm_operation_event(&event, op);
@@ -343,6 +345,7 @@ void VMThread::wait_until_executed(VM_Operation* op) {
                      Mutex::_no_safepoint_check_flag);
   {
     TraceTime timer("Installing VM operation", TRACETIME_LOG(Trace, vmthread));
+    // 将任务提交给虚拟机线程
     while (true) {
       if (VMThread::vm_thread()->set_next_operation(op)) {
         ml.notify_all();
@@ -358,6 +361,7 @@ void VMThread::wait_until_executed(VM_Operation* op) {
     TraceTime timer("Waiting for VM operation to be completed", TRACETIME_LOG(Trace, vmthread));
     // _next_vm_operation is cleared holding VMOperation_lock after it has been
     // executed. We wait until _next_vm_operation is not our op.
+    // 等待任务执行完成
     while (_next_vm_operation == op) {
       // VM Thread can process it once we unlock the mutex on wait.
       ml.wait();
@@ -374,6 +378,7 @@ static void self_destruct_if_needed() {
   }
 }
 
+// 执行任务
 void VMThread::inner_execute(VM_Operation* op) {
   assert(Thread::current()->is_VM_thread(), "Must be the VM thread");
 
@@ -418,6 +423,7 @@ void VMThread::inner_execute(VM_Operation* op) {
     end_safepoint = true;
   }
 
+  // 执行任务
   evaluate_operation(_cur_vm_operation);
 
   if (end_safepoint) {
@@ -469,6 +475,7 @@ void VMThread::wait_for_operation() {
   }
 }
 
+// 循环执行任务
 void VMThread::loop() {
   assert(_cur_vm_operation == nullptr, "no current one should be executing");
 
@@ -513,9 +520,11 @@ class SkipGCALot : public StackObj {
 #endif
 };
 
+// 执行虚拟机操作
 void VMThread::execute(VM_Operation* op) {
   Thread* t = Thread::current();
 
+  // 如果当前线程是虚拟机线程，直接执行操作
   if (t->is_VM_thread()) {
     op->set_calling_thread(t);
     ((VMThread*)t)->inner_execute(op);
@@ -544,6 +553,7 @@ void VMThread::execute(VM_Operation* op) {
 
   op->set_calling_thread(t);
 
+  // 将任务提交给虚拟机线程，并等待任务执行完成
   wait_until_executed(op);
 
   op->doit_epilogue();

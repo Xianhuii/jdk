@@ -51,6 +51,9 @@ class STWGCTimer;
 class MarkAndPushClosure;
 class AdjustPointerClosure;
 
+/*
+ * 串行Full-GC类，负责对SerialHeap进行全局标记-压缩垃圾收集
+ */
 class SerialFullGC : AllStatic {
   //
   // Inline closure decls
@@ -82,16 +85,19 @@ class SerialFullGC : AllStatic {
 
  protected:
   // Traversal stacks used during phase1
+  // 标记阶段使用的标记栈
   static Stack<oop, mtGC>                      _marking_stack;
   static Stack<ObjArrayTask, mtGC>             _objarray_stack;
 
   // Space for storing/restoring mark word
+  // 用于存储/恢复标记
   static PreservedMarksSet               _preserved_overflow_stack_set;
   static size_t                          _preserved_count;
   static size_t                          _preserved_count_max;
   static PreservedMark*                  _preserved_marks;
 
   static AlwaysTrueClosure               _always_true_closure;
+  // 引用处理器
   static ReferenceProcessor*             _ref_processor;
 
   static STWGCTimer*                     _gc_timer;
@@ -106,6 +112,7 @@ class SerialFullGC : AllStatic {
   static void initialize();
 
   // Public closures
+  // 闭包：用于遍历和处理对象
   static IsAliveClosure       is_alive;
   static FollowRootClosure    follow_root_closure;
   static MarkAndPushClosure   mark_and_push_closure;

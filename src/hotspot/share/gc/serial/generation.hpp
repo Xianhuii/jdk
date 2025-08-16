@@ -56,6 +56,17 @@ class ContiguousSpace;
 class OopClosure;
 class ReservedSpace;
 
+/*
+ * Generation（代）是Serial GC中的核心抽象概念，代表Java堆中一块特定的内存区域，用于存放具有相似生命周期的对象。
+ * 在Serial GC中，Generation是一个抽象基类，它有两个主要的子类实现：
+ *  1. DefNewGeneration ：年轻代实现，负责新对象的分配和Minor GC，使用复制算法进行垃圾回收
+ *  2. TenuredGeneration ：老年代实现，存储长期存活的对象，使用标记-整理算法进行垃圾回收
+ * Generation模块的主要作用是：
+ *  1. 不同年龄的对象提供独立的内存管理策略
+ *  2. 定义代的基本属性和行为（如容量、已使用空间、空闲空间等）
+ *  3. 为垃圾回收提供统一的抽象接口
+ *  4. 管理内存的预留和提交
+ */
 class Generation: public CHeapObj<mtGC> {
   friend class VMStructs;
  private:
@@ -66,25 +77,33 @@ class Generation: public CHeapObj<mtGC> {
   // committed) for generation.
   // Used by card marking code. Must not overlap with address ranges of
   // other generations.
-  MemRegion _reserved;
+  MemRegion _reserved; // 代表为该代预留的内存区域，定义了代的边界
 
   // Memory area reserved for generation
-  VirtualSpace _virtual_space;
+  VirtualSpace _virtual_space; // 代表为该代实际分配的内存区域，可能小于_reserved
 
   // Performance Counters
-  CollectorCounters* _gc_counters;
+  CollectorCounters* _gc_counters; // 代的性能计数器，用于统计垃圾回收的相关指标
 
   // Initialize the generation.
+  /*
+   * 初始化代，为其预留内存空间和初始化性能计数器
+   * @param rs 代的预留内存空间
+   * @param initial_byte_size 代的初始容量
+   */
   Generation(ReservedSpace rs, size_t initial_byte_size);
 
  public:
+  /*
+   * 代的公共常量定义
+   */
   enum SomePublicConstants {
     // Generations are GenGrain-aligned and have size that are multiples of
     // GenGrain.
     // Note: on ARM we add 1 bit for card_table_base to be properly aligned
     // (we expect its low byte to be zero - see implementation of post_barrier)
-    LogOfGenGrain = 16 ARM32_ONLY(+1),
-    GenGrain = 1 << LogOfGenGrain
+    LogOfGenGrain = 16 ARM32_ONLY(+1), // 代的对齐单位，通常为16字节
+    GenGrain = 1 << LogOfGenGrain, // 代的对齐单位，通常为16字节
   };
 
   virtual size_t capacity() const = 0;  // The maximum number of object bytes the

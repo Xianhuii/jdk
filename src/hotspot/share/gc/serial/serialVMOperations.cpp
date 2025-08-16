@@ -25,15 +25,16 @@
 #include "gc/serial/serialVMOperations.hpp"
 #include "gc/shared/gcLocker.hpp"
 
+// serialGC在分配内存时的垃圾回收操作
 void VM_SerialCollectForAllocation::doit() {
-  SerialHeap* gch = SerialHeap::heap();
-  GCCauseSetter gccs(gch, _gc_cause);
-  _result = gch->satisfy_failed_allocation(_word_size, _tlab);
+  SerialHeap* gch = SerialHeap::heap(); // 串行堆
+  GCCauseSetter gccs(gch, _gc_cause); // 垃圾回收原因设置器
+  _result = gch->satisfy_failed_allocation(_word_size, _tlab); // 尝试满足失败的分配
   assert(_result == nullptr || gch->is_in_reserved(_result), "result not in heap");
 }
 
 void VM_SerialGCCollect::doit() {
-  SerialHeap* gch = SerialHeap::heap();
-  GCCauseSetter gccs(gch, _gc_cause);
-  gch->collect_at_safepoint(_full);
+  SerialHeap* gch = SerialHeap::heap(); // 串行堆
+  GCCauseSetter gccs(gch, _gc_cause); // 垃圾回收原因设置器
+  gch->collect_at_safepoint(_full); // 收集堆
 }

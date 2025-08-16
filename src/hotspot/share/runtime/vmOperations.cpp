@@ -62,6 +62,8 @@ void VM_Operation::set_calling_thread(Thread* thread) {
   _calling_thread = thread;
 }
 
+
+// 执行虚拟机操作
 void VM_Operation::evaluate() {
   ResourceMark rm;
   LogTarget(Debug, vmoperation) lt;
@@ -71,6 +73,7 @@ void VM_Operation::evaluate() {
     print_on_error(&ls);
     ls.cr();
   }
+  // 实际执行的方法
   doit();
   if (lt.is_enabled()) {
     LogStream ls(lt);

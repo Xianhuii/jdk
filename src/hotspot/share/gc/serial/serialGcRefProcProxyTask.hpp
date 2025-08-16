@@ -27,6 +27,7 @@
 
 #include "gc/shared/referenceProcessor.hpp"
 
+// 串行引用处理器代理任务类，用于在串行Full-GC中处理引用
 class SerialGCRefProcProxyTask : public RefProcProxyTask {
   BoolObjectClosure& _is_alive;
   OopClosure& _keep_alive;
@@ -39,9 +40,14 @@ public:
       _keep_alive(keep_alive),
       _complete_gc(complete_gc) {}
 
+      /*
+       * 工作方法，用于在指定的工作线程上执行引用处理任务
+       * @param worker_id 工作线程ID
+       */
   void work(uint worker_id) override {
     assert(worker_id < _max_workers, "sanity");
     BarrierEnqueueDiscoveredFieldClosure enqueue;
+    // 调用引用处理器的工作方法进行引用处理
     _rp_task->rp_work(worker_id, &_is_alive, &_keep_alive, &enqueue, &_complete_gc);
   }
 };

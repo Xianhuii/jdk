@@ -47,20 +47,29 @@ class STWGCTimer;
 
 // DefNewGeneration is a young generation containing eden, from- and
 // to-space.
-// 年轻代
+// HotSpot VM 中 Serial GC 的年轻代实现。它负责管理年轻代内存，包括 Eden 区和两个 Survivor 区（From 和 To）。其主要作用是：
+// 1. 分配新对象：当新对象需要分配时，会先尝试在 Eden 区分配。如果 Eden 区空间不足，会触发一次 Minor GC。
+// 2. 垃圾回收 (Minor GC)：在 Minor GC 中，存活的对象会从 Eden 区复制到 Survivor 区（From 或 To）。
+// 3. 对象晋升：每个对象在 Survivor 区中存在的时间称为年龄。当对象在 Survivor 区中存在的时间超过阈值（默认是 15 次），
+//    它会被提升到老年代。
+// 4. 内存管理：动态调整 Eden 区和 Survivor 区的大小以适应应用行为。
 class DefNewGeneration: public Generation {
   friend class VMStructs;
 
-  TenuredGeneration* _old_gen; // 老年代的指针
+  // 老年代的指针，用于对象晋升
+  TenuredGeneration* _old_gen;
 
+  // 年龄阈值，用于对象晋升
   uint        _tenuring_threshold;   // Tenuring threshold for next collection.
+  // 年龄表，用于记录对象的年龄
   AgeTable    _age_table;
   // Size of object to pretenure in words; command line provides bytes
+  // 对象直接晋升到老年代的大小阈值（以字为单位）。
   size_t      _pretenure_size_threshold_words;
 
   // ("Weak") Reference processing support
   SpanSubjectToDiscoveryClosure _span_based_discoverer;
-  ReferenceProcessor* _ref_processor;
+  ReferenceProcessor* _ref_processor; // 引用处理器，用于处理弱引用、软引用等
 
   AgeTable*   age_table() { return &_age_table; }
 
@@ -68,8 +77,10 @@ class DefNewGeneration: public Generation {
   // happen.
   void   init_assuming_no_promotion_failure();
   // True iff a promotion has failed in the current collection.
+  // 标记当前GC中是否发生了晋升失败
   bool   _promotion_failed;
   bool   promotion_failed() { return _promotion_failed; }
+  // 记录晋升失败的信息
   PromotionFailedInfo _promotion_failed_info;
 
   // Handling promotion failure.  A young generation collection
@@ -102,11 +113,11 @@ class DefNewGeneration: public Generation {
   void drain_promo_failure_scan_stack(void);
   bool _promo_failure_drain_in_progress;
 
-  // Performance Counters
-  GenerationCounters*  _gen_counters;
-  CSpaceCounters*      _eden_counters;
-  CSpaceCounters*      _from_counters;
-  CSpaceCounters*      _to_counters;
+  // Performance Counters 性能计数器
+  GenerationCounters*  _gen_counters; // 年轻代性能计数器
+  CSpaceCounters*      _eden_counters; // Eden 区性能计数器
+  CSpaceCounters*      _from_counters; // From 区性能计数器
+  CSpaceCounters*      _to_counters; // To 区性能计数器
 
   // sizing information
   size_t               _max_eden_size;
@@ -115,10 +126,10 @@ class DefNewGeneration: public Generation {
   // Tenuring
   void adjust_desired_tenuring_threshold();
 
-  // Spaces
-  ContiguousSpace* _eden_space;
-  ContiguousSpace* _from_space;
-  ContiguousSpace* _to_space;
+  // Spaces 内存空间
+  ContiguousSpace* _eden_space; // Eden 区
+  ContiguousSpace* _from_space; // From 区
+  ContiguousSpace* _to_space; // To 区
 
   STWGCTimer* _gc_timer;
 
@@ -134,6 +145,14 @@ class DefNewGeneration: public Generation {
   }
 
  public:
+  /*
+   * 构造函数
+   * @param rs 保留的内存空间
+   * @param initial_byte_size 初始大小
+   * @param min_byte_size 最小大小
+   * @param max_byte_size 最大大小
+   * @param policy 收集策略
+   */
   DefNewGeneration(ReservedSpace rs,
                    size_t initial_byte_size,
                    size_t min_byte_size,
@@ -141,6 +160,7 @@ class DefNewGeneration: public Generation {
                    const char* policy="Serial young collection pauses");
 
   // allocate and initialize ("weak") refs processing support
+  // 初始化引用处理器
   void ref_processor_init();
   ReferenceProcessor* ref_processor() { return _ref_processor; }
 
@@ -157,6 +177,7 @@ class DefNewGeneration: public Generation {
   size_t capacity_before_gc() const;
 
   // Returns "TRUE" iff "p" points into the used areas in each space of young-gen.
+  // 检查指针是否指向年轻代的已使用区域
   bool is_in(const void* p) const;
 
   // Return an estimate of the maximum allocation that could be performed
@@ -177,15 +198,26 @@ class DefNewGeneration: public Generation {
   // Grow the generation by the specified number of bytes.
   // The size of bytes is assumed to be properly aligned.
   // Return true if the expansion was successful.
+  // 扩容
   bool expand(size_t bytes);
 
 
   // Iteration
+  /*
+   * 遍历对象
+   * @param blk 对象闭包
+   */
   void object_iterate(ObjectClosure* blk);
 
   HeapWord* block_start(const void* p) const;
 
   // Allocation support
+  /*
+   * 检查是否应该分配对象
+   * @param word_size 对象大小
+   * @param is_tlab 是否使用 TLAB
+   * @return 如果应该分配对象，则返回 true；否则返回 false
+   */
   bool should_allocate(size_t word_size, bool is_tlab) {
     assert(UseTLAB || !is_tlab, "Should not allocate tlab");
     assert(word_size != 0, "precondition");
@@ -204,23 +236,58 @@ class DefNewGeneration: public Generation {
   }
 
   // Allocate requested size or return null; single-threaded and lock-free versions.
+  /*
+   * 分配对象
+   * @param word_size 对象大小
+   * @return 分配的对象指针
+   */
   HeapWord* allocate(size_t word_size);
+  /*
+   * 并行分配对象
+   * @param word_size 对象大小
+   * @return 分配的对象指针
+   */
   HeapWord* par_allocate(size_t word_size);
 
+  /*
+   * 垃圾收集结束处理
+   * @param full 是否是完整的垃圾收集
+   */
   void gc_epilogue(bool full);
 
   // For Old collection (part of running Full GC), the DefNewGeneration can
   // contribute the free part of "to-space" as the scratch space.
+  /*
+   * 贡献 To 区的空闲空间
+   * @param scratch 空闲空间指针
+   * @param num_words 空闲空间大小
+   */
   void contribute_scratch(void*& scratch, size_t& num_words);
 
   // Reset for contribution of "to-space".
+  /*
+   * 重置 To 区的空闲空间
+   */
   void reset_scratch();
 
   // GC support
+  /*
+   * 计算新的大小
+   */
   void compute_new_size();
 
+  /*
+   * 收集对象
+   * @param clear_all_soft_refs 是否清除所有软引用
+   * @return 如果收集成功，则返回 true；否则返回 false
+   */
   bool collect(bool clear_all_soft_refs);
 
+  /*
+   * 复制对象到 Survivor 区
+   * @param old 对象指针
+   * @return 复制后的对象指针
+   */
   oop copy_to_survivor_space(oop old);
   uint tenuring_threshold() { return _tenuring_threshold; }
 
@@ -244,12 +311,26 @@ class DefNewGeneration: public Generation {
   // If clear_space is true, clear the survivor spaces.  Eden is
   // cleared if the minimum size of eden is 0.  If mangle_space
   // is true, also mangle the space in debug mode.
+  /*
+   * 计算空间边界
+   * @param minimum_eden_size 最小 Eden 大小
+   * @param clear_space 是否清除空间
+   * @param mangle_space 是否损坏空间
+   */
   void compute_space_boundaries(uintx minimum_eden_size,
                                 bool clear_space,
                                 bool mangle_space);
 
   // Return adjusted new size for NewSizeThreadIncrease.
   // If any overflow happens, revert to previous new size.
+  /*
+   * 调整新大小以适应线程增加
+   * @param new_size_candidate 新大小候选值
+   * @param new_size_before 之前的新大小
+   * @param alignment 对齐大小
+   * @param thread_increase_size 线程增加大小
+   * @return 调整后的新大小
+   */
   size_t adjust_for_thread_increase(size_t new_size_candidate,
                                     size_t new_size_before,
                                     size_t alignment,
@@ -259,6 +340,9 @@ class DefNewGeneration: public Generation {
 
 
   // Scavenge support
+  /*
+   * 交换 From 和 To 区的角色。在每次 Minor GC 成功后都会执行。
+   */
   void swap_spaces();
 };
 

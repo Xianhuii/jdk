@@ -178,6 +178,7 @@ void ReferenceProcessor::verify_total_count_zero(DiscoveredList lists[], const c
 }
 #endif
 
+// 处理已经扫描的存活引用
 ReferenceProcessorStats ReferenceProcessor::process_discovered_references(RefProcProxyTask& proxy_task,
                                                                           WorkerThreads* workers,
                                                                           ReferenceProcessorPhaseTimes& phase_times) {

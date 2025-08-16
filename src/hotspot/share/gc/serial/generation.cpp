@@ -38,14 +38,19 @@
 #include "utilities/copy.hpp"
 #include "utilities/events.hpp"
 
+/*
+ * 初始化代，为其预留内存空间和初始化性能计数器
+ * @param rs 代的预留内存空间
+ * @param initial_size 代的初始容量
+ */
 Generation::Generation(ReservedSpace rs, size_t initial_size) :
   _gc_manager(nullptr) {
-  if (!_virtual_space.initialize(rs, initial_size)) {
+  if (!_virtual_space.initialize(rs, initial_size)) { // 初始化虚拟空间，为其预留内存空间
     vm_exit_during_initialization("Could not reserve enough space for "
                     "object heap");
   }
   // Mangle all of the initial generation.
-  if (ZapUnusedHeapArea) {
+  if (ZapUnusedHeapArea) {  // 如果开启了未使用堆区域的填充，将初始生成的内存区域填充为特定模式
     MemRegion mangle_region((HeapWord*)_virtual_space.low(),
       (HeapWord*)_virtual_space.high());
     SpaceMangler::mangle_region(mangle_region);

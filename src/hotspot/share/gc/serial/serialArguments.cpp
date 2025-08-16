@@ -27,11 +27,19 @@
 #include "gc/shared/fullGCForwarding.hpp"
 #include "gc/shared/gcArguments.hpp"
 
+/*
+ * 初始化串行收集器参数
+ * 该方法用于初始化串行收集器的参数，包括初始化父类的参数和设置Full GC转发的参数
+ */
 void SerialArguments::initialize() {
-  GCArguments::initialize();
-  FullGCForwarding::initialize_flags(MaxHeapSize);
+  GCArguments::initialize(); // 初始化父类的参数
+  FullGCForwarding::initialize_flags(MaxHeapSize); // 设置Full GC转发的参数
 }
 
+/*
+ * 创建串行收集器
+ * 该方法用于创建串行收集器，返回一个SerialHeap对象
+ */
 CollectedHeap* SerialArguments::create_heap() {
   return new SerialHeap();
 }

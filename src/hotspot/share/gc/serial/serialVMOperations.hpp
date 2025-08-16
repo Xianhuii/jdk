@@ -28,6 +28,9 @@
 #include "gc/serial/serialHeap.hpp"
 #include "gc/shared/gcVMOperations.hpp"
 
+/*
+ * 串行GC的VM操作
+ */
 class VM_SerialCollectForAllocation : public VM_CollectForAllocation {
  private:
   bool        _tlab;                       // alloc is of a tlab.

@@ -41,17 +41,22 @@
 #include "utilities/copy.hpp"
 #include "utilities/macros.hpp"
 
+/*
+ * 扩容老年代的内存空间
+ * @param bytes 扩容的字节数
+ * @return 扩容是否成功
+ */
 bool TenuredGeneration::grow_by(size_t bytes) {
   assert_correct_size_change_locking();
-  bool result = _virtual_space.expand_by(bytes);
+  bool result = _virtual_space.expand_by(bytes); // 扩容内存空间
   if (result) {
     size_t new_word_size =
        heap_word_size(_virtual_space.committed_size());
     MemRegion mr(space()->bottom(), new_word_size);
     // Expand card table
-    SerialHeap::heap()->rem_set()->resize_covered_region(mr);
+    SerialHeap::heap()->rem_set()->resize_covered_region(mr); // 调整卡表的覆盖区域
     // Expand shared block offset array
-    _bts->resize(new_word_size);
+    _bts->resize(new_word_size); // 调整块偏移表的大小
 
     // Fix for bug #4668531
     if (ZapUnusedHeapArea) {
@@ -74,6 +79,12 @@ bool TenuredGeneration::grow_by(size_t bytes) {
   return result;
 }
 
+/*
+ * 扩容老年代的内存空间
+ * @param bytes 扩容的字节数
+ * @param expand_bytes 扩容的字节数（对齐后的）
+ * @return 扩容是否成功
+ */
 bool TenuredGeneration::expand(size_t bytes, size_t expand_bytes) {
   assert_locked_or_safepoint(Heap_lock);
   if (bytes == 0) {
@@ -115,6 +126,11 @@ bool TenuredGeneration::grow_to_reserved() {
   return success;
 }
 
+/*
+ *  shrink 方法用于缩小老年代的内存空间
+ * @param bytes 缩小的字节数
+ * @return 缩小是否成功
+ */
 void TenuredGeneration::shrink(size_t bytes) {
   assert_correct_size_change_locking();
 
@@ -277,10 +293,22 @@ HeapWord* TenuredGeneration::block_start(const void* addr) const {
   }
 }
 
+/*
+ * 扫描老年代对年轻代的引用
+ * @param saved_top_in_old_gen 老年代的顶部地址
+ */
 void TenuredGeneration::scan_old_to_young_refs(HeapWord* saved_top_in_old_gen) {
   _rs->scan_old_to_young_refs(this, saved_top_in_old_gen);
 }
 
+/*
+ * 构造函数
+ * @param rs 内存空间
+ * @param initial_byte_size 初始内存大小
+ * @param min_byte_size 最小内存大小
+ * @param max_byte_size 最大内存大小
+ * @param remset 卡表
+ */
 TenuredGeneration::TenuredGeneration(ReservedSpace rs,
                                      size_t initial_byte_size,
                                      size_t min_byte_size,
@@ -386,6 +414,12 @@ bool TenuredGeneration::promotion_attempt_is_safe(size_t max_promotion_in_bytes)
   return res;
 }
 
+/*
+ * 分配指定大小的内存块
+ * @param obj 要分配的对象
+ * @param obj_size 对象的大小
+ * @return 分配的内存块地址，如果分配失败则返回null
+ */
 oop TenuredGeneration::allocate_for_promotion(oop obj, size_t obj_size) {
   assert(obj_size == obj->size(), "bad obj_size passed in");
 
@@ -396,13 +430,13 @@ oop TenuredGeneration::allocate_for_promotion(oop obj, size_t obj_size) {
 #endif  // #ifndef PRODUCT
 
   // Allocate new object.
-  HeapWord* result = allocate(obj_size);
+  HeapWord* result = allocate(obj_size); // 分配内存块
   if (result == nullptr) {
     // Promotion of obj into gen failed.  Try to expand and allocate.
     result = expand_and_allocate(obj_size);
   }
 
-  return cast_to_oop<HeapWord*>(result);
+  return cast_to_oop<HeapWord*>(result); // 返回分配的内存块地址
 }
 
 HeapWord*

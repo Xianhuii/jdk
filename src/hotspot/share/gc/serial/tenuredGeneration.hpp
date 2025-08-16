@@ -39,7 +39,7 @@ class ContiguousSpace;
 // contained in a single contiguous space. This generation is covered by a card
 // table, and uses a card-size block-offset array to implement block_start.
 // Garbage collection is performed using mark-compact.
-// 年老代
+// 老年代
 class TenuredGeneration: public Generation {
   friend class VMStructs;
   // Abstractly, this is a subtype that gets access to protected fields.
@@ -48,9 +48,9 @@ class TenuredGeneration: public Generation {
   MemRegion _prev_used_region;
 
   // This is shared with other generations.
-  CardTableRS* _rs;
+  CardTableRS* _rs; // 卡表
   // This is local to this generation.
-  SerialBlockOffsetTable* _bts;
+  SerialBlockOffsetTable* _bts; // 块偏移表，用于快速定位对象的起始地址
 
   // Current shrinking effect: this damps shrinking when the heap gets empty.
   size_t _shrink_factor;
@@ -67,8 +67,8 @@ class TenuredGeneration: public Generation {
 
   ContiguousSpace*    _the_space;       // Actual space holding objects 实际存放对象的内存空间
 
-  GenerationCounters* _gen_counters;
-  CSpaceCounters*     _space_counters;
+  GenerationCounters* _gen_counters; // 性能计数器，用于统计老年代的性能指标
+  CSpaceCounters*     _space_counters; // 内存空间计数器，用于统计老年代的内存空间指标
 
   // Avg amount promoted; used for avoiding promotion undo
   // This class does not update deviations if the sample is zero.
@@ -125,6 +125,11 @@ public:
 
   // Allocate and returns a block of the requested size, or returns "null".
   // Assumes the caller has done any necessary locking.
+  /*
+   * 分配指定大小的内存块
+   * @param word_size 内存块大小（以字为单位）
+   * @return 分配的内存块地址，如果分配失败则返回null
+   */
   inline HeapWord* allocate(size_t word_size);
 
   // Expand the old-gen then invoke allocate above.

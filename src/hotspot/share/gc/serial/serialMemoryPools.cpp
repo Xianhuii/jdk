@@ -27,6 +27,9 @@
 #include "gc/serial/tenuredGeneration.hpp"
 #include "gc/shared/space.hpp"
 
+/*
+ * 连续空间内存池
+ */
 ContiguousSpacePool::ContiguousSpacePool(ContiguousSpace* space,
                                          const char* name,
                                          size_t max_size,
