@@ -36,6 +36,9 @@
 
 /*
  * Entry point.
+ *
+ * On Windows, this is WinMain().
+ * On other platforms, this is main().
  */
 #ifdef JAVAW
 
@@ -147,6 +150,7 @@ main(int argc, char **argv)
         margv = args->elements;
     }
 #endif /* WIN32 */
+    // 启动JVM
     return JLI_Launch(margc, margv,
                    jargc, jargv,
                    0, NULL,

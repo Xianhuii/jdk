@@ -110,6 +110,9 @@ PerfCounter*      VMThread::_perf_accumulated_vm_operation_time = nullptr;
 VMOperationTimeoutTask* VMThread::_timeout_task = nullptr;
 
 
+/*
+ * 创建VMThread线程
+ */
 void VMThread::create() {
   assert(vm_thread() == nullptr, "we can only allocate one VMThread");
   _vm_thread = new VMThread();

@@ -220,7 +220,7 @@ static jlong initialHeapSize    = 0;  /* initial heap size */
 #endif
 
 /*
- * Entry point.
+ * Entry point. JVM启动入口
  */
 JNIEXPORT int JNICALL
 JLI_Launch(int argc, char ** argv,              /* main argc, argv */
@@ -270,6 +270,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
         AddOption("-Dsun.java.launcher.diag=true", NULL);
     }
 
+    // 创建执行环境
     CreateExecutionEnvironment(&argc, &argv,
                                jdkroot, sizeof(jdkroot),
                                jvmpath, sizeof(jvmpath),
@@ -282,6 +283,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
         start = CurrentTimeMicros();
     }
 
+    // 加载JVM，将创建JVM等函数指针赋值给ifn
     if (!LoadJavaVM(jvmpath, &ifn)) {
         return(6);
     }
@@ -327,6 +329,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
     /* Set the -Dsun.java.launcher pseudo property */
     SetJavaLauncherProp();
 
+    // 初始化JVM
     return JVMInit(&ifn, threadStackSize, argc, argv, mode, what, ret);
 }
 /*
@@ -381,6 +384,14 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
  * Returns 0 with a pending exception if not found. Returns 1 if invoked, maybe
  * a pending exception if the method threw.
  */
+ /*
+ * 执行静态main方法
+ *
+ * @param env JNIEnv指针
+ * @param mainClass 主类
+ * @param mainArgs 主方法参数
+ * @return int 执行结果
+ */
 int
 invokeStaticMainWithArgs(JNIEnv *env, jclass mainClass, jobjectArray mainArgs) {
     jmethodID mainID = (*env)->GetStaticMethodID(env, mainClass, "main",
@@ -389,6 +400,7 @@ invokeStaticMainWithArgs(JNIEnv *env, jclass mainClass, jobjectArray mainArgs) {
         // static main(String[]) not found
         return 0;
     }
+    // 调用静态main方法
     (*env)->CallStaticVoidMethod(env, mainClass, mainID, mainArgs);
     return 1; // method was invoked
 }
@@ -398,6 +410,14 @@ invokeStaticMainWithArgs(JNIEnv *env, jclass mainClass, jobjectArray mainArgs) {
  * Returns 0 with a pending exception if not found. Returns 1 if invoked, maybe
  * a pending exception if the method threw.
  */
+ /*
+ * 执行实例main方法
+ *
+ * @param env JNIEnv指针
+ * @param mainClass 主类
+ * @param mainArgs 主方法参数
+ * @return int 执行结果
+ */
 int
 invokeInstanceMainWithArgs(JNIEnv *env, jclass mainClass, jobjectArray mainArgs) {
     jmethodID constructor = (*env)->GetMethodID(env, mainClass, "<init>", "()V");
@@ -405,17 +425,20 @@ invokeInstanceMainWithArgs(JNIEnv *env, jclass mainClass, jobjectArray mainArgs)
         // main class' no-arg constructor not found
         return 0;
     }
+    // 创建主类实例
     jobject mainObject = (*env)->NewObject(env, mainClass, constructor);
     if (mainObject == NULL) {
         // main class instance couldn't be constructed
         return 0;
     }
+    // 获取实例main方法
     jmethodID mainID =
         (*env)->GetMethodID(env, mainClass, "main", "([Ljava/lang/String;)V");
     if (mainID == NULL) {
         // instance method main(String[]) method not found
         return 0;
     }
+    // 调用实例main方法
     (*env)->CallVoidMethod(env, mainObject, mainID, mainArgs);
     return 1; // method was invoked
 }
@@ -425,6 +448,13 @@ invokeInstanceMainWithArgs(JNIEnv *env, jclass mainClass, jobjectArray mainArgs)
  * Returns 0 with a pending exception if not found. Returns 1 if invoked, maybe
  * a pending exception if the method threw.
  */
+ /*
+ * 执行静态main方法
+ *
+ * @param env JNIEnv指针
+ * @param mainClass 主类
+ * @return int 执行结果
+ */
 int
 invokeStaticMainWithoutArgs(JNIEnv *env, jclass mainClass) {
     jmethodID mainID = (*env)->GetStaticMethodID(env, mainClass, "main",
@@ -433,6 +463,7 @@ invokeStaticMainWithoutArgs(JNIEnv *env, jclass mainClass) {
         // static main() method couldn't be located
         return 0;
     }
+    // 调用静态main方法
     (*env)->CallStaticVoidMethod(env, mainClass, mainID);
     return 1; // method was invoked
 }
@@ -442,6 +473,13 @@ invokeStaticMainWithoutArgs(JNIEnv *env, jclass mainClass) {
  * Returns 0 with a pending exception if not found. Returns 1 if invoked, maybe
  * a pending exception if the method threw.
  */
+ /*
+ * 执行实例main方法
+ *
+ * @param env JNIEnv指针
+ * @param mainClass 主类
+ * @return int 执行结果
+ */
 int
 invokeInstanceMainWithoutArgs(JNIEnv *env, jclass mainClass) {
     jmethodID constructor = (*env)->GetMethodID(env, mainClass, "<init>", "()V");
@@ -449,17 +487,20 @@ invokeInstanceMainWithoutArgs(JNIEnv *env, jclass mainClass) {
         // main class' no-arg constructor not found
         return 0;
     }
+    // 创建主类实例
     jobject mainObject = (*env)->NewObject(env, mainClass, constructor);
     if (mainObject == NULL) {
         // couldn't create instance of main class
         return 0;
     }
+    // 获取实例main方法
     jmethodID mainID = (*env)->GetMethodID(env, mainClass, "main",
                                  "()V");
     if (mainID == NULL) {
         // instance method main() not found
         return 0;
     }
+    // 调用实例main方法
     (*env)->CallVoidMethod(env, mainObject, mainID);
     return 1; // method was invoked
 }
@@ -491,6 +532,7 @@ JavaMain(void* _args)
 
     /* Initialize the virtual machine */
     start = CurrentTimeMicros();
+    // 创建&初始化JVM
     if (!InitializeJVM(&vm, &env, &ifn)) {
         JLI_ReportErrorMessage(JVM_ERROR1);
         exit(1);
@@ -589,6 +631,7 @@ JavaMain(void* _args)
      * This method also correctly handles launching existing JavaFX
      * applications that may or may not have a Main-Class manifest entry.
      */
+     // 加载主类
     mainClass = LoadMainClass(env, mode, what);
     CHECK_EXCEPTION_NULL_LEAVE(mainClass);
     /*
@@ -633,6 +676,7 @@ JavaMain(void* _args)
     CHECK_EXCEPTION_NULL_LEAVE(noArgMainField);
     noArgMain = (*env)->GetStaticBooleanField(env, helperClass, noArgMainField);
 
+    // 调用LauncherHelper.invokeStaticMain方法，执行main方法
     if (isStaticMain) {
         if (noArgMain) {
             ret = invokeStaticMainWithoutArgs(env, mainClass);
@@ -646,6 +690,7 @@ JavaMain(void* _args)
             ret = invokeInstanceMainWithArgs(env, mainClass, mainArgs);
         }
     }
+    // main方法执行完成
     if (!ret) {
         // An appropriate main method couldn't be located, check and report
         // any exception and LEAVE()
@@ -1479,6 +1524,14 @@ SetupSplashScreenEnvVars(const char *splash_file_path, char *jar_path) {
  * Initializes the Java Virtual Machine. Also frees options array when
  * finished.
  */
+ /*
+ * 初始化JVM：初始化Java虚拟机
+ *
+ * @param pvm JavaVM指针
+ * @param penv JNIEnv指针
+ * @param ifn InvocationFunctions结构体指针
+ * @return jboolean 成功
+ */
 static jboolean
 InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn)
 {
@@ -1503,6 +1556,7 @@ InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn)
                    i, args.options[i].optionString);
     }
 
+    // 创建JavaVM，对应的是之前注册的：JNI_CreateJavaVM
     r = ifn->CreateJavaVM(pvm, (void **)penv, &args);
     JLI_MemFree(options);
     return r == JNI_OK;
@@ -1581,6 +1635,14 @@ NewPlatformStringArray(JNIEnv *env, char **strv, int strc)
  * is present, it is ok to load the main class and then load the main class.
  * For more details refer to the java implementation.
  */
+ /*
+ * 加载主类：加载Java程序的主类
+ *
+ * @param env JNIEnv指针
+ * @param mode 模式
+ * @param name 类名
+ * @return jclass 主类
+ */
 static jclass
 LoadMainClass(JNIEnv *env, int mode, char *name)
 {
@@ -1588,6 +1650,7 @@ LoadMainClass(JNIEnv *env, int mode, char *name)
     jstring str;
     jobject result;
     jlong start = 0, end = 0;
+    // 获取LauncherHelper类
     jclass cls = GetLauncherHelperClass(env);
     NULL_CHECK0(cls);
     if (JLI_IsTraceLauncher()) {
@@ -1598,6 +1661,7 @@ LoadMainClass(JNIEnv *env, int mode, char *name)
                 "(ZILjava/lang/String;)Ljava/lang/Class;"));
 
     NULL_CHECK0(str = NewPlatformString(env, name));
+    // 调用LauncherHelper.checkAndLoadMain方法，检查并加载主类
     NULL_CHECK0(result = (*env)->CallStaticObjectMethod(env, cls, mid,
                                                         USE_STDERR, mode, str));
 
@@ -2306,6 +2370,18 @@ IsWildCardEnabled()
     return _wc_enabled;
 }
 
+/*
+ * 继续在新线程中执行JavaMain：根据InvocationFunctions结构体指针、线程栈大小、命令行参数数量、命令行参数数组、模式、什么、返回值初始化JVM
+ *
+ * @param ifn InvocationFunctions结构体指针
+ * @param threadStackSize 线程栈大小
+ * @param argc 命令行参数数量
+ * @param argv 命令行参数数组
+ * @param mode 模式
+ * @param what 什么
+ * @param ret 返回值
+ * @return int JVM初始化结果
+ */
 int
 ContinueInNewThread(InvocationFunctions* ifn, jlong threadStackSize,
                     int argc, char **argv,
@@ -2337,6 +2413,7 @@ ContinueInNewThread(InvocationFunctions* ifn, jlong threadStackSize,
         args.what = what;
         args.ifn = *ifn;
 
+        // 创建新线程&执行Java的main方法
         rslt = CallJavaMainInNewThread(threadStackSize, (void*)&args);
         /* If the caller has deemed there is an error we
          * simply return that, otherwise we return the value of

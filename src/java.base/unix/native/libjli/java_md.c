@@ -517,6 +517,14 @@ GetJDKInstallRoot(char *path, jint pathsize, jboolean speculative)
     return JNI_FALSE;
 }
 
+/*
+ * 加载JVM：根据JVM库路径加载JVM库
+ *
+ * @param jvmpath JVM库路径
+ * @param ifn InvocationFunctions结构体指针
+ * @return JNI_TRUE 成功
+ * @return JNI_FALSE 失败
+ */
 jboolean
 LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
 {
@@ -536,7 +544,7 @@ LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
     }
 
     ifn->CreateJavaVM = (CreateJavaVM_t)
-        dlsym(libjvm, "JNI_CreateJavaVM");
+        dlsym(libjvm, "JNI_CreateJavaVM"); // 加载JNI_CreateJavaVM函数
     if (ifn->CreateJavaVM == NULL) {
         JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
         return JNI_FALSE;
@@ -550,7 +558,7 @@ LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
     }
 
     ifn->GetCreatedJavaVMs = (GetCreatedJavaVMs_t)
-        dlsym(libjvm, "JNI_GetCreatedJavaVMs");
+        dlsym(libjvm, "JNI_GetCreatedJavaVMs"); // 加载JNI_GetCreatedJavaVMs函数
     if (ifn->GetCreatedJavaVMs == NULL) {
         JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
         return JNI_FALSE;
@@ -642,6 +650,12 @@ void* SplashProcAddress(const char* name) {
 /*
  * Signature adapter for pthread_create() or thr_create().
  */
+ /*
+ * 新线程执行函数：调用JavaMain方法
+ *
+ * @param args 参数
+ * @return void* 线程执行结果
+ */
 static void* ThreadJavaMain(void* args) {
     return (void*)(intptr_t)JavaMain(args);
 }
@@ -662,6 +676,13 @@ static size_t adjustStackSize(size_t stack_size) {
 
 /*
  * Block current thread and continue execution in a new thread.
+ */
+ /*
+ * 阻塞当前启动线程，在新线程中执行JavaMain：根据线程栈大小、参数初始化JVM
+ *
+ * @param stack_size 线程栈大小
+ * @param args 参数
+ * @return int JVM初始化结果
  */
 int
 CallJavaMainInNewThread(jlong stack_size, void* args) {
@@ -684,11 +705,14 @@ CallJavaMainInNewThread(jlong stack_size, void* args) {
     }
     pthread_attr_setguardsize(&attr, 0); // no pthread guard page on java threads
 
+    // 创建新线程&执行JavaMain方法
     if (pthread_create(&tid, &attr, ThreadJavaMain, args) == 0) {
         void* tmp;
-        pthread_join(tid, &tmp);
+        pthread_join(tid, &tmp); // 阻塞当前线程，等待新线程执行完毕
         rslt = (int)(intptr_t)tmp;
-    } else {
+    } 
+    // 新线程创建失败，直接在当前线程执行JavaMain方法进行尝试，大概率也会失败
+    else {
        /*
         * Continue execution in current thread if for some reason (e.g. out of
         * memory/LWP)  a new thread can't be created. This will likely fail
@@ -705,12 +729,26 @@ CallJavaMainInNewThread(jlong stack_size, void* args) {
 /* Coarse estimation of number of digits assuming the worst case is a 64-bit pid. */
 #define MAX_PID_STR_SZ   20
 
+/*
+ * 初始化JVM：根据InvocationFunctions结构体指针初始化JVM
+ *
+ * @param ifn InvocationFunctions结构体指针
+ * @param threadStackSize 线程栈大小
+ * @param argc 命令行参数数量
+ * @param argv 命令行参数数组
+ * @param mode 模式
+ * @param what 什么
+ * @param ret 返回值
+ * @return int JVM初始化结果
+ */
 int
 JVMInit(InvocationFunctions* ifn, jlong threadStackSize,
         int argc, char **argv,
         int mode, char *what, int ret)
 {
+    // 显示启动屏幕
     ShowSplashScreen();
+    // 继续在新线程中执行JavaMain
     return ContinueInNewThread(ifn, threadStackSize, argc, argv, mode, what, ret);
 }
 

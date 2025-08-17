@@ -438,6 +438,13 @@ class ReadReleaseFileTask : public PeriodicTask {
   }
 };
 
+/*
+ * 创建JavaVM：创建Java虚拟机
+ *
+ * @param args JavaVMInitArgs结构体指针
+ * @param canTryAgain bool指针
+ * @return jint 成功
+ */
 jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   extern void JDK_Version_init();
 
@@ -555,6 +562,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   JavaThread::_thread_oop_storage = OopStorageSet::create_strong("Thread OopStorage", mtThread);
 
   // Attach the main thread to this os thread
+  // 为主线程创建JavaThread对象
   JavaThread* main_thread = new JavaThread();
   main_thread->set_thread_state(_thread_in_vm);
   main_thread->initialize_thread_current();
@@ -585,6 +593,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   main_thread->stack_overflow_state()->create_stack_guard_pages();
 
   // Initialize Java-Level synchronization subsystem
+  // 初始化Java-Level同步子系统
   ObjectMonitor::Initialize();
   ObjectSynchronizer::initialize();
 
@@ -607,6 +616,7 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   // Add main_thread to threads list to finish barrier setup with
   // on_thread_attach.  Should be before starting to build Java objects in
   // init_globals2, which invokes barriers.
+  // 为主线程添加到线程列表中，完成屏障设置
   {
     MutexLocker mu(Threads_lock);
     Threads::add(main_thread);
@@ -637,11 +647,13 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   JvmtiExport::transition_pending_onload_raw_monitors();
 
   // Create the VMThread
+  // 创建VMThread线程
   { TraceTime timer("Start VMThread", TRACETIME_LOG(Info, startuptime));
 
     VMThread::create();
     VMThread* vmthread = VMThread::vm_thread();
 
+    // 创建VMThread线程
     if (!os::create_thread(vmthread, os::vm_thread)) {
       vm_exit_during_initialization("Cannot create VM thread. "
                                     "Out of system resources.");

@@ -3530,6 +3530,14 @@ _JNI_IMPORT_OR_EXPORT_ jint JNICALL JNI_GetDefaultJavaVMInitArgs(void *args_) {
 DT_RETURN_MARK_DECL(CreateJavaVM, jint
                     , HOTSPOT_JNI_CREATEJAVAVM_RETURN(_ret_ref));
 
+/*
+ * 创建JavaVM：创建Java虚拟机
+ *
+ * @param vm JavaVM指针
+ * @param penv JNIEnv指针
+ * @param args JavaVMInitArgs结构体指针
+ * @return jint 成功
+ */
 static jint JNI_CreateJavaVM_inner(JavaVM **vm, void **penv, void *args) {
   HOTSPOT_JNI_CREATEJAVAVM_ENTRY((void **) vm, penv, args);
 
@@ -3586,6 +3594,7 @@ static jint JNI_CreateJavaVM_inner(JavaVM **vm, void **penv, void *args) {
    */
   bool can_try_again = true;
 
+  // 创建JavaVM，初始化Java虚拟机
   result = Threads::create_vm((JavaVMInitArgs*) args, &can_try_again);
   if (result == JNI_OK) {
     JavaThread *thread = JavaThread::current();
@@ -3671,6 +3680,14 @@ static jint JNI_CreateJavaVM_inner(JavaVM **vm, void **penv, void *args) {
 
 }
 
+ /*
+ * 创建JavaVM：创建Java虚拟机
+ *
+ * @param vm JavaVM指针
+ * @param penv JNIEnv指针
+ * @param args JavaVMInitArgs结构体指针
+ * @return jint 成功
+ */
 _JNI_IMPORT_OR_EXPORT_ jint JNICALL JNI_CreateJavaVM(JavaVM **vm, void **penv, void *args) {
   jint result = JNI_ERR;
   // On Windows, let CreateJavaVM run with SEH protection
