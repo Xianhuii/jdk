@@ -39,7 +39,7 @@ typedef Array<u1> AnnotationArray;
 // Class to hold the various types of annotations. The only metadata that points
 // to this is InstanceKlass, or another Annotations instance if this is a
 // a type_annotation instance.
-
+// InstanceKlass中保存注解信息的元数据
 class Annotations: public MetaspaceObj {
  friend class VMStructs;
  friend class JVMCIVMStructs;
@@ -48,10 +48,10 @@ class Annotations: public MetaspaceObj {
   // must add this field to Annotations::metaspace_pointers_do().
 
   // Annotations for this class, or null if none.
-  AnnotationArray*             _class_annotations;
+  AnnotationArray*             _class_annotations; // 类的注解
   // Annotation objects (byte arrays) for fields, or null if no annotations.
   // Indices correspond to entries (not indices) in fields array.
-  Array<AnnotationArray*>*     _fields_annotations;
+  Array<AnnotationArray*>*     _fields_annotations; // 属性的注解
   // Type annotations for this class, or null if none.
   AnnotationArray*             _class_type_annotations;
   Array<AnnotationArray*>*     _fields_type_annotations;

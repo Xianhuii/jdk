@@ -36,6 +36,7 @@ class ClassFileParser;
 // walked and dependent class loaders are kept alive.  I thought we walked
 // the list later?
 
+// 类加载器的Klass实现
 class InstanceClassLoaderKlass: public InstanceKlass {
   friend class VMStructs;
   friend class InstanceKlass;

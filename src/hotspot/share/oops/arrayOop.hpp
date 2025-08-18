@@ -39,7 +39,7 @@
 //  Klass*    // 32 bits if compressed but declared 64 in LP64.
 //  length    // shares klass memory or allocated after declared fields.
 
-
+// 数组对象的oop实现
 class arrayOopDesc : public oopDesc {
   friend class VMStructs;
   friend class arrayOopDescTest;

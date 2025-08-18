@@ -114,6 +114,7 @@ public:
   }
 };
 
+// 常量池，保存class文件中的常量
 class ConstantPool : public Metadata {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -125,7 +126,7 @@ class ConstantPool : public Metadata {
   // must add this field to ConstantPool::metaspace_pointers_do().
   Array<u1>*           _tags;        // the tag array describing the constant pool's contents
   ConstantPoolCache*   _cache;       // the cache holding interpreter runtime information
-  InstanceKlass*       _pool_holder; // the corresponding class
+  InstanceKlass*       _pool_holder; // the corresponding class 关联的类
   Array<u2>*           _operands;    // for variable-sized (InvokeDynamic) nodes, usually empty
 
   // Consider using an array of compressed klass pointers to

@@ -46,7 +46,7 @@ class ClassFileParser;
 // are linked to the static pending_list in class java/lang/ref/Reference,
 // and the pending list lock object in the same class is notified.
 
-
+// java.lang.ref.Reference子类的Klass实现
 class InstanceRefKlass: public InstanceKlass {
   friend class InstanceKlass;
  public:

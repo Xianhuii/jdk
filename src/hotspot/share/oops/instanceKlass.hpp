@@ -47,15 +47,15 @@ class DeoptimizationScope;
 class klassItable;
 class RecordComponent;
 
-// An InstanceKlass is the VM level representation of a Java class.
-// It contains all information needed for at class at execution runtime.
+// An InstanceKlass is the VM level representation of a Java class. InstanceKlass 是 Java 类的 VM 级表示。
+// It contains all information needed for at class at execution runtime. 包含Java类在执行时所需的所有信息。
 
-//  InstanceKlass embedded field layout (after declared fields):
-//    [EMBEDDED Java vtable             ] size in words = vtable_len
-//    [EMBEDDED nonstatic oop-map blocks] size in words = nonstatic_oop_map_size
-//      The embedded nonstatic oop-map blocks are short pairs (offset, length)
-//      indicating where oops are located in instances of this klass.
-//    [EMBEDDED implementor of the interface] only exist for interface
+//  InstanceKlass embedded field layout (after declared fields): 实例类的嵌入式字段布局（在声明字段之后）
+//    [EMBEDDED Java vtable             ] size in words = vtable_len 嵌入的 Java 虚表，大小为 vtable_len 个单词
+//    [EMBEDDED nonstatic oop-map blocks] size in words = nonstatic_oop_map_size 嵌入的非静态 oop 映射块，大小为 nonstatic_oop_map_size 个单词
+//      The embedded nonstatic oop-map blocks are short pairs (offset, length) 嵌入的非静态 oop 映射块是短对 (offset, length)
+//      indicating where oops are located in instances of this klass.    嵌入的非静态 oop 映射块指示实例中 oops 的位置
+//    [EMBEDDED implementor of the interface] only exist for interface 嵌入的接口实现类，仅存在于接口类中
 
 
 // forward declaration for class -- see below for definition
@@ -75,23 +75,23 @@ class InterpreterOopMap;
 class PackageEntry;
 class ModuleEntry;
 
-// This is used in iterators below.
+// This is used in iterators below. 遍历字段的闭包
 class FieldClosure: public StackObj {
 public:
   virtual void do_field(fieldDescriptor* fd) = 0;
 };
 
-// Print fields.
+// Print fields. 遍历打印字段的闭包
 // If "obj" argument to constructor is null, prints static fields, otherwise prints non-static fields.
 class FieldPrinter: public FieldClosure {
-   oop _obj;
-   outputStream* _st;
+   oop _obj; // 实例对象
+   outputStream* _st; // 输出流
  public:
    FieldPrinter(outputStream* st, oop obj = nullptr) : _obj(obj), _st(st) {}
    void do_field(fieldDescriptor* fd);
 };
 
-// Describes where oops are located in instances of this klass.
+// Describes where oops are located in instances of this klass. 描述这个类的实例中 oops 的位置
 class OopMapBlock {
  public:
   // Byte offset of the first oop mapped by this block.
@@ -131,6 +131,9 @@ class OopMapBlock {
 
 struct JvmtiCachedClassFileData;
 
+/*
+ * InstanceKlass 是 Java 类的 VM 级表示。它包含了 Java 类在执行时所需的所有信息。
+*/
 class InstanceKlass: public Klass {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -138,11 +141,20 @@ class InstanceKlass: public Klass {
   friend class CompileReplay;
 
  public:
-  static const KlassKind Kind = InstanceKlassKind;
+  static const KlassKind Kind = InstanceKlassKind; // Klass类型，实例类
 
  protected:
   InstanceKlass(const ClassFileParser& parser, KlassKind kind = Kind, ReferenceType reference_type = REF_NONE);
 
+  /*
+   * 分配实例类的内存
+   * @param size 内存大小
+   * @param loader_data 类加载器数据
+   * @param word_size 内存大小（单词数）
+   * @param use_class_space 是否使用类空间
+   * @param CHECK 异常检查
+   * @return 实例类的内存地址
+   */
   void* operator new(size_t size, ClassLoaderData* loader_data, size_t word_size, bool use_class_space, TRAPS) throw();
 
  public:
@@ -150,13 +162,13 @@ class InstanceKlass: public Klass {
 
   // See "The Java Virtual Machine Specification" section 2.16.2-5 for a detailed description
   // of the class loading & initialization procedure, and the use of the states.
-  enum ClassState : u1 {
-    allocated,                          // allocated (but not yet linked)
-    loaded,                             // loaded and inserted in class hierarchy (but not linked yet)
-    linked,                             // successfully linked/verified (but not initialized yet)
-    being_initialized,                  // currently running class initializer
-    fully_initialized,                  // initialized (successful final state)
-    initialization_error                // error happened during initialization
+  enum ClassState : u1 { // 类状态
+    allocated,                          // allocated (but not yet linked) 已分配（但未链接）
+    loaded,                             // loaded and inserted in class hierarchy (but not linked yet) 已加载并插入类层次结构（但未链接）
+    linked,                             // successfully linked/verified (but not initialized yet) 成功链接/验证（但未初始化）
+    being_initialized,                  // currently running class initializer 当前正在运行类初始化器
+    fully_initialized,                  // initialized (successful final state) 已初始化（成功最终状态）
+    initialization_error                // error happened during initialization 初始化过程中发生错误
   };
 
  private:
@@ -166,13 +178,13 @@ class InstanceKlass: public Klass {
   // If you add a new field that points to any metaspace object, you
   // must add this field to InstanceKlass::metaspace_pointers_do().
 
-  // Annotations for this class
+  // Annotations for this class 类的注解
   Annotations*    _annotations;
-  // Package this class is defined in
+  // Package this class is defined in 类定义所在的包
   PackageEntry*   _package_entry;
-  // Array classes holding elements of this class.
+  // Array classes holding elements of this class. 数组类，用于存储该类的元素
   ObjArrayKlass* volatile _array_klasses;
-  // Constant pool for this class.
+  // Constant pool for this class. 常量池，用于存储该类的常量
   ConstantPool* _constants;
   // The InnerClasses attribute and EnclosingMethod attribute. The
   // _inner_classes is an array of shorts. If the class has InnerClasses
@@ -185,26 +197,26 @@ class InstanceKlass: public Klass {
   // number_of_inner_classes * 4. If the class has both InnerClasses
   // and EnclosingMethod attributes the _inner_classes array length is
   // number_of_inner_classes * 4 + enclosing_method_attribute_size.
-  Array<jushort>* _inner_classes;
+  Array<jushort>* _inner_classes; // 内部类数组，用于存储该类的内部类
 
   // The NestMembers attribute. An array of shorts, where each is a
   // class info index for the class that is a nest member. This data
   // has not been validated.
-  Array<jushort>* _nest_members;
+  Array<jushort>* _nest_members; // 嵌套成员数组，用于存储该类的嵌套成员
 
   // Resolved nest-host klass: either true nest-host or self if we are not
   // nested, or an error occurred resolving or validating the nominated
   // nest-host. Can also be set directly by JDK API's that establish nest
   // relationships.
   // By always being set it makes nest-member access checks simpler.
-  InstanceKlass* _nest_host;
+  InstanceKlass* _nest_host; // 嵌套InstanceKlass
 
   // The PermittedSubclasses attribute. An array of shorts, where each is a
   // class info index for the class that is a permitted subclass.
-  Array<jushort>* _permitted_subclasses;
+  Array<jushort>* _permitted_subclasses; // 允许的子类数组，用于存储该类的允许的子类
 
   // The contents of the Record attribute.
-  Array<RecordComponent*>* _record_components;
+  Array<RecordComponent*>* _record_components; // 记录组件数组，用于存储该类的记录组件
 
   // the source debug extension for this klass, null if not specified.
   // Specified as UTF-8 string without terminating zero byte in the classfile,
@@ -236,6 +248,7 @@ class InstanceKlass: public Klass {
   // State is set either at parse time or while executing, atomically to not disturb other state
   InstanceKlassFlags _misc_flags;
 
+  // 初始化线程，用于存储当前正在初始化该类的线程
   JavaThread* volatile _init_thread;        // Pointer to current thread doing initialization (to handle recursive initialization)
 
   OopMapCache*    volatile _oop_map_cache;   // OopMapCache for all methods in the klass (allocated lazily)
@@ -260,21 +273,21 @@ class InstanceKlass: public Klass {
   NOT_PRODUCT(int _verify_count;)  // to avoid redundant verifies
   NOT_PRODUCT(volatile int _shared_class_load_count;) // ensure a shared class is loaded only once
 
-  // Method array.
+  // Method array. 方法数组，用于存储该类的方法
   Array<Method*>* _methods;
-  // Default Method Array, concrete methods inherited from interfaces
+  // Default Method Array, concrete methods inherited from interfaces  默认方法数组，用于存储该类从接口继承的具体方法
   Array<Method*>* _default_methods;
-  // Interfaces (InstanceKlass*s) this class declares locally to implement.
+  // Interfaces (InstanceKlass*s) this class declares locally to implement. 本地接口数组，用于存储该类声明的本地接口
   Array<InstanceKlass*>* _local_interfaces;
-  // Interfaces (InstanceKlass*s) this class implements transitively.
+  // Interfaces (InstanceKlass*s) this class implements transitively. 传递接口数组，用于存储该类实现的传递接口
   Array<InstanceKlass*>* _transitive_interfaces;
-  // Int array containing the original order of method in the class file (for JVMTI).
+  // Int array containing the original order of method in the class file (for JVMTI). 方法数组，用于存储该类的方法数组
   Array<int>*     _method_ordering;
   // Int array containing the vtable_indices for default_methods
   // offset matches _default_methods offset
   Array<int>*     _default_vtable_indices;
 
-  // Fields information is stored in an UNSIGNED5 encoded stream (see fieldInfo.hpp)
+  // Fields information is stored in an UNSIGNED5 encoded stream (see fieldInfo.hpp) 字段信息数组，用于存储该类的字段信息数组
   Array<u1>*          _fieldinfo_stream;
   Array<u1>*          _fieldinfo_search_table;
   Array<FieldStatus>* _fields_status;

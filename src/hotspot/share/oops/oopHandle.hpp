@@ -36,11 +36,11 @@ class OopStorage;
 // stored in OopStorage, or stored in the ClassLoaderData handles area.
 // These classes help with allocation, release, and NativeAccess loads and
 // stores with the appropriate barriers.
-
+// 对象句柄
 class OopHandle {
   friend class VMStructs;
 private:
-  oop* _obj;
+  oop* _obj; // 实际对象
 
 public:
   OopHandle() : _obj(nullptr) {}

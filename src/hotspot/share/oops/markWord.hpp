@@ -74,9 +74,10 @@ class ObjectMonitor;
 class JavaThread;
 class outputStream;
 
+// 对象头信息
 class markWord {
  private:
-  uintptr_t _value;
+  uintptr_t _value; // 对象头的实际值
 
  public:
   explicit markWord(uintptr_t value) : _value(value) {}
@@ -202,6 +203,7 @@ class markWord {
     assert(LockingMode == LM_LEGACY, "should only be called with legacy stack locking");
     return (value() & lock_mask_in_place) == locked_value;
   }
+  // 获取对象的BasicLock
   BasicLock* locker() const {
     assert(has_locker(), "check");
     return (BasicLock*) value();
@@ -219,6 +221,7 @@ class markWord {
   bool has_monitor() const {
     return ((value() & lock_mask_in_place) == monitor_value);
   }
+  // 获取对象的ObjectMonitor
   ObjectMonitor* monitor() const {
     assert(has_monitor(), "check");
     assert(!UseObjectMonitorTable, "Lightweight locking with OM table does not use markWord for monitors");
@@ -267,6 +270,7 @@ class markWord {
   markWord set_marked()   { return markWord((value() & ~lock_mask_in_place) | marked_value); }
   markWord set_unmarked() { return markWord((value() & ~lock_mask_in_place) | unlocked_value); }
 
+  // 获取对象的gc age
   uint     age()           const { return (uint) mask_bits(value() >> age_shift, age_mask); }
   markWord set_age(uint v) const {
     assert((v & ~age_mask) == 0, "shouldn't overflow age field");

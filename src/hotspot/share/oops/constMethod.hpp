@@ -167,6 +167,7 @@ class InlineTableSizes : StackObj {
 #undef INLINE_TABLE_PARAM
 #undef INLINE_TABLE_DECLARE
 
+// 常量方法，可以被共享使用
 class ConstMethod : public MetaspaceObj {
   friend class VMStructs;
   friend class JVMCIVMStructs;

@@ -455,20 +455,35 @@ const char* InstanceKlass::nest_host_error() {
   }
 }
 
+/*
+ * 在Metaspace中分配实例类对象
+ * @param size 实例类对象大小
+ * @param loader_data 类加载器数据
+ * @param word_size 实例类对象大小
+ * @param use_class_space 是否使用类空间
+ * @param THREAD 线程
+ * @return 实例类对象指针
+ */
 void* InstanceKlass::operator new(size_t size, ClassLoaderData* loader_data, size_t word_size,
                                   bool use_class_space, TRAPS) throw() {
   return Metaspace::allocate(loader_data, word_size, ClassType, use_class_space, THREAD);
 }
 
+/*
+ * 分配实例类对象
+ * @param parser 类文件解析器
+ * @param THREAD 线程
+ * @return 实例类对象指针
+ */
 InstanceKlass* InstanceKlass::allocate_instance_klass(const ClassFileParser& parser, TRAPS) {
   const int size = InstanceKlass::size(parser.vtable_size(),
                                        parser.itable_size(),
                                        nonstatic_oop_map_size(parser.total_oop_map_count()),
                                        parser.is_interface());
 
-  const Symbol* const class_name = parser.class_name();
+  const Symbol* const class_name = parser.class_name(); // 类名
   assert(class_name != nullptr, "invariant");
-  ClassLoaderData* loader_data = parser.loader_data();
+  ClassLoaderData* loader_data = parser.loader_data(); // 类加载器数据
   assert(loader_data != nullptr, "invariant");
 
   InstanceKlass* ik;
@@ -476,19 +491,19 @@ InstanceKlass* InstanceKlass::allocate_instance_klass(const ClassFileParser& par
 
   // Allocation
   if (parser.is_instance_ref_klass()) {
-    // java.lang.ref.Reference
+    // java.lang.ref.Reference -> InstanceRefKlass
     ik = new (loader_data, size, use_class_space, THREAD) InstanceRefKlass(parser);
   } else if (class_name == vmSymbols::java_lang_Class()) {
-    // mirror - java.lang.Class
+    // mirror - java.lang.Class -> InstanceMirrorKlass
     ik = new (loader_data, size, use_class_space, THREAD) InstanceMirrorKlass(parser);
   } else if (is_stack_chunk_class(class_name, loader_data)) {
-    // stack chunk
+    // stack chunk - 栈帧 -> InstanceStackChunkKlass
     ik = new (loader_data, size, use_class_space, THREAD) InstanceStackChunkKlass(parser);
   } else if (is_class_loader(class_name, parser)) {
-    // class loader - java.lang.ClassLoader
+    // class loader - java.lang.ClassLoader -> InstanceClassLoaderKlass
     ik = new (loader_data, size, use_class_space, THREAD) InstanceClassLoaderKlass(parser);
   } else {
-    // normal
+    // normal 普通Java对象类 -> InstanceKlass
     ik = new (loader_data, size, use_class_space, THREAD) InstanceKlass(parser);
   }
 
@@ -533,6 +548,12 @@ InstanceKlass::InstanceKlass() {
   assert(CDSConfig::is_dumping_static_archive() || CDSConfig::is_using_archive(), "only for CDS");
 }
 
+/*
+ * 实例类对象构造函数
+ * @param parser 类文件解析器
+ * @param kind 类类型
+ * @param reference_type 引用类型
+ */
 InstanceKlass::InstanceKlass(const ClassFileParser& parser, KlassKind kind, ReferenceType reference_type) :
   Klass(kind),
   _nest_members(nullptr),
@@ -772,6 +793,10 @@ bool InstanceKlass::should_be_initialized() const {
   return !is_initialized();
 }
 
+/*
+ * 获取实例类对象的itable
+ * @return itable
+ */
 klassItable InstanceKlass::itable() const {
   return klassItable(const_cast<InstanceKlass*>(this));
 }
@@ -814,6 +839,10 @@ void InstanceKlass::fence_and_clear_init_lock() {
 // See "The Virtual Machine Specification" section 2.16.5 for a detailed explanation of the class initialization
 // process. The step comments refers to the procedure described in that section.
 // Note: implementation moved to static method to expose the this pointer.
+/*
+ * 初始化实例类对象
+ * @param CHECK 检查异常
+ */
 void InstanceKlass::initialize(TRAPS) {
   if (this->should_be_initialized()) {
     initialize_impl(CHECK);
@@ -893,11 +922,20 @@ void InstanceKlass::initialize_with_aot_initialized_mirror(TRAPS) {
 }
 #endif
 
+/*
+ * 验证实例类对象的字节码
+ * @param CHECK 检查异常
+ * @return 是否验证通过
+ */
 bool InstanceKlass::verify_code(TRAPS) {
   // 1) Verify the bytecodes
   return Verifier::verify(this, should_verify_class(), THREAD);
 }
 
+/*
+ * 链接实例类对象
+ * @param CHECK 检查异常
+ */
 void InstanceKlass::link_class(TRAPS) {
   assert(is_loaded(), "must be loaded");
   if (!is_linked()) {
@@ -915,6 +953,11 @@ bool InstanceKlass::link_class_or_fail(TRAPS) {
   return is_linked();
 }
 
+/*
+ * 链接实例类对象实现
+ * @param CHECK 检查异常
+ * @return 是否链接成功
+ */
 bool InstanceKlass::link_class_impl(TRAPS) {
   if (CDSConfig::is_dumping_static_archive() && SystemDictionaryShared::has_class_failed_verification(this)) {
     // This is for CDS static dump only -- we use the in_error_state to indicate that
@@ -941,7 +984,7 @@ bool InstanceKlass::link_class_impl(TRAPS) {
   // timer handles recursion
   JavaThread* jt = THREAD;
 
-  // link super class before linking this class
+  // link super class before linking this class 先链接父类
   Klass* super_klass = super();
   if (super_klass != nullptr) {
     if (super_klass->is_interface()) {  // check if super class is an interface
@@ -961,7 +1004,7 @@ bool InstanceKlass::link_class_impl(TRAPS) {
     ik_super->link_class_impl(CHECK_false);
   }
 
-  // link all interfaces implemented by this class before linking this class
+  // link all interfaces implemented by this class before linking this class 先链接实现的接口
   Array<InstanceKlass*>* interfaces = local_interfaces();
   int num_interfaces = interfaces->length();
   for (int index = 0; index < num_interfaces; index++) {
@@ -983,11 +1026,11 @@ bool InstanceKlass::link_class_impl(TRAPS) {
                              jt->get_thread_stat()->perf_timers_addr(),
                              PerfClassTraceTime::CLASS_LINK);
 
-  // verification & rewriting
+  // verification & rewriting 验证和重写字节码
   {
     HandleMark hm(THREAD);
     Handle h_init_lock(THREAD, init_lock());
-    ObjectLocker ol(h_init_lock, jt);
+    ObjectLocker ol(h_init_lock, jt); // 加锁
     // rewritten will have been set if loader constraint error found
     // on an earlier link attempt
     // don't verify or rewrite if already rewritten
@@ -999,7 +1042,7 @@ bool InstanceKlass::link_class_impl(TRAPS) {
           assert(!verified_at_dump_time(), "must be");
         }
         {
-          bool verify_ok = verify_code(THREAD);
+          bool verify_ok = verify_code(THREAD); // 验证字节码
           if (!verify_ok) {
             return false;
           }
@@ -1018,8 +1061,8 @@ bool InstanceKlass::link_class_impl(TRAPS) {
         SystemDictionaryShared::check_verification_constraints(this, CHECK_false);
       }
 
-      // relocate jsrs and link methods after they are all rewritten
-      link_methods(CHECK_false);
+      // relocate jsrs and link methods after they are all rewritten 重定位jsrs并链接方法
+      link_methods(CHECK_false); 
 
       // Initialize the vtable and interface table after
       // methods have been rewritten since rewrite may
@@ -1037,8 +1080,8 @@ bool InstanceKlass::link_class_impl(TRAPS) {
         need_init_table = false;
       }
       if (need_init_table) {
-        vtable().initialize_vtable_and_check_constraints(CHECK_false);
-        itable().initialize_itable_and_check_constraints(CHECK_false);
+        vtable().initialize_vtable_and_check_constraints(CHECK_false); // 初始化vtable并检查约束
+        itable().initialize_itable_and_check_constraints(CHECK_false); // 初始化itable并检查约束
       }
 #ifdef ASSERT
       vtable().verify(tty, true);
@@ -1071,6 +1114,11 @@ bool InstanceKlass::link_class_impl(TRAPS) {
 // Rewrite the byte codes of all of the methods of a class.
 // The rewriter must be called exactly once. Rewriting must happen after
 // verification but before the first method of the class is executed.
+/*
+ * 重写类的字节码
+ * 重写器必须被调用一次
+ * 重写必须在验证之后发生，但在类的第一个方法执行之前发生
+ */
 void InstanceKlass::rewrite_class(TRAPS) {
   assert(is_loaded(), "must be loaded");
   if (is_rewritten()) {
@@ -1084,6 +1132,10 @@ void InstanceKlass::rewrite_class(TRAPS) {
 // Now relocate and link method entry points after class is rewritten.
 // This is outside is_rewritten flag. In case of an exception, it can be
 // executed more than once.
+/*
+ * 重定位方法入口点并链接方法
+ * 该方法可以被调用多次
+ */
 void InstanceKlass::link_methods(TRAPS) {
   PerfTraceTime timer(ClassLoader::perf_ik_link_methods_time());
 
@@ -1091,7 +1143,7 @@ void InstanceKlass::link_methods(TRAPS) {
   for (int i = len-1; i >= 0; i--) {
     methodHandle m(THREAD, methods()->at(i));
 
-    // Set up method entry points for compiler and interpreter    .
+    // Set up method entry points for compiler and interpreter 为编译器和解释器设置方法入口点
     m->link_method(m, CHECK);
   }
 }
@@ -1181,12 +1233,16 @@ void InstanceKlass::clean_initialization_error_table() {
   }
 }
 
+/*
+ * 初始化类
+ * 初始化必须在验证之后发生
+ */
 void InstanceKlass::initialize_impl(TRAPS) {
   HandleMark hm(THREAD);
 
   // Make sure klass is linked (verified) before initialization
   // A class could already be verified, since it has been reflected upon.
-  link_class(CHECK);
+  link_class(CHECK); // 链接类
 
   DTRACE_CLASSINIT_PROBE(required, -1);
 
@@ -1587,22 +1643,30 @@ instanceOop InstanceKlass::register_finalizer(instanceOop i, TRAPS) {
   return h_i();
 }
 
+/*
+ * 在堆上分配一个实例
+ */
 instanceOop InstanceKlass::allocate_instance(TRAPS) {
   assert(!is_abstract() && !is_interface(), "Should not create this object");
   size_t size = size_helper();  // Query before forming handle.
   return (instanceOop)Universe::heap()->obj_allocate(this, size, CHECK_NULL);
 }
 
+/*
+ * 在堆上分配一个实例
+ * @param java_class 类对象
+ * @return 实例对象
+ */
 instanceOop InstanceKlass::allocate_instance(oop java_class, TRAPS) {
-  Klass* k = java_lang_Class::as_Klass(java_class);
+  Klass* k = java_lang_Class::as_Klass(java_class); // 将类对象转换为Klass对象
   if (k == nullptr) {
     ResourceMark rm(THREAD);
     THROW_(vmSymbols::java_lang_InstantiationException(), nullptr);
   }
-  InstanceKlass* ik = cast(k);
+  InstanceKlass* ik = cast(k); // 将Klass对象转换为InstanceKlass对象
   ik->check_valid_for_instantiation(false, CHECK_NULL);
   ik->initialize(CHECK_NULL);
-  return ik->allocate_instance(THREAD);
+  return ik->allocate_instance(THREAD); // 在堆上分配一个实例
 }
 
 instanceHandle InstanceKlass::allocate_instance_handle(TRAPS) {
@@ -1622,6 +1686,11 @@ void InstanceKlass::check_valid_for_instantiation(bool throwError, TRAPS) {
   }
 }
 
+/*
+ * 获取数组类
+ * @param n 数组维度
+ * @return 数组类
+ */
 ArrayKlass* InstanceKlass::array_klass(int n, TRAPS) {
   // Need load-acquire for lock-free read
   if (array_klasses_acquire() == nullptr) {
@@ -1663,6 +1732,10 @@ ArrayKlass* InstanceKlass::array_klass_or_null() {
 
 static int call_class_initializer_counter = 0;   // for debugging
 
+/*
+ * 获取类初始化方法
+ * @return 类初始化方法
+ */
 Method* InstanceKlass::class_initializer() const {
   Method* clinit = find_method(
       vmSymbols::class_initializer_name(), vmSymbols::void_method_signature());
@@ -1672,6 +1745,9 @@ Method* InstanceKlass::class_initializer() const {
   return nullptr;
 }
 
+/*
+ * 调用类初始化方法
+ */
 void InstanceKlass::call_class_initializer(TRAPS) {
   if (ReplayCompiles &&
       (ReplaySuppressInitializers == 1 ||
@@ -1694,7 +1770,7 @@ void InstanceKlass::call_class_initializer(TRAPS) {
   }
 #endif
 
-  methodHandle h_method(THREAD, class_initializer());
+  methodHandle h_method(THREAD, class_initializer()); // 获取类初始化方法
   assert(!is_initialized(), "we cannot initialize twice");
   LogTarget(Info, class, init) lt;
   if (lt.is_enabled()) {
@@ -1710,7 +1786,7 @@ void InstanceKlass::call_class_initializer(TRAPS) {
     ThreadInClassInitializer ticl(THREAD, this); // Track class being initialized
     JavaCallArguments args; // No arguments
     JavaValue result(T_VOID);
-    JavaCalls::call(&result, h_method, &args, CHECK); // Static call (no args)
+    JavaCalls::call(&result, h_method, &args, CHECK); // Static call (no args) 调用类初始化方法
   }
 }
 
@@ -1780,6 +1856,11 @@ bool InstanceKlass::contains_field_offset(int offset) {
   return find_field_from_offset(offset, false, &fd);
 }
 
+/*
+ * 获取字段信息
+ * @param index 字段索引
+ * @return 字段信息
+ */
 FieldInfo InstanceKlass::field(int index) const {
   for (AllFieldStream fs(this); !fs.done(); fs.next()) {
     if (fs.index() == index) {
@@ -1882,7 +1963,9 @@ bool InstanceKlass::find_field_from_offset(int offset, bool is_static, fieldDesc
   return false;
 }
 
-
+/*
+* 执行方法
+*/
 void InstanceKlass::methods_do(void f(Method* method)) {
   // Methods aren't stable until they are loaded.  This can be read outside
   // a lock through the ClassLoaderData for profiling

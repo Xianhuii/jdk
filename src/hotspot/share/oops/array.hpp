@@ -31,7 +31,7 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ostream.hpp"
 
-// Array for metadata allocation
+// Array for metadata allocation 数组元数据
 
 template <typename T>
 class Array: public MetaspaceObj {

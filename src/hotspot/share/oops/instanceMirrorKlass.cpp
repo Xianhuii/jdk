@@ -50,6 +50,9 @@ size_t InstanceMirrorKlass::instance_size(Klass* k) {
   return size_helper();
 }
 
+/*
+* 在堆中分配实例
+*/
 instanceOop InstanceMirrorKlass::allocate_instance(Klass* k, TRAPS) {
   // Query before forming handle.
   size_t size = instance_size(k);

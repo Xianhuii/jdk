@@ -31,6 +31,7 @@
 // Class for associating Method with jmethodID
 class Method;
 
+// methodId-Mehtod的表
 class JmethodIDTable : public AllStatic {
  public:
   static void initialize();

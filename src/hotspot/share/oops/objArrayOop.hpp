@@ -34,6 +34,7 @@ class Klass;
 // An objArrayOop is an array containing oops.
 // Evaluating "String arg[10]" will create an objArrayOop.
 
+// 对象数据实例的oop实现
 class objArrayOopDesc : public arrayOopDesc {
   friend class ArchiveHeapWriter;
   friend class ObjArrayKlass;

@@ -38,6 +38,7 @@
 // AllFieldStream exposes all fields and should only be used in rare
 // cases.
 // HierarchicalFieldStream allows to also iterate over fields of supertypes.
+// field的访问迭代器
 class FieldStreamBase : public StackObj {
  protected:
   const Array<u1>*    _fieldinfo_stream;

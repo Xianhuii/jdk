@@ -36,10 +36,11 @@
 #include "jfr/support/jfrTraceIdExtension.hpp"
 #endif
 
+// Java类在JVM中的表示，包含类的常量池、字段和方法等信息。加载.class文件时，会在元空间中创建对应的Klass对象。
 //
 // A Klass provides:
-//  1: language level class object (method dictionary etc.)
-//  2: provide vm dispatch behavior for the object
+//  1: language level class object (method dictionary etc.) 语言级类对象（方法字典等）
+//  2: provide vm dispatch behavior for the object 提供虚拟机调度行为
 // Both functions are combined into one C++ class.
 
 // One reason for the oop/klass dichotomy in the implementation is
@@ -65,16 +66,16 @@ class Klass : public Metadata {
   friend class VMStructs;
   friend class JVMCIVMStructs;
  public:
-  // Klass Kinds for all subclasses of Klass
+  // Klass Kinds for all subclasses of Klass 所有Klass的子类类型
   enum KlassKind : u2 {
-    InstanceKlassKind,
-    InstanceRefKlassKind,
-    InstanceMirrorKlassKind,
-    InstanceClassLoaderKlassKind,
-    InstanceStackChunkKlassKind,
-    TypeArrayKlassKind,
-    ObjArrayKlassKind,
-    UnknownKlassKind
+    InstanceKlassKind,      // 实例类：表示普通的Java类
+    InstanceRefKlassKind,   // 实例引用类
+    InstanceMirrorKlassKind, // 实例镜像类
+    InstanceClassLoaderKlassKind, // 实例类加载器类
+    InstanceStackChunkKlassKind, // 实例栈帧类
+    TypeArrayKlassKind,      // 类型数组类：表示基本数据类型的数组类，数组元素为基本类型
+    ObjArrayKlassKind,       // 对象数组类：表示对象类型的数组类，数组元素为对象类型
+    UnknownKlassKind,        // 未知类
   };
 
   static const uint KLASS_KIND_COUNT = ObjArrayKlassKind + 1;
@@ -87,22 +88,22 @@ class Klass : public Metadata {
   // for better cache behavior (may not make much of a difference but sure won't hurt)
   enum { _primary_super_limit = 8 };
 
-  // The "layout helper" is a combined descriptor of object layout.
-  // For klasses which are neither instance nor array, the value is zero.
+  // The "layout helper" is a combined descriptor of object layout. Java类对应实例的内存布局信息
+  // For klasses which are neither instance nor array, the value is zero. 如果不是实例类或数组类，值为0
   //
-  // For instances, layout helper is a positive number, the instance size.
-  // This size is already passed through align_object_size and scaled to bytes.
+  // For instances, layout helper is a positive number, the instance size. 实例类的值是一个正数，表示实例大小
+  // This size is already passed through align_object_size and scaled to bytes. 这个大小已经通过align_object_size对齐并缩放为字节
   // The low order bit is set if instances of this class cannot be
   // allocated using the fastpath.
   //
   // For arrays, layout helper is a negative number, containing four
-  // distinct bytes, as follows:
+  // distinct bytes, as follows: 数组类的值是一个负数，包含四个不同的字节，如下所示：
   //    MSB:[tag, hsz, ebt, log2(esz)]:LSB
   // where:
-  //    tag is 0x80 if the elements are oops, 0xC0 if non-oops
-  //    hsz is array header size in bytes (i.e., offset of first element)
-  //    ebt is the BasicType of the elements
-  //    esz is the element size in bytes
+  //    tag is 0x80 if the elements are oops, 0xC0 if non-oops 数组元素是对象引用时，tag为0x80；数组元素不是对象引用时，tag为0xC0
+  //    hsz is array header size in bytes (i.e., offset of first element) 数组头大小，单位为字节
+  //    ebt is the BasicType of the elements 数组元素的类型
+  //    esz is the element size in bytes 数组元素的大小，单位为字节
   // This packed word is arranged so as to be quickly unpacked by the
   // various fast paths that use the various subfields.
   //
@@ -115,15 +116,16 @@ class Klass : public Metadata {
   // because it is frequently queried.
   jint _layout_helper;
 
-  // Klass kind used to resolve the runtime type of the instance.
-  //  - Used to implement devirtualized oop closure dispatching.
-  //  - Various type checking in the JVM
+  // Klass kind used to resolve the runtime type of the instance. 实例类的类型，用于解析实例的运行时类型
+  //  - Used to implement devirtualized oop closure dispatching. 用于实现非虚方法调用的优化
+  //  - Various type checking in the JVM 各种类型检查
   const KlassKind _kind;
 
+  // 访问权限，类的访问权限，如public、private、protected等
   AccessFlags _access_flags;    // Access flags. The class/interface distinction is stored here.
                                 // Some flags created by the JVM, not in the class file itself,
                                 // are in _misc_flags below.
-  KlassFlags  _misc_flags;
+  KlassFlags  _misc_flags; // 类的其他标志位
 
   // The fields _super_check_offset, _secondary_super_cache, _secondary_supers
   // and _primary_supers all help make fast subtype checks.  See big discussion
@@ -135,42 +137,43 @@ class Klass : public Metadata {
 
   // Class name.  Instance classes: java/lang/String, etc.  Array classes: [I,
   // [Ljava/lang/String;, etc.  Set to zero for all other kinds of classes.
-  Symbol*     _name;
+  Symbol*     _name; // 类名
 
   // Cache of last observed secondary supertype
-  Klass*      _secondary_super_cache;
+  Klass*      _secondary_super_cache; // 缓存上一次查询的父类
   // Array of all secondary supertypes
-  Array<Klass*>* _secondary_supers;
+  Array<Klass*>* _secondary_supers; // 二级父类数组，用于存储超过8个父类的情况
   // Ordered list of all primary supertypes
-  Klass*      _primary_supers[_primary_super_limit];
+  Klass*      _primary_supers[_primary_super_limit]; // 一级父类数组，最多8个父类，如果父类超过8个，会放到_secondary_supers数组中
   // java/lang/Class instance mirroring this class
-  OopHandle   _java_mirror;
+  OopHandle   _java_mirror; // 指向java/lang/Class实例的句柄（即Java类对象）
   // Superclass
-  Klass*      _super;
+  Klass*      _super; // 直接父类
   // First subclass (null if none); _subklass->next_sibling() is next one
-  Klass* volatile _subklass;
+  Klass* volatile _subklass; // 第一个子类（如果没有，则为null）；_subklass->next_sibling()是下一个子类
   // Sibling link (or null); links all subklasses of a klass
-  Klass* volatile _next_sibling;
+  Klass* volatile _next_sibling; // 同级子类链接（或null）；链接所有兄弟子类
 
   // All klasses loaded by a class loader are chained through these links
-  Klass*      _next_link;
+  Klass*      _next_link; // 类加载器加载的类通过这些链接进行链接
 
-  // The VM's representation of the ClassLoader used to load this class.
-  // Provide access the corresponding instance java.lang.ClassLoader.
+  // The VM's representation of the ClassLoader used to load this class. 类加载器数据，指向加载该类的类加载器的元数据
+  // Provide access the corresponding instance java.lang.ClassLoader. 提供访问对应的java.lang.ClassLoader实例的方法
   ClassLoaderData* _class_loader_data;
 
+  // 类的原型头，用于初始化对象的头
   markWord _prototype_header;   // Used to initialize objects' header
 
   // Bitmap and hash code used by hashed secondary supers.
-  uintx    _secondary_supers_bitmap;
-  uint8_t  _hash_slot;
+  uintx    _secondary_supers_bitmap; // 二级超类型的位图
+  uint8_t  _hash_slot; // 哈希槽
 
 private:
   // This is an index into AOTClassLocationConfig::class_locations(), to
   // indicate the AOTClassLocation where this class is loaded from during
   // dump time. If a class is not loaded from the AOT cache, this field is
   // -1.
-  s2 _shared_class_path_index;
+  s2 _shared_class_path_index; // 共享类路径索引，用于指示类加载器加载该类的位置
 
 #if INCLUDE_CDS
   // Various attributes for shared classes. Should be zero for a non-shared class.
@@ -192,6 +195,7 @@ private:
   };
 #endif
 
+  // 类的vtable长度，用于快速访问vtable
   int _vtable_len;              // vtable length. This field may be read very often when we
                                 // have lots of itable dispatches (e.g., lambdas and streams).
                                 // Keep it away from the beginning of a Klass to avoid cacheline
@@ -544,7 +548,7 @@ protected:
   // What is the maximum number of primary superclasses any klass can have?
   static juint primary_super_limit()         { return _primary_super_limit; }
 
-  // vtables
+  // vtables 虚函数表
   klassVtable vtable() const;
   int vtable_length() const { return _vtable_len; }
 

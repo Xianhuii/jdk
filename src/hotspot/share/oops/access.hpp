@@ -89,6 +89,7 @@
 // include the various GC backend .inline.hpp headers. Their implementation resides in
 // access.inline.hpp.
 
+// 定义了一些声明式访问的API
 template <DecoratorSet decorators = DECORATORS_NONE>
 class Access: public AllStatic {
   // This function asserts that if an access gets passed in a decorator outside

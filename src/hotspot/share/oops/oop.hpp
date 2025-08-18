@@ -44,15 +44,16 @@
 //
 // no virtual functions allowed
 
+// Java实例在JVM中的表示
 class oopDesc {
   friend class VMStructs;
   friend class JVMCIVMStructs;
  private:
-  volatile markWord _mark;
+  volatile markWord _mark; // 对象头
   union _metadata {
     Klass*      _klass;
     narrowKlass _compressed_klass;
-  } _metadata;
+  } _metadata; // 类的元数据
 
   // There may be ordering constraints on the initialization of fields that
   // make use of the C++ copy/assign incorrect.

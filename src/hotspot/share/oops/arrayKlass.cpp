@@ -41,6 +41,9 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.inline.hpp"
 
+/*
+* 在元空间中分配ArrayKlass实例
+*/
 void* ArrayKlass::operator new(size_t size, ClassLoaderData* loader_data, size_t word_size, TRAPS) throw() {
   return Metaspace::allocate(loader_data, word_size, MetaspaceObj::ClassType, true, THREAD);
 }
@@ -187,6 +190,9 @@ GrowableArray<Klass*>* ArrayKlass::compute_secondary_supers(int num_extra_slots,
   return nullptr;
 }
 
+/*
+* 在堆中分配objArrayOop
+*/
 objArrayOop ArrayKlass::allocate_arrayArray(int n, int length, TRAPS) {
   check_array_allocation_length(length, arrayOopDesc::max_array_length(T_ARRAY), CHECK_NULL);
   size_t size = objArrayOopDesc::object_size(length);

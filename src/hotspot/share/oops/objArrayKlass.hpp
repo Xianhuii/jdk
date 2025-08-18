@@ -32,6 +32,7 @@ class ClassLoaderData;
 
 // ObjArrayKlass is the klass for objArrays
 
+// 对象数组的Klass实现
 class ObjArrayKlass : public ArrayKlass {
   friend class Deoptimization;
   friend class JVMCIVMStructs;
@@ -44,8 +45,8 @@ class ObjArrayKlass : public ArrayKlass {
  private:
   // If you add a new field that points to any metaspace object, you
   // must add this field to ObjArrayKlass::metaspace_pointers_do().
-  Klass* _element_klass;            // The klass of the elements of this array type
-  Klass* _bottom_klass;             // The one-dimensional type (InstanceKlass or TypeArrayKlass)
+  Klass* _element_klass;            // The klass of the elements of this array type 元素类型
+  Klass* _bottom_klass;             // The one-dimensional type (InstanceKlass or TypeArrayKlass) 一维元素类型
 
   // Constructor
   ObjArrayKlass(int n, Klass* element_klass, Symbol* name);

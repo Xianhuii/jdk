@@ -101,6 +101,7 @@ class ClassLoaderData;
 #define PERM_REFCOUNT 0xffff
 #endif
 
+// 标准字符串
 class Symbol : public MetaspaceObj {
   friend class VMStructs;
   friend class SymbolTable;

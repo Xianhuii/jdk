@@ -42,7 +42,7 @@
 #endif
 
 
-// A Method represents a Java method.
+// A Method represents a Java method. Java方法的JVM实现
 //
 // Note that most applications load thousands of methods, so keeping the size of this
 // class small has a big impact on footprint.

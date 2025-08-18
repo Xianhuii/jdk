@@ -34,6 +34,7 @@
  * the Klass* is accessed frequently, especially by GC oop iterators
  * and stack-trace builders.
  */
+ // 对象布局格式
 class ObjLayout {
 public:
   enum Mode {

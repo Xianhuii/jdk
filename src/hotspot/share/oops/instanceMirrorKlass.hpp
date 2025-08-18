@@ -39,7 +39,7 @@ class ClassFileParser;
 // instances and need special logic for computing their size and for
 // iteration of their oops.
 
-
+// java.lang.Class的Klass实现
 class InstanceMirrorKlass: public InstanceKlass {
   friend class VMStructs;
   friend class InstanceKlass;

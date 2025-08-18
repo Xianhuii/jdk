@@ -52,6 +52,7 @@ struct ArrayHelper {
 // array type.  FieldInfo generally shouldn't be used directly.
 // Fields should be queried either through InstanceKlass or through
 // the various FieldStreams.
+// Java类的成员变量
 class FieldInfo {
   friend class fieldDescriptor;
   friend class JavaFieldStream;

@@ -98,7 +98,7 @@ Chunk layout:
 
 ************************************************/
 
-
+// 实例数据栈的Klass，实现对象在栈上分配
 class InstanceStackChunkKlass: public InstanceKlass {
   friend class VMStructs;
   friend class InstanceKlass;

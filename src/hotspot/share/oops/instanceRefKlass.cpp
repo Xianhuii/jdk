@@ -34,6 +34,7 @@ InstanceRefKlass::InstanceRefKlass() {
   assert(CDSConfig::is_dumping_static_archive() || CDSConfig::is_using_archive(), "only for CDS");
 }
 
+// 根据类名获取对应的引用类型
 static ReferenceType reference_subclass_name_to_type(const Symbol* name) {
   if (       name == vmSymbols::java_lang_ref_SoftReference()) {
     return REF_SOFT;
@@ -49,6 +50,7 @@ static ReferenceType reference_subclass_name_to_type(const Symbol* name) {
   }
 }
 
+// 根据字节码信息获取引用类型
 static ReferenceType determine_reference_type(const ClassFileParser& parser) {
   const ReferenceType rt = parser.super_reference_type();
   if (rt != REF_NONE) {
@@ -61,6 +63,7 @@ static ReferenceType determine_reference_type(const ClassFileParser& parser) {
   return reference_subclass_name_to_type(name);
 }
 
+// 实例化InstanceRefKlass
 InstanceRefKlass::InstanceRefKlass(const ClassFileParser& parser)
   : InstanceKlass(parser, Kind, determine_reference_type(parser)) {}
 

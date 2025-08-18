@@ -45,6 +45,7 @@ namespace TypeToBT {
   template<> inline BasicType to_basic_type<jdouble>()  { return T_DOUBLE;  }
 };
 
+// 基本数据类型数组对象的oop实现
 class typeArrayOopDesc : public arrayOopDesc {
 private:
   template <typename T>

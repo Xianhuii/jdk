@@ -146,15 +146,18 @@ void Klass::set_name(Symbol* n) {
   }
 }
 
+/*
+ * 检查当前类是否是指定类的子类
+ */
 bool Klass::is_subclass_of(const Klass* k) const {
   // Run up the super chain and check
-  if (this == k) return true;
+  if (this == k) return true; // 如果当前类和指定类相同，直接返回true
 
-  Klass* t = const_cast<Klass*>(this)->super();
+  Klass* t = const_cast<Klass*>(this)->super(); // 获取当前类的直接父类
 
   while (t != nullptr) {
-    if (t == k) return true;
-    t = t->super();
+    if (t == k) return true; // 如果当前类的直接父类和指定类相同，返回true
+    t = t->super(); // 继续向上查找父类
   }
   return false;
 }
