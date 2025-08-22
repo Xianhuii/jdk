@@ -163,6 +163,9 @@ void ClassFileParser::set_class_bad_constant_seen(short bad_constant) {
   if (_bad_constant_seen == 0) _bad_constant_seen = bad_constant;
 }
 
+/**
+* 解析常量池元素
+*/
 void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const stream,
                                                   ConstantPool* cp,
                                                   const int length,
@@ -187,44 +190,54 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
   unsigned int hashValues[SymbolTable::symbol_alloc_batch_size];
   int names_count = 0;
 
-  // parsing  Index 0 is unused
+  // parsing  Index 0 is unused 遍历解析常量
   for (int index = 1; index < length; index++) {
     // Each of the following case guarantees one more byte in the stream
     // for the following tag or the access_flags following constant pool,
     // so we don't need bounds-check for reading tag.
-    const u1 tag = cfs->get_u1_fast();
-    switch (tag) {
+    const u1 tag = cfs->get_u1_fast(); // 获取1字节的常量类型标识符
+    switch (tag) { // 根据常量类型分别处理
+      // CONSTANT_Class=7，class或interface常量
+      // https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4.1
       case JVM_CONSTANT_Class : {
         cfs->guarantee_more(3, CHECK);  // name_index, tag/access_flags
-        const u2 name_index = cfs->get_u2_fast();
-        cp->klass_index_at_put(index, name_index);
+        const u2 name_index = cfs->get_u2_fast(); // 获取2字节的name_index，即类名字符串常量（CONSTANT_Utf8_info）在常量池的位置索引
+        cp->klass_index_at_put(index, name_index); // 添加到ConstantPool的类常量数据池
         break;
       }
+      // CONSTANT_Fieldref=9，类或接口的属性引用常量
+      // https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4.2
       case JVM_CONSTANT_Fieldref: {
         cfs->guarantee_more(5, CHECK);  // class_index, name_and_type_index, tag/access_flags
-        const u2 class_index = cfs->get_u2_fast();
-        const u2 name_and_type_index = cfs->get_u2_fast();
-        cp->field_at_put(index, class_index, name_and_type_index);
+        const u2 class_index = cfs->get_u2_fast(); // 获取2字节的class_index，即类或接口常量（CONSTANT_Class_info）在常量池的位置索引
+        const u2 name_and_type_index = cfs->get_u2_fast(); // 获取2字节的name_and_type_index，即名称&类型标识符（CONSTANT_NameAndType_info）在常量位置的位置索引
+        cp->field_at_put(index, class_index, name_and_type_index); // 添加到ConstantPool的属性引用常量数据池
         break;
       }
+      // CONSTANT_Methodref=10，类方法引用常量
+      // https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4.2
       case JVM_CONSTANT_Methodref: {
         cfs->guarantee_more(5, CHECK);  // class_index, name_and_type_index, tag/access_flags
-        const u2 class_index = cfs->get_u2_fast();
-        const u2 name_and_type_index = cfs->get_u2_fast();
-        cp->method_at_put(index, class_index, name_and_type_index);
+        const u2 class_index = cfs->get_u2_fast(); // 获取2字节的class_index，即类常量（CONSTANT_Class_info）在常量池的位置索引
+        const u2 name_and_type_index = cfs->get_u2_fast(); // 获取2字节的name_and_type_index，即名称&类型标识符（CONSTANT_NameAndType_info）在常量位置的位置索引
+        cp->method_at_put(index, class_index, name_and_type_index); // 添加到ConstantPool的类方法引用常量数据池
         break;
       }
+      // CONSTANT_InterfaceMethodref=11，接口方法引用常量
+      // https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4.2
       case JVM_CONSTANT_InterfaceMethodref: {
         cfs->guarantee_more(5, CHECK);  // class_index, name_and_type_index, tag/access_flags
-        const u2 class_index = cfs->get_u2_fast();
-        const u2 name_and_type_index = cfs->get_u2_fast();
-        cp->interface_method_at_put(index, class_index, name_and_type_index);
+        const u2 class_index = cfs->get_u2_fast(); // 获取2字节的class_index，即接口常量（CONSTANT_Class_info）在常量池的位置索引
+        const u2 name_and_type_index = cfs->get_u2_fast(); // 获取2字节的name_and_type_index，即名称&类型标识符（CONSTANT_NameAndType_info）在常量位置的位置索引
+        cp->interface_method_at_put(index, class_index, name_and_type_index); // 添加到ConstantPool的接口方法引用常量数据池
         break;
       }
+      // CONSTANT_String=8，字符串常量
+      // https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4.3
       case JVM_CONSTANT_String : {
         cfs->guarantee_more(3, CHECK);  // string_index, tag/access_flags
-        const u2 string_index = cfs->get_u2_fast();
-        cp->string_index_at_put(index, string_index);
+        const u2 string_index = cfs->get_u2_fast(); // 获取2字节的string_index，即字符串常量（CONSTANT_Utf8_info）在常量池的位置索引
+        cp->string_index_at_put(index, string_index); // 添加到ConstantPool的字符串信息数据池
         break;
       }
       case JVM_CONSTANT_MethodHandle :
@@ -235,15 +248,19 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
             tag, THREAD);
           return;
         }
+        // CONSTANT_MethodHandle=15，方法句柄
+        // https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4.8
         if (tag == JVM_CONSTANT_MethodHandle) {
           cfs->guarantee_more(4, CHECK);  // ref_kind, method_index, tag/access_flags
-          const u1 ref_kind = cfs->get_u1_fast();
-          const u2 method_index = cfs->get_u2_fast();
-          cp->method_handle_index_at_put(index, ref_kind, method_index);
+          const u1 ref_kind = cfs->get_u1_fast(); // 获取1字节的ref_kind，表示方法句柄的类型，https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-5.html#jvms-5.4.3.5
+          const u2 method_index = cfs->get_u2_fast(); // 获取2字节的method_index，根据类型分别表示CONSTANT_Fieldref_info/CONSTANT_Methodref_info/CONSTANT_InterfaceMethodref_info在
+          cp->method_handle_index_at_put(index, ref_kind, method_index); // 添加到ConstantPool的方法句柄数据池
         }
+        // CONSTANT_MethodType=16，方法类型
+        // https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4.9
         else if (tag == JVM_CONSTANT_MethodType) {
           cfs->guarantee_more(3, CHECK);  // signature_index, tag/access_flags
-          const u2 signature_index = cfs->get_u2_fast();
+          const u2 signature_index = cfs->get_u2_fast(); // 获取2字节的signature_index，即方法描述符（CONSTANT_Utf8_info）在常量池的位置索引
           cp->method_type_index_at_put(index, signature_index);
         }
         else {
@@ -414,14 +431,17 @@ static inline Symbol* check_symbol_at(const ConstantPool* cp, int index) {
   return nullptr;
 }
 
-void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream,
-                                         ConstantPool* const cp,
-                                         const int length,
+/**
+* 解析常量池数据 https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4
+*/
+void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream, // 字节码文件流
+                                         ConstantPool* const cp, // 虚拟机中的常量池对象
+                                         const int length, // 常量池中常量的个数
                                          TRAPS) {
   assert(cp != nullptr, "invariant");
   assert(stream != nullptr, "invariant");
 
-  // parsing constant pool entries
+  // parsing constant pool entries 解析常量池元素
   parse_constant_pool_entries(stream, cp, length, CHECK);
   if (class_bad_constant_seen() != 0) {
     // a bad CP entry has been detected previously so stop parsing and just return.
@@ -4991,6 +5011,7 @@ static void check_methods_for_intrinsics(const InstanceKlass* ik,
   }
 }
 
+// 创建InstanceKlass实例
 InstanceKlass* ClassFileParser::create_instance_klass(bool changed_by_loadhook,
                                                       const ClassInstanceInfo& cl_inst_info,
                                                       TRAPS) {
@@ -4998,6 +5019,7 @@ InstanceKlass* ClassFileParser::create_instance_klass(bool changed_by_loadhook,
     return _klass;
   }
 
+  // 根据类名创建对应的InstanceKlass实现类
   InstanceKlass* const ik =
     InstanceKlass::allocate_instance_klass(*this, CHECK_NULL);
 
@@ -5005,6 +5027,7 @@ InstanceKlass* ClassFileParser::create_instance_klass(bool changed_by_loadhook,
     mangle_hidden_class_name(ik);
   }
 
+  // 填充数据
   fill_instance_klass(ik, changed_by_loadhook, cl_inst_info, CHECK_NULL);
 
   assert(_klass == ik, "invariant");
@@ -5012,6 +5035,7 @@ InstanceKlass* ClassFileParser::create_instance_klass(bool changed_by_loadhook,
   return ik;
 }
 
+// 解析.class文件数据，设置到InstanceKlass中
 void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
                                           bool changed_by_loadhook,
                                           const ClassInstanceInfo& cl_inst_info,
@@ -5019,15 +5043,15 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
   assert(ik != nullptr, "invariant");
 
   // Set name and CLD before adding to CLD
-  ik->set_class_loader_data(_loader_data);
-  ik->set_class_loader_type();
-  ik->set_name(_class_name);
+  ik->set_class_loader_data(_loader_data); // 关联类加载器数据池
+  ik->set_class_loader_type(); // 设置类加载器类型：boot、system或platform
+  ik->set_name(_class_name); // 设置类名
 
   // Add all classes to our internal class loader list here,
   // including classes in the bootstrap (null) class loader.
   const bool publicize = !is_internal();
 
-  _loader_data->add_class(ik, publicize);
+  _loader_data->add_class(ik, publicize); // 添加到类加载器数据池
 
   set_klass_to_deallocate(ik);
 
@@ -5043,9 +5067,9 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
   ik->set_should_verify_class(_need_verify);
 
   // Not yet: supers are done below to support the new subtype-checking fields
-  ik->set_nonstatic_field_size(_field_info->_nonstatic_field_size);
-  ik->set_has_nonstatic_fields(_field_info->_has_nonstatic_fields);
-  ik->set_static_oop_field_count(_static_oop_count);
+  ik->set_nonstatic_field_size(_field_info->_nonstatic_field_size); // 非static属性的数量
+  ik->set_has_nonstatic_fields(_field_info->_has_nonstatic_fields); // 是否含有非static属性
+  ik->set_static_oop_field_count(_static_oop_count); // static属性的数量
 
   // this transfers ownership of a lot of arrays from
   // the parser onto the InstanceKlass*
@@ -5068,11 +5092,11 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
   assert(nullptr == _record_components, "invariant");
   assert(nullptr == _permitted_subclasses, "invariant");
 
-  if (_has_localvariable_table) {
+  if (_has_localvariable_table) { // 是否有局部变量表
     ik->set_has_localvariable_table(true);
   }
 
-  if (_has_final_method) {
+  if (_has_final_method) { // 是否有final方法
     ik->set_has_final_method();
   }
 
@@ -5097,8 +5121,8 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
     ik->constants()->klass_at_put(_this_class_index, ik);
   }
 
-  ik->set_minor_version(_minor_version);
-  ik->set_major_version(_major_version);
+  ik->set_minor_version(_minor_version); // 设置minor版本
+  ik->set_major_version(_major_version); // 设置major版本
   ik->set_has_nonstatic_concrete_methods(_has_nonstatic_concrete_methods);
   ik->set_declares_nonstatic_concrete_methods(_declares_nonstatic_concrete_methods);
 
@@ -5110,14 +5134,14 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
   ClassLoaderData* cld = ClassLoaderData::class_loader_data_or_null(clh());
   ik->set_package(cld, nullptr, CHECK);
 
-  const Array<Method*>* const methods = ik->methods();
+  const Array<Method*>* const methods = ik->methods(); // 获取方法
   assert(methods != nullptr, "invariant");
   const int methods_len = methods->length();
 
   check_methods_for_intrinsics(ik, methods);
 
   // Fill in field values obtained by parse_classfile_attributes
-  if (_parsed_annotations->has_any_annotations()) {
+  if (_parsed_annotations->has_any_annotations()) { // 注解
     _parsed_annotations->apply_to(ik);
   }
 
@@ -5179,7 +5203,7 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
   Handle module_handle(THREAD, module_entry->module_oop());
 
   // Allocate mirror and initialize static fields
-  java_lang_Class::create_mirror(ik,
+  java_lang_Class::create_mirror(ik, // 创建对应的java.lang.Class对象
                                  Handle(THREAD, _loader_data->class_loader()),
                                  module_handle,
                                  _protection_domain,
@@ -5264,15 +5288,16 @@ void ClassFileParser::update_class_name(Symbol* new_class_name) {
   _class_name->increment_refcount();
 }
 
+// 创建ClassFileParser对象
 ClassFileParser::ClassFileParser(ClassFileStream* stream,
                                  Symbol* name,
                                  ClassLoaderData* loader_data,
                                  const ClassLoadInfo* cl_info,
                                  Publicity pub_level,
                                  TRAPS) :
-  _stream(stream),
+  _stream(stream), // 字节码文件流
   _class_name(nullptr),
-  _loader_data(loader_data),
+  _loader_data(loader_data), // 类加载器数据池
   _is_hidden(cl_info->is_hidden()),
   _can_access_vm_annotations(cl_info->can_access_vm_annotations()),
   _orig_cp_size(0),
@@ -5347,8 +5372,10 @@ ClassFileParser::ClassFileParser(ClassFileStream* stream,
   // synch back verification state to stream to check for truncation.
   stream->set_need_verify(_need_verify);
 
+  // 解析字节码文件流，将字节码数据转成虚拟机数据结构
   parse_stream(stream, CHECK);
 
+  // 后处理
   post_process_parsed_stream(stream, _cp, CHECK);
 }
 
@@ -5446,6 +5473,25 @@ ClassFileParser::~ClassFileParser() {
   }
 }
 
+/**
+* 解析字节码文件流：根据字节码文件格式，读取对应数据，存储为虚拟机对应数据结构
+    u4 magic;                // 魔数（0xCAFEBABE）
+    u2 minor_version;        // 次版本号
+    u2 major_version;        // 主版本号
+    u2 constant_pool_count;  // 常量池大小
+    cp_info constant_pool[]; // 常量池表
+    u2 access_flags;         // 访问标志
+    u2 this_class;           // 当前类索引
+    u2 super_class;          // 父类索引
+    u2 interfaces_count;     // 接口数量
+    u2 interfaces[];         // 接口表
+    u2 fields_count;         // 字段数量
+    field_info fields[];     // 字段表
+    u2 methods_count;        // 方法数量
+    method_info methods[];   // 方法表
+    u2 attributes_count;     // 属性数量
+    attribute_info attributes[]; // 属性表
+*/
 void ClassFileParser::parse_stream(const ClassFileStream* const stream,
                                    TRAPS) {
 
@@ -5454,37 +5500,39 @@ void ClassFileParser::parse_stream(const ClassFileStream* const stream,
 
   // BEGIN STREAM PARSING
   stream->guarantee_more(8, CHECK);  // magic, major, minor
-  // Magic value
+  // Magic value 获取4字节的魔数
   const u4 magic = stream->get_u4_fast();
-  guarantee_property(magic == JAVA_CLASSFILE_MAGIC,
+  guarantee_property(magic == JAVA_CLASSFILE_MAGIC, // 校验魔数是否为0xCAFEBABE
                      "Incompatible magic value %u in class file %s",
                      magic, CHECK);
 
   // Version numbers
-  _minor_version = stream->get_u2_fast();
-  _major_version = stream->get_u2_fast();
+  _minor_version = stream->get_u2_fast(); // 获取2字节的minor版本号
+  _major_version = stream->get_u2_fast(); // 获取2字节的major版本号
 
-  // Check version numbers - we check this even with verifier off
+  // Check version numbers - we check this even with verifier off 校验版本号是否符合规范
   verify_class_version(_major_version, _minor_version, _class_name, CHECK);
 
   stream->guarantee_more(3, CHECK); // length, first cp tag
-  u2 cp_size = stream->get_u2_fast();
+  u2 cp_size = stream->get_u2_fast(); // 获取2字节的常量池大小
 
-  guarantee_property(
+  guarantee_property( // 校验常量池大小
     cp_size >= 1, "Illegal constant pool size %u in class file %s",
     cp_size, CHECK);
 
-  _orig_cp_size = cp_size;
+  _orig_cp_size = cp_size; // 原始常量池大小使用_orig_cp_size保存
   if (is_hidden()) { // Add a slot for hidden class name.
     cp_size++;
   }
 
+  // 创建常量池，在元空间分配内存
   _cp = ConstantPool::allocate(_loader_data,
                                cp_size,
                                CHECK);
 
   ConstantPool* const cp = _cp;
 
+  // 解析常量池数据
   parse_constant_pool(stream, cp, _orig_cp_size, CHECK);
 
   assert(cp_size == (u2)cp->length(), "invariant");

@@ -1063,9 +1063,9 @@ void java_lang_Class::allocate_fixup_lists() {
 
 void java_lang_Class::allocate_mirror(Klass* k, bool is_scratch, Handle protection_domain, Handle classData,
                                       Handle& mirror, Handle& comp_mirror, TRAPS) {
-  // Allocate mirror (java.lang.Class instance)
+  // Allocate mirror (java.lang.Class instance) 创建对应的java.lang.Class对象
   oop mirror_oop = InstanceMirrorKlass::cast(vmClasses::Class_klass())->allocate_instance(k, CHECK);
-  mirror = Handle(THREAD, mirror_oop);
+  mirror = Handle(THREAD, mirror_oop); // 封装成句柄
 
   // Setup indirection from mirror->klass
   set_klass(mirror(), k);

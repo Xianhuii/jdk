@@ -239,7 +239,9 @@ PackageEntry* ClassLoader::get_package_entry(Symbol* pkg_name, ClassLoaderData* 
   if (pkg_name == nullptr) {
     return nullptr;
   }
+  // 从loader_data中获取PackageEntryTable
   PackageEntryTable* pkgEntryTable = loader_data->packages();
+  // 从PackageEntryTable中查找package
   return pkgEntryTable->lookup_only(pkg_name);
 }
 
@@ -253,6 +255,7 @@ ClassPathDirEntry::~ClassPathDirEntry() {
   FREE_C_HEAP_ARRAY(char, _dir);
 }
 
+// 获取.class文件流
 ClassFileStream* ClassPathDirEntry::open_stream(JavaThread* current, const char* name) {
   // construct full path name
   assert((_dir != nullptr) && (name != nullptr), "sanity");
@@ -263,10 +266,10 @@ ClassFileStream* ClassPathDirEntry::open_stream(JavaThread* current, const char*
   // check if file exists
   struct stat st;
   if (os::stat(path, &st) == 0) {
-    // found file, open it
+    // found file, open it 打开文件，获取文件句柄
     int file_handle = os::open(path, 0, 0);
     if (file_handle != -1) {
-      // read contents into resource array
+      // read contents into resource array 读取文件到buffer
       u1* buffer = NEW_RESOURCE_ARRAY_IN_THREAD(current, u1, st.st_size);
       size_t num_read = ::read(file_handle, (char*) buffer, st.st_size);
       // close file
@@ -284,6 +287,7 @@ ClassFileStream* ClassPathDirEntry::open_stream(JavaThread* current, const char*
         // We don't verify the length of the classfile stream fits in an int, but this is the
         // bootloader so we have control of this.
         // Resource allocated
+        // 创建ClassFileStream，封装.class文件内容
         return new ClassFileStream(buffer,
                                    checked_cast<int>(st.st_size),
                                    _dir);
@@ -354,6 +358,7 @@ u1* ClassPathZipEntry::open_entry(JavaThread* current, const char* name, jint* f
   return buffer;
 }
 
+// 读取zip文件中某个文件，封装成.class文件流
 ClassFileStream* ClassPathZipEntry::open_stream(JavaThread* current, const char* name) {
   jint filesize;
   u1* buffer = open_entry(current, name, &filesize, false);
@@ -1025,7 +1030,7 @@ ClassFileStream* ClassLoader::search_module_entries(JavaThread* current,
   return nullptr;
 }
 
-// Called by the boot classloader to load classes
+// Called by the boot classloader to load classes 加载.class文件 -> InstanceKlass
 InstanceKlass* ClassLoader::load_class(Symbol* name, PackageEntry* pkg_entry, bool search_append_only, TRAPS) {
   assert(name != nullptr, "invariant");
 
@@ -1103,10 +1108,14 @@ InstanceKlass* ClassLoader::load_class(Symbol* name, PackageEntry* pkg_entry, bo
     return nullptr;
   }
 
+  // 获取bootstrap类加载器
   ClassLoaderData* loader_data = ClassLoaderData::the_null_class_loader_data();
+  // 新建对象句柄
   Handle protection_domain;
+  // 创建类加载信息
   ClassLoadInfo cl_info(protection_domain);
 
+  // 解析.class文件流
   InstanceKlass* result = KlassFactory::create_from_stream(stream,
                                                            name,
                                                            loader_data,
@@ -1366,6 +1375,7 @@ void ClassLoader::append_boot_classpath(ClassPathEntry* new_entry) {
 // this list has been created, it must not change order (see class PackageInfo)
 // it can be appended to and is by jvmti.
 
+// 初始化ClassLoader
 void ClassLoader::initialize(TRAPS) {
   if (UsePerfData) {
     // jvmstat performance counters

@@ -80,7 +80,7 @@ class FieldLayoutInfo : public ResourceObj {
 // Parser for for .class files
 //
 // The bytes describing the class file structure is read from a Stream object
-
+// 核心类
 class ClassFileParser {
   friend class FieldLayoutBuilder;
   friend class FieldLayout;
@@ -109,9 +109,9 @@ class ClassFileParser {
   // Potentially unaligned pointer to various 16-bit entries in the class file
   typedef void unsafe_u2;
 
-  const ClassFileStream* _stream; // Actual input stream
-  Symbol* _class_name;
-  mutable ClassLoaderData* _loader_data;
+  const ClassFileStream* _stream; // Actual input stream 字节码文件输入流
+  Symbol* _class_name; // 类名
+  mutable ClassLoaderData* _loader_data; // 类加载器数据池
   const bool _is_hidden;
   const bool _can_access_vm_annotations;
   int _orig_cp_size;
@@ -120,12 +120,12 @@ class ClassFileParser {
   // Metadata created before the instance klass is created.  Must be deallocated
   // if not transferred to the InstanceKlass upon successful class loading
   // in which case these pointers have been set to null.
-  const InstanceKlass* _super_klass;
-  ConstantPool* _cp;
-  Array<u1>* _fieldinfo_stream;
+  const InstanceKlass* _super_klass; // 父类
+  ConstantPool* _cp; // 常量池
+  Array<u1>* _fieldinfo_stream; // 属性信息的常量池索引
   Array<u1>* _fieldinfo_search_table;
   Array<FieldStatus>* _fields_status;
-  Array<Method*>* _methods;
+  Array<Method*>* _methods; // 方法
   Array<u2>* _inner_classes;
   Array<u2>* _nest_members;
   u2 _nest_host;
@@ -138,7 +138,7 @@ class ClassFileParser {
   AnnotationArray* _class_type_annotations;
   Array<AnnotationArray*>* _fields_annotations;
   Array<AnnotationArray*>* _fields_type_annotations;
-  InstanceKlass* _klass;  // InstanceKlass* once created.
+  InstanceKlass* _klass;  // InstanceKlass* once created. 创建出来的InstanceKlass
   InstanceKlass* _klass_to_deallocate; // an InstanceKlass* to be destroyed
 
   ClassAnnotationCollector* _parsed_annotations;
@@ -156,7 +156,7 @@ class ClassFileParser {
 
   int _num_miranda_methods;
 
-  Handle _protection_domain;
+  Handle _protection_domain; // 句柄
   AccessFlags _access_flags;
 
   // for tracing and notifications
@@ -229,6 +229,7 @@ class ClassFileParser {
                                    const int length,
                                    TRAPS);
 
+  // 解析常量池
   void parse_constant_pool(const ClassFileStream* const cfs,
                            ConstantPool* const cp,
                            const int length,
@@ -241,6 +242,7 @@ class ClassFileParser {
                         bool* has_nonstatic_concrete_methods,
                         TRAPS);
 
+  // 解析父类
   const InstanceKlass* parse_super_class(ConstantPool* const cp,
                                          const int super_class_index,
                                          const bool need_verify,
@@ -257,6 +259,7 @@ class ClassFileParser {
                               FieldAnnotationCollector* parsed_annotations,
                               TRAPS);
 
+  // 解析属性
   void parse_fields(const ClassFileStream* const cfs,
                     bool is_interface,
                     ConstantPool* cp,
@@ -271,6 +274,7 @@ class ClassFileParser {
                        bool* const has_localvariable_table,
                        TRAPS);
 
+  // 解析方法
   void parse_methods(const ClassFileStream* const cfs,
                      bool is_interface,
                      bool* const has_localvariable_table,
@@ -278,16 +282,19 @@ class ClassFileParser {
                      bool* const declares_nonstatic_concrete_methods,
                      TRAPS);
 
+  // 解析exception表
   const unsafe_u2* parse_exception_table(const ClassFileStream* const stream,
                                          u4 code_length,
                                          u4 exception_table_length,
                                          TRAPS);
 
+  // 建立 Java 源码行号与 字节码指令地址之间的映射关系
   void parse_linenumber_table(u4 code_attribute_length,
                               u4 code_length,
                               CompressedLineNumberWriteStream**const write_stream,
                               TRAPS);
 
+  // 解析局部变量表
   const unsafe_u2* parse_localvariable_table(const ClassFileStream* const cfs,
                                              u4 code_length,
                                              u2 max_locals,
@@ -296,6 +303,7 @@ class ClassFileParser {
                                              bool isLVTT,
                                              TRAPS);
 
+  // 解析checked异常
   const unsafe_u2* parse_checked_exceptions(const ClassFileStream* const cfs,
                                             u2* const checked_exceptions_length,
                                             u4 method_attribute_length,
@@ -496,6 +504,7 @@ class ClassFileParser {
 
   ~ClassFileParser();
 
+  // 根据.class字节码创建InstanceKlass
   InstanceKlass* create_instance_klass(bool cf_changed_in_CFLH, const ClassInstanceInfo& cl_inst_info, TRAPS);
 
   const ClassFileStream* clone_stream() const;

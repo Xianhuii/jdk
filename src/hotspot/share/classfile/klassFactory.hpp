@@ -39,8 +39,8 @@ class Symbol;
  * Summary: create a VM internal runtime representation ("Klass")
             from a bytestream (classfile).
  *
- * Input:  a named bytestream in the Java class file format (see JVMS, chapter 4).
- * Output: a VM runtime representation of a Java class
+ * Input:  a named bytestream in the Java class file format (see JVMS, chapter 4). 输入：.class字节码文件流
+ * Output: a VM runtime representation of a Java class 输出：Java类在虚拟机的实现，即InstanceKlass实例
  *
  * Pre-conditions:
  *   a non-null ClassFileStream* // the classfile bytestream

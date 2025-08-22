@@ -68,6 +68,7 @@ inline oop ClassLoaderData::class_loader_no_keepalive() const {
   return _class_loader.peek();
 }
 
+// 判断是否为boot加载器
 inline bool ClassLoaderData::is_boot_class_loader_data() const {
   return this == _the_null_class_loader_data || class_loader() == nullptr;
 }

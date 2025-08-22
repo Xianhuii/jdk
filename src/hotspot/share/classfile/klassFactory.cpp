@@ -50,6 +50,11 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
                                           Handle protection_domain,
                                           const ClassFileStream *cfs,
                                           TRAPS) {
+// cds：类元数据共享机制，通过在多个JVM实例之间共享类的结构信息（如类的字段、方法、继承关系等），减少内存占用并提升JVM启动速度。
+//  1. 类数据序列化（CDS归档生成）
+//  2. 类数据共享（多JVM实例复用）
+//  3. 共享内存管理
+// jvmti：Java虚拟机工具接口，是Java生态中诊断、调试、性能分析等工具的“基础设施”，为上层工具提供了直接操作JVM和Java程序的能力。
 #if INCLUDE_CDS && INCLUDE_JVMTI
   assert(ik != nullptr, "sanity");
   assert(ik->is_shared(), "expecting a shared class");
@@ -58,6 +63,7 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
     // Post the CFLH
     JvmtiCachedClassFileData* cached_class_file = nullptr;
     if (cfs == nullptr) {
+      // 从cds获取字节码文件流
       cfs = FileMapInfo::open_stream_for_jvmti(ik, class_loader, CHECK_NULL);
     }
     unsigned char* ptr = (unsigned char*)cfs->buffer();
@@ -166,7 +172,7 @@ static ClassFileStream* check_class_file_load_hook(ClassFileStream* stream,
   return stream;
 }
 
-
+// 根据字节码文件流创建InstanceKlass
 InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
                                                 Symbol* name,
                                                 ClassLoaderData* loader_data,
@@ -182,7 +188,7 @@ InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
 
   ClassFileStream* old_stream = stream;
 
-  // increment counter
+  // increment counter 计数器增加已定义类的数量
   THREAD->statistical_info().incr_define_class_count();
 
   // Skip this processing for VM hidden classes
@@ -195,6 +201,7 @@ InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
                                         CHECK_NULL);
   }
 
+  // 创建ClassFileParser
   ClassFileParser parser(stream,
                          name,
                          loader_data,
@@ -203,6 +210,7 @@ InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
                          CHECK_NULL);
 
   const ClassInstanceInfo* cl_inst_info = cl_info.class_hidden_info_ptr();
+  // 解析.class字节码文件流
   InstanceKlass* result = parser.create_instance_klass(old_stream != stream, *cl_inst_info, CHECK_NULL);
   assert(result != nullptr, "result cannot be null with no pending exception");
   if (CDSConfig::is_dumping_archive() && stream->from_class_file_load_hook()) {
@@ -217,7 +225,7 @@ InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
   JFR_ONLY(ON_KLASS_CREATION(result, parser, THREAD);)
 
 #if INCLUDE_CDS
-  if (CDSConfig::is_dumping_archive()) {
+  if (CDSConfig::is_dumping_archive()) { // cds缓存
     ClassLoader::record_result(THREAD, result, stream, old_stream != stream);
   }
 #endif // INCLUDE_CDS

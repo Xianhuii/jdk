@@ -32,6 +32,7 @@
 #include "utilities/bytes.hpp"
 #include "utilities/checkedCast.hpp"
 
+// 初始化
 void BytecodeConstantPool::init() {
   for (int i = 1; i < _orig->length(); i++) {
     BytecodeCPEntry entry;

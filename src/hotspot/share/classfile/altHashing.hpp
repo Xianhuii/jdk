@@ -32,7 +32,7 @@
 /**
  * Implementation of alternate more secure hashing.
  */
-
+// hash工具
 class AltHashing : AllStatic {
   friend class AltHashingTest;
 

@@ -106,6 +106,7 @@ class ClassLoaderData : public CHeapObj<mtClass> {
   friend class MetaDataFactory;
   friend class Method;
 
+  // bootstrap类加载器的存储数据
   static ClassLoaderData * _the_null_class_loader_data;
 
   WeakHandle _holder;       // The oop that determines lifetime of this class loader

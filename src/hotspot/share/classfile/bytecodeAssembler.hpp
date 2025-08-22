@@ -34,7 +34,7 @@
 
 
 /**
- * Bytecode Assembler
+ * Bytecode Assembler 字节码汇编器
  *
  * These classes are used to synthesize code for creating new methods from
  * within the VM.  This is only a partial implementation of an assembler;
@@ -123,6 +123,7 @@ class BytecodeCPEntry {
   }
 };
 
+// 字节码常量池
 class BytecodeConstantPool : public ResourceObj {
  private:
   typedef ResourceHashtable<BytecodeCPEntry, u2,

@@ -124,7 +124,7 @@ class ConstantPool : public Metadata {
  private:
   // If you add a new field that points to any metaspace object, you
   // must add this field to ConstantPool::metaspace_pointers_do().
-  Array<u1>*           _tags;        // the tag array describing the constant pool's contents
+  Array<u1>*           _tags;        // the tag array describing the constant pool's contents 常量池索引位置的类型标识
   ConstantPoolCache*   _cache;       // the cache holding interpreter runtime information
   InstanceKlass*       _pool_holder; // the corresponding class 关联的类
   Array<u2>*           _operands;    // for variable-sized (InvokeDynamic) nodes, usually empty
@@ -306,8 +306,8 @@ class ConstantPool : public Metadata {
 
   // For temporary use while constructing constant pool
   void klass_index_at_put(int cp_index, int name_index) {
-    tag_at_put(cp_index, JVM_CONSTANT_ClassIndex);
-    *int_at_addr(cp_index) = name_index;
+    tag_at_put(cp_index, JVM_CONSTANT_ClassIndex); // 设置索引位置的类型标识为JVM_CONSTANT_ClassIndex
+    *int_at_addr(cp_index) = name_index; // 设置常量值
   }
 
   // Hidden class support:

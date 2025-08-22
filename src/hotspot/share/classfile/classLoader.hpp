@@ -134,17 +134,21 @@ public:
   void add_to_list(ClassPathEntry* new_entry);
 };
 
+/**
+* 类加载器
+*/
 class ClassLoader: AllStatic {
  public:
+  // 类加载器的类型
   enum ClassLoaderType {
     OTHER = 0,
-    BOOT_LOADER = 1,      /* boot loader */
-    PLATFORM_LOADER  = 2, /* PlatformClassLoader */
-    APP_LOADER  = 3       /* AppClassLoader */
+    BOOT_LOADER = 1,      /* boot loader 引导类加载器 */
+    PLATFORM_LOADER  = 2, /* PlatformClassLoader 平台类加载器 */
+    APP_LOADER  = 3       /* AppClassLoader 应用类加载器 */
   };
  protected:
 
-  // Performance counters
+  // Performance counters 性能计数器
   static PerfCounter* _perf_accumulated_time;
   static PerfCounter* _perf_classes_inited;
   static PerfCounter* _perf_class_init_time;
@@ -309,12 +313,13 @@ class ClassLoader: AllStatic {
   static void add_to_exploded_build_list(JavaThread* current, Symbol* module_name);
 
   // Search the module list for the class file stream based on the file name and java package
+  // 从模块列表中查找类文件
   static ClassFileStream* search_module_entries(JavaThread* current,
                                                 const GrowableArray<ModuleClassPathList*>* const module_list,
                                                 PackageEntry* pkg_entry, // Java package entry derived from the class name
                                                 const char* const file_name);
 
-  // Load individual .class file
+  // Load individual .class file 加载单个.class文件
   static InstanceKlass* load_class(Symbol* class_name, PackageEntry* pkg_entry, bool search_append_only, TRAPS);
 
   // If the specified package has been loaded by the system, then returns

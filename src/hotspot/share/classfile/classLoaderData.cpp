@@ -785,12 +785,14 @@ ClassLoaderData::~ClassLoaderData() {
 // Returns true if this class loader data is for the app class loader
 // or a user defined system class loader.  (Note that the class loader
 // data may have a Class holder.)
+// 判断是否为system类加载器
 bool ClassLoaderData::is_system_class_loader_data() const {
   return SystemDictionary::is_system_class_loader(class_loader());
 }
 
 // Returns true if this class loader data is for the platform class loader.
 // (Note that the class loader data may have a Class holder.)
+// 判断是否为platform类加载器
 bool ClassLoaderData::is_platform_class_loader_data() const {
   return SystemDictionary::is_platform_class_loader(class_loader());
 }
