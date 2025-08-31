@@ -32,6 +32,8 @@ class ClassLoaderData;
 class LoaderConstraint;
 class Symbol;
 
+// LoaderConstraints是JVM类加载机制中保障类型安全的核心组件，通过约束表管理跨类加载器的类依赖关系，防止因类重复加载导致的类型冲突。
+// 其设计兼顾性能与安全性，是Java模块化和动态加载能力的重要基础。
 class LoaderConstraintTable : public AllStatic {
 
 private:

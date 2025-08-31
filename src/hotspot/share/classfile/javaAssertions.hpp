@@ -31,8 +31,11 @@
 #include "utilities/exceptions.hpp"
 #include "utilities/ostream.hpp"
 
+// 在 JVM 的断言机制实现中，JavaAssertions类是管理断言配置的核心组件，
+// 其设计体现了 命令行参数解析 与 类加载时断言状态决策 的结合。
 class JavaAssertions: AllStatic {
 public:
+  // 通过 _userDefault和 _sysDefault成员变量分别存储用户类（-ea）和系统类（-esa）的默认断言状态，初始值为 false（禁用断言）
   static inline bool userClassDefault();
   static inline void setUserClassDefault(bool enabled);
   static inline bool systemClassDefault();
@@ -40,12 +43,14 @@ public:
 
   // Add a command-line option.  A name ending in "..." applies to a package and
   // any subpackages; other names apply to a single class.
+  // addOption方法支持添加类似 -ea:com.example.MyClass或 -esa:java.util.*的断言配置，将选项存储为 OptionList链表。
   static void addOption(const char* name, bool enable);
 
   // Return true if command-line options have enabled assertions for the named
   // class.  Should be called only after all command-line options have been
   // processed.  Note:  this only consults command-line options and does not
   // account for any dynamic changes to assertion status.
+  // enabled方法根据类名（如 com/example/MyClass）匹配已注册的断言选项，返回是否启用断言。
   static bool enabled(const char* classname, bool systemClass);
 
   // Create an instance of java.lang.AssertionStatusDirectives and fill in the

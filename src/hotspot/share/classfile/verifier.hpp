@@ -33,6 +33,10 @@
 #include "utilities/growableArray.hpp"
 #include "utilities/resourceHash.hpp"
 
+
+// 该头文件定义了JVM类文件验证器的核心逻辑，涵盖类、方法、字节码的多层次验证。
+// 通过严格的类型检查和错误上下文管理，确保类文件的安全性和规范性。其设计兼顾性能（如资源管理、缓存）和兼容性（多版本支持），是JVM防止恶意代码和运行时错误的关键组件。
+
 // The verifier class
 class Verifier : AllStatic {
  public:

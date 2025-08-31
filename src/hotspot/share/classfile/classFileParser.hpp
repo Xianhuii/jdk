@@ -80,7 +80,7 @@ class FieldLayoutInfo : public ResourceObj {
 // Parser for for .class files
 //
 // The bytes describing the class file structure is read from a Stream object
-// 核心类
+// 核心类：.class类文件的解析器
 class ClassFileParser {
   friend class FieldLayoutBuilder;
   friend class FieldLayout;

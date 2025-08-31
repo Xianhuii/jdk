@@ -33,6 +33,7 @@
 class ClassLoaderData;
 class InstanceKlass;
 
+// 管理 JVM 内部预定义的类（如 Object、Class、基本类型的包装类等），提供高效的访问和状态检查机制。
 class vmClasses : AllStatic {
   friend class VMStructs;
 

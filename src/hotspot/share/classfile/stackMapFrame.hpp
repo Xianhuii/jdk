@@ -40,6 +40,8 @@ enum {
   FLAG_THIS_UNINIT = 0x01
 };
 
+// 表示 Java 方法字节码中的栈映射帧（Stack Map Frame），用于 JVM 的类型验证阶段（如 StackMapTable属性）。
+// 维护局部变量表和操作数栈的类型状态，支持类型验证、异常处理和状态回滚。
 class StackMapFrame : public ResourceObj {
  private:
   int32_t _offset;

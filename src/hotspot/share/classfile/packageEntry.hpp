@@ -99,6 +99,7 @@ class ModuleEntry;
 #define PKG_EXP_ALLUNNAMED   0x0002
 #define PKG_EXP_UNQUALIFIED_OR_ALL_UNAMED (PKG_EXP_UNQUALIFIED | PKG_EXP_ALLUNNAMED)
 
+// 表示 Java 中的一个包（Package），管理包的导出状态、所属模块及限定导出列表。
 class PackageEntry : public CHeapObj<mtModule> {
 private:
   Symbol*      _name;

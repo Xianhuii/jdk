@@ -56,7 +56,7 @@ class Symbol;
  *   null (or a null handle) and the caller *might* now have a pending exception.
  *
  */
-
+// 根据.class字节码文件流创建InstanceKlass对象的工厂方法
 class KlassFactory : AllStatic {
 
  public:

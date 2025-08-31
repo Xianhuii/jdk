@@ -32,6 +32,7 @@
 
 // GC root for walking class loader data created
 
+// 管理类加载器（ClassLoader）及其加载的类之间的引用关系，确保垃圾回收（GC）过程中类加载器的可达性分析和资源回收的正确性。
 class ClassLoaderDataGraph : public AllStatic {
   friend class ClassLoaderData;
   friend class ClassLoaderDataGraphMetaspaceIterator;
@@ -42,6 +43,7 @@ class ClassLoaderDataGraph : public AllStatic {
   class ClassLoaderDataGraphIterator;
 
   // All CLDs (except unlinked CLDs) can be reached by walking _head->_next->...
+  // 全局的CLD链表，投节点为bootstrap类加载器的CLD
   static ClassLoaderData* volatile _head;
 
   // Set if there's anything to purge in the deallocate lists or previous versions

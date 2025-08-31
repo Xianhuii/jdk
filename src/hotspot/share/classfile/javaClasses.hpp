@@ -43,8 +43,12 @@ class ObjectMonitor;
 
 #define CHECK_INIT(offset)  assert(offset != 0, "should be initialized"); return offset;
 
-// Interface to java.lang.Object objects
+// 此头文件定义了JVM内部对Java核心类（如java.lang.Object、java.lang.String、java.lang.Thread等）的C++实现，
+// 用于支持JVM的底层操作，包括对象内存布局、方法调用、垃圾回收、反射等机制。
 
+
+// Interface to java.lang.Object objects
+// java.lang.Object的C++实现
 class java_lang_Object : AllStatic {
  public:
   static void register_natives(TRAPS);
@@ -56,7 +60,7 @@ class java_lang_Object : AllStatic {
 // internally by the VM.
 #define STRING_INJECTED_FIELDS(macro) \
   macro(java_lang_String, flags, byte_signature, false)
-
+// java.lang.String的C++实现
 class java_lang_String : AllStatic {
  private:
   static int _value_offset;
@@ -230,7 +234,7 @@ class java_lang_String : AllStatic {
   macro(java_lang_Class, static_oop_field_count, int_signature,     false) \
   macro(java_lang_Class, source_file,            object_signature,  false) \
   macro(java_lang_Class, init_lock,              object_signature,  false)
-
+// java.lang.Class的C++实现
 class java_lang_Class : AllStatic {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -372,7 +376,7 @@ class java_lang_Class : AllStatic {
   macro(java_lang_Thread, jvmti_VTMS_transition_disable_count, int_signature, false) \
   macro(java_lang_Thread, jvmti_is_in_VTMS_transition, bool_signature, false) \
   JFR_ONLY(macro(java_lang_Thread, jfr_epoch, short_signature, false))
-
+// java.lang.Thread的C++实现
 class java_lang_Thread : AllStatic {
   friend class java_lang_VirtualThread;
   friend class JVMCIVMStructs;
@@ -470,7 +474,7 @@ class java_lang_Thread : AllStatic {
 };
 
 // Interface to java.lang.Thread$FieldHolder objects
-
+// java.lang.Thread$FieldHolder的C++实现
 class java_lang_Thread_FieldHolder : AllStatic {
  private:
   static int _group_offset;
@@ -501,7 +505,7 @@ class java_lang_Thread_FieldHolder : AllStatic {
 };
 
 // Interface to java.lang.Thread$Constants objects
-
+// java.lang.Thread$Constants的C++实现
 class java_lang_Thread_Constants : AllStatic {
  private:
   static int _static_VTHREAD_GROUP_offset;
@@ -517,7 +521,7 @@ class java_lang_Thread_Constants : AllStatic {
 };
 
 // Interface to java.lang.ThreadGroup objects
-
+// java.lang.ThreadGroup的C++实现
 class java_lang_ThreadGroup : AllStatic {
  private:
   static int _parent_offset;
@@ -546,7 +550,7 @@ class java_lang_ThreadGroup : AllStatic {
 // Interface to java.lang.VirtualThread objects
 #define VTHREAD_INJECTED_FIELDS(macro)                                           \
   macro(java_lang_VirtualThread,   objectWaiter,  intptr_signature,       false)
-
+// java.lang.VirtualThread的C++实现
 class java_lang_VirtualThread : AllStatic {
  private:
   static int static_vthread_scope_offset;
@@ -619,7 +623,7 @@ class java_lang_VirtualThread : AllStatic {
 
 
 // Interface to java.lang.Throwable objects
-
+// java.lang.Throwable的C++实现
 class java_lang_Throwable: AllStatic {
   friend class BacktraceBuilder;
   friend class BacktraceIterator;
@@ -696,7 +700,7 @@ class java_lang_Throwable: AllStatic {
 
 
 // Interface to java.lang.reflect.AccessibleObject objects
-
+// java.lang.reflect.AccessibleObject的C++实现
 class java_lang_reflect_AccessibleObject: AllStatic {
  private:
   // Note that to reduce dependencies on the JDK we compute these
@@ -718,7 +722,7 @@ class java_lang_reflect_AccessibleObject: AllStatic {
 
 
 // Interface to java.lang.reflect.Method objects
-
+// java.lang.reflect.Method的C++实现
 class java_lang_reflect_Method : public java_lang_reflect_AccessibleObject {
  private:
   // Note that to reduce dependencies on the JDK we compute these
@@ -770,7 +774,7 @@ class java_lang_reflect_Method : public java_lang_reflect_AccessibleObject {
 
 
 // Interface to java.lang.reflect.Constructor objects
-
+// java.lang.reflect.Constructor的C++实现
 class java_lang_reflect_Constructor : public java_lang_reflect_AccessibleObject {
  private:
   // Note that to reduce dependencies on the JDK we compute these
@@ -813,7 +817,7 @@ class java_lang_reflect_Constructor : public java_lang_reflect_AccessibleObject 
 
 
 // Interface to java.lang.reflect.Field objects
-
+// java.lang.reflect.Field的C++实现
 class java_lang_reflect_Field : public java_lang_reflect_AccessibleObject {
  private:
   // Note that to reduce dependencies on the JDK we compute these
@@ -967,7 +971,7 @@ class reflect_ConstantPool {
 //  - java.lang.Long
 
 // This could be separated out into 8 individual classes.
-
+// 基本数据类型包装类的C++实现
 class java_lang_boxing_object: AllStatic {
  private:
   static int _value_offset;
@@ -1000,7 +1004,7 @@ class java_lang_boxing_object: AllStatic {
 
 
 // Interface to java.lang.ref.Reference objects
-
+// java.lang.ref.Reference的C++实现
 class java_lang_ref_Reference: AllStatic {
   static int _referent_offset;
   static int _queue_offset;
@@ -1043,7 +1047,7 @@ class java_lang_ref_Reference: AllStatic {
 
 
 // Interface to java.lang.ref.SoftReference objects
-
+// java.lang.ref.SoftReference的C++实现
 class java_lang_ref_SoftReference: public java_lang_ref_Reference {
   static int _timestamp_offset;
   static int _static_clock_offset;
@@ -1061,7 +1065,7 @@ class java_lang_ref_SoftReference: public java_lang_ref_Reference {
 };
 
 // Interface to java.lang.invoke.MethodHandle objects
-
+// java.lang.invoke.MethodHandle的C++实现
 class java_lang_invoke_MethodHandle: AllStatic {
   friend class JavaClasses;
 
@@ -1417,7 +1421,7 @@ class java_lang_invoke_MethodType: AllStatic {
 #define CALLSITE_INJECTED_FIELDS(macro) \
   macro(java_lang_invoke_CallSite, vmdependencies, intptr_signature, false) \
   macro(java_lang_invoke_CallSite, last_cleanup, long_signature, false)
-
+// java.lang.invoke.CallSite的C++实现
 class java_lang_invoke_CallSite: AllStatic {
   friend class JavaClasses;
 
@@ -1448,7 +1452,7 @@ public:
 };
 
 // Interface to java.lang.invoke.ConstantCallSite objects
-
+// java.lang.invoke.ConstantCallSite的C++实现
 class java_lang_invoke_ConstantCallSite: AllStatic {
   friend class JavaClasses;
 
@@ -1473,7 +1477,7 @@ public:
 
 #define CLASSLOADER_INJECTED_FIELDS(macro)                            \
   macro(java_lang_ClassLoader, loader_data,  intptr_signature, false)
-
+// java.lang.ClassLoader的C++实现
 class java_lang_ClassLoader : AllStatic {
  private:
   static int _loader_data_offset;

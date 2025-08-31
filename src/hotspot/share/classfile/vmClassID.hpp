@@ -28,6 +28,7 @@
 #include "classfile/vmClassMacros.hpp"
 #include "utilities/enumIterator.hpp"
 
+// 为JVM内部类（如java/lang/String、java/util/ArrayList等）分配唯一整数ID，便于高效管理和比较。
 enum class vmClassID : int {
   #define DECLARE_VM_CLASS(name, symbol) _VM_CLASS_ENUM(name), _VM_CLASS_ENUM(symbol) = _VM_CLASS_ENUM(name),
   VM_CLASSES_DO(DECLARE_VM_CLASS)

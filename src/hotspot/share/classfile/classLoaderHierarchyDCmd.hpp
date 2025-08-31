@@ -28,6 +28,8 @@
 
 #include "services/diagnosticCommand.hpp"
 
+// ClassLoaderHierarchyDCmd 是用于查看类加载器层次结构的诊断命令，通常通过 jcmd工具执行。
+// 其核心作用是分析类加载器的父子关系、加载路径及潜在问题（如类冲突或内存泄漏）。
 class ClassLoaderHierarchyDCmd: public DCmdWithParser {
   DCmdArgument<bool> _show_classes;
   DCmdArgument<bool> _verbose;

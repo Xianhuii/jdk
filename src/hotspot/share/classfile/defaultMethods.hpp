@@ -33,6 +33,8 @@ class InstanceKlass;
 class Symbol;
 class Method;
 
+// 在 JVM 的内部实现中，DefaultMethods类是处理接口默认方法（Default Methods）的核心组件，
+// 其设计目标是为实现类自动生成 桥接方法（Bridge Methods），以解决多接口继承中的默认方法冲突问题。
 class DefaultMethods : AllStatic {
  public:
 

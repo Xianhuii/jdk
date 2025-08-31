@@ -47,6 +47,7 @@ enum : uint {
 
 class ClassVerifier;
 
+// 处理Java字节码验证过程中的类型系统，确保类型安全性和规范合规性。直接关联JVM规范中的类型验证规则。
 class VerificationType {
   private:
     // Least significant 2 bits of _sym are always 0, so we use these as

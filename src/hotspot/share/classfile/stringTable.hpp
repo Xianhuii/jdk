@@ -38,6 +38,8 @@ class SerializeClosure;
 
 class StringTableConfig;
 
+// JVM内部实现的字符串表（StringTable），用于管理字符串符号化（interning）和垃圾回收相关的操作。
+// 其核心目标是高效存储和检索唯一的字符串实例，减少内存占用。
 class StringTable : AllStatic {
   friend class StringTableConfig;
   class VerifyCompStrings;

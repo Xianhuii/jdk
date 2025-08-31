@@ -82,11 +82,14 @@
 
 ClassLoaderData * ClassLoaderData::_the_null_class_loader_data = nullptr;
 
+// 初始化boot类加载器数据池
 void ClassLoaderData::init_null_class_loader_data() {
   assert(_the_null_class_loader_data == nullptr, "cannot initialize twice");
   assert(ClassLoaderDataGraph::_head == nullptr, "cannot initialize twice");
 
+  // 创建ClassLoaderData，类加载器为null
   _the_null_class_loader_data = new ClassLoaderData(Handle(), false);
+  // 设置为ClassLoaderDataGraph的头节点
   ClassLoaderDataGraph::_head = _the_null_class_loader_data;
   assert(_the_null_class_loader_data->is_the_null_class_loader_data(), "Must be");
 
@@ -133,6 +136,7 @@ void ClassLoaderData::initialize_name(Handle class_loader) {
   _name_and_id = SymbolTable::new_symbol(cl_instance_name_and_id);
 }
 
+// 根据ClassLoader的句柄创建ClassLoaderData
 ClassLoaderData::ClassLoaderData(Handle h_class_loader, bool has_class_mirror_holder) :
   _metaspace(nullptr),
   _metaspace_lock(new Mutex(Mutex::nosafepoint-2, "MetaspaceAllocation_lock")),

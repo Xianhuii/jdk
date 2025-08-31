@@ -32,6 +32,7 @@ class ModuleEntryTable;
 class SerializeClosure;
 class Symbol;
 
+// 该文件是JVM模块系统的核心实现之一，直接关联Java 9+的模块化特性（JPMS），为类加载、包可见性及跨模块依赖提供底层支持。
 class Modules : AllStatic {
   static void check_cds_restrictions(TRAPS) NOT_CDS_JAVA_HEAP_RETURN;
 

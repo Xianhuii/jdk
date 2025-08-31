@@ -115,6 +115,7 @@ class DumpTimeSharedClassTable;
 class RunTimeClassInfo;
 class RunTimeSharedDictionary;
 
+// 它负责管理在共享存档（如.jsa文件）中的类数据，支持在多个JVM实例间共享类元数据以减少内存占用和启动时间。
 class SharedClassLoadingMark {
  private:
   Thread* THREAD;

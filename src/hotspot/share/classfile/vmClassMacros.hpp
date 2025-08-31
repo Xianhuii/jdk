@@ -26,8 +26,10 @@
 #define SHARE_CLASSFILE_VMCLASSMACROS_HPP
 
 // _VM_CLASS_ENUM - internal: should be used only by vmClass*.{hpp,cpp}
+// 将类名转换为内部标识符（如Object_knum）
 #define _VM_CLASS_ENUM(kname)    kname##_knum
 
+// 通过类名或Java全限定名获取唯一的vmClassID，两者等价（如VM_CLASS_ID(Object_klass)与VM_CLASS_ID(java_lang_Object)结果相同）。
 #define VM_CLASS_ID(kname)      vmClassID::_VM_CLASS_ENUM(kname)
 
 // VM_CLASSES_DO iterates the classes that are directly referenced
@@ -47,8 +49,9 @@
 // resolved by vmClasses::resolve_all() in this order. Changing the
 // order may require careful restructuring of the VM start-up sequence.
 //
+// 按特定顺序枚举VM直接引用的所有核心类，用于启动时解析。顺序不可随意更改，否则可能破坏VM初始化流程。
 #define VM_CLASSES_DO(do_klass)                                                                                 \
-  /* well-known classes */                                                                                      \
+  /* well-known classes 基础类 */                                                                                \
   do_klass(Object_klass,                                java_lang_Object                                      ) \
   do_klass(String_klass,                                java_lang_String                                      ) \
   do_klass(Class_klass,                                 java_lang_Class                                       ) \
@@ -76,7 +79,7 @@
   do_klass(Reference_klass,                             java_lang_ref_Reference                               ) \
   do_klass(IllegalCallerException_klass,                java_lang_IllegalCallerException                      ) \
                                                                                                                 \
-  /* ref klasses and set reference types */                                                                     \
+  /* ref klasses and set reference types 引用类 */                                                               \
   do_klass(SoftReference_klass,                         java_lang_ref_SoftReference                           ) \
   do_klass(WeakReference_klass,                         java_lang_ref_WeakReference                           ) \
   do_klass(FinalReference_klass,                        java_lang_ref_FinalReference                          ) \

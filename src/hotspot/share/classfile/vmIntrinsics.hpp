@@ -105,6 +105,13 @@ class methodHandle;
 // annotate the method in the source code. The list below contains all
 // library intrinsics followed by bytecode intrinsics. Please also make sure to
 // add the declaration of the intrinsic to the appropriate section of the list.
+
+// 定义JVM运行时的内联方法（Intrinsics），通过直接替换或特殊处理提升关键方法的执行效率。
+// 内联方法分为两类：
+//  库内联（Library Intrinsics）：可替换为手写汇编/编译器IR（如数学函数）。
+//  字节码内联（Bytecode Intrinsics）：由编译器特殊处理（如延迟内联字符串操作）
+
+// 遍历所有内联方法，生成枚举值（vmIntrinsicID）和符号表（vmSymbols）
 #define VM_INTRINSICS_DO(do_intrinsic, do_class, do_name, do_signature, do_alias)                                       \
   /* (1) Library intrinsics                                                                        */                   \
   do_intrinsic(_hashCode,                 java_lang_Object,       hashCode_name, void_int_signature,             F_RN)  \
@@ -1450,6 +1457,7 @@ class methodHandle;
 #define __IGNORE_ALIAS(id, name)                      /*ignored*/
 
 // VM Intrinsic ID's uniquely identify some very special methods
+// 所有内联方法ID（如 _hashCode, _getClass, _dabs等），共200+项，涵盖基础类库、数学运算、加密算法、字符串处理等。
 enum class vmIntrinsicID : int {
   _none = 0,                      // not an intrinsic (default answer)
 

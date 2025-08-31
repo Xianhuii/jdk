@@ -30,6 +30,7 @@
 // Java Thread Status for JVMTI and M&M use.
 // This thread status info is saved in threadStatus field of
 // java.lang.Thread java class.
+// Java线程状态枚举
 enum class JavaThreadStatus : int {
   NEW                      = 0,
   RUNNABLE                 = JVMTI_THREAD_STATE_ALIVE +          // runnable / running

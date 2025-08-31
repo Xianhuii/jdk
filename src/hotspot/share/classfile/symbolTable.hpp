@@ -46,6 +46,7 @@ class SymbolTableCreateEntry;
 class constantPoolHandle;
 class SymbolClosure;
 
+// 符号表（SymbolTable） 是 JVM 中用于管理类文件中字符串常量的核心数据结构，提供高效的符号存储与查找功能。
 class SymbolTable : public AllStatic {
   friend class Symbol;
   friend class ClassFileParser;

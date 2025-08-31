@@ -39,6 +39,8 @@
 
 bool ClassLoaderDataShared::_full_module_graph_loaded = false;
 
+// ArchivedClassLoaderData 是 HotSpot 虚拟机在类加载器（ClassLoader）生命周期结束后，用于持久化存储其加载的类元数据的关键结构。
+// 它主要用于调试、内存分析或类卸载后的恢复场景，确保已卸载类加载器的信息仍可追溯。
 class ArchivedClassLoaderData {
   Array<PackageEntry*>* _packages;
   Array<ModuleEntry*>* _modules;

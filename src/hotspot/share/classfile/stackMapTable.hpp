@@ -36,6 +36,7 @@
 class StackMapReader;
 
 // StackMapTable class is the StackMap table used by type checker
+// 用于实现栈映射表（StackMapTable）的解析与管理
 class StackMapTable : public StackObj {
  private:
   // Logically, the _frame_count (as well as many fields in the StackFrame)

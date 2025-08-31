@@ -41,6 +41,7 @@ class Symbol;
 // may happen if these functions are called in a context where these locks
 // are already held. Use with caution.
 
+// ClassPrinter是一个用于调试和诊断的实用工具类，其设计体现了 策略模式 和 命令模式 的结合，主要用于控制类和方法的元数据打印行为。
 class ClassPrinter : public AllStatic {
   class KlassPrintClosure;
 

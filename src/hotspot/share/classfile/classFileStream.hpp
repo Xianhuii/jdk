@@ -37,6 +37,7 @@
 
 class ClassPathEntry;
 
+// .class类文件的输入流
 class ClassFileStream: public ResourceObj {
  private:
   const u1* const _buffer_start; // Buffer bottom

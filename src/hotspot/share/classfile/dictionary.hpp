@@ -34,6 +34,8 @@ class outputStream;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // The data structure for the class loader data dictionaries.
 
+// 类加载器的数据字典
+// 在 JVM 的类加载子系统中，Dictionary类是 类加载器（ClassLoader） 的核心数据结构，用于管理类加载器命名空间中的类元数据。
 class Dictionary : public CHeapObj<mtClass> {
   int _number_of_entries;
 

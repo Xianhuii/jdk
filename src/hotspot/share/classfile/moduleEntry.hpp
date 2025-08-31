@@ -61,6 +61,7 @@ class ModuleClosure;
 //
 // The Mutex Module_lock is shared between ModuleEntry and PackageEntry, to lock either
 // data structure.  This lock must be taken on all accesses to either table.
+// 表示由JVM_DefineModule定义的模块，管理模块的元数据和关系
 class ModuleEntry : public CHeapObj<mtModule> {
 private:
   OopHandle _module_handle;            // java.lang.Module

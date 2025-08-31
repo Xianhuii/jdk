@@ -31,7 +31,8 @@ class ResolutionErrorEntry;
 
 // ResolutionError objects are used to record errors encountered during
 // constant pool resolution (JVMS 5.4.3).
-
+// 实现了 JVM 在类文件解析过程中对错误的记录与管理机制，主要用于处理常量池（Constant Pool）解析失败的情况（遵循 JVMS 5.4.3 规范）。
+// 通过维护一个全局错误表 ResolutionErrorTable，记录解析失败的上下文信息，避免重复处理相同错误。
 class ResolutionErrorTable : AllStatic {
 
 public:

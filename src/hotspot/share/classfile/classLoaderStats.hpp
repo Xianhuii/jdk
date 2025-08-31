@@ -34,7 +34,8 @@
 #include "services/diagnosticCommand.hpp"
 #include "utilities/resourceHash.hpp"
 
-
+// ClassLoaderStatsDCmd 是用于查看类加载器（ClassLoader）统计信息的诊断命令，通过 jcmd工具执行。
+// 其核心功能是分析类加载器的层级结构、加载的类数量、内存占用及潜在问题（如类冲突或内存泄漏）。
 class ClassLoaderStatsDCmd : public DCmd {
 public:
   ClassLoaderStatsDCmd(outputStream* output, bool heap) :

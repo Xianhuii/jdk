@@ -31,10 +31,14 @@ class PlaceholderEntry;
 class Thread;
 class ClassLoaderData;
 
+// 实现了JVM类加载器的核心并发控制逻辑，通过精细的队列管理和锁策略，确保了类加载过程的高效性和正确性。占位符表作为类加载状态的集中管理器，
+// 协调了多线程间的协作，是JVM动态类加载机制的重要基础设施。
+
+
 // Placeholder objects. These represent classes currently
 // being loaded, as well as arrays of primitives.
 //
-
+// 全局单例，维护所有正在加载的类和原始类型的占位符。
 class PlaceholderTable : public AllStatic {
  public:
   // caller to create a placeholder entry must enumerate an action
@@ -78,6 +82,7 @@ class SeenThread;
 // SystemDictionary_lock, so we don't need special precautions
 // on store ordering here.
 // The system dictionary is the only user of this class.
+// 表示一个正在加载的类或原始类型，记录其加载状态和关联线程。
 class PlaceholderEntry {
   friend class PlaceholderTable;
  private:

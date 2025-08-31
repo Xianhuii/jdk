@@ -75,6 +75,11 @@ class Symbol;
 
 template <class E> class GrowableArray;
 
+// SystemDictionary 是 JVM 中管理类加载的核心数据结构，负责维护所有已加载类的全局字典。其关键职责包括：
+// 1.类加载与查找
+// 2.类加载器管理
+// 3.类卸载与垃圾回收
+// 4.并发与锁机制
 class SystemDictionary : AllStatic {
   friend class AOTLinkedClassBulkLoader;
   friend class BootstrapInfo;

@@ -51,7 +51,7 @@ class SerializeClosure;
 #define VM_ALIAS_IGNORE(id, id2)                         /*ignored*/
 
 // Mapping function names to values. New entries should be added below.
-
+// 主要用于定义和管理JVM内部使用的符号常量
 #define VM_SYMBOLS_DO(template, do_alias)                                                         \
   /* commonly used class, package, module names */                                                \
   template(java_base,                                 "java.base")                                \

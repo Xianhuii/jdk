@@ -29,9 +29,18 @@
 
 class InstanceKlass;
 
+// 在 JVM 中，ClassInstanceInfo和 ClassLoadInfo是两个与类加载和实例化密切相关的核心数据结构，分别用于管理类的实例元数据和类加载过程的上下文信息。
+
+// 存储类的实例元数据：记录类的父类、接口、字段、方法等结构化信息。
+// 支持反射与动态调用：提供类的方法签名、访问权限等元数据，供反射机制使用。
+// 内存布局管理：与对象头（Object Header）配合，确定实例字段的偏移量和内存对齐方式。
 class ClassInstanceInfo : public StackObj {
  private:
+  // 指向动态嵌套类的宿主类（如内部类或匿名类），用于支持嵌套类的访问权限和生命周期管理。
+  // 例如，Java 中内部类需要持有外部类的引用，_dynamic_nest_host即存储该外部类的 InstanceKlass。
   InstanceKlass* _dynamic_nest_host;
+
+  // 通过 Handle引用类的元数据（如常量池、方法表、字段信息等），这些数据在类加载时由 ClassFileParser解析并填充到 InstanceKlass中。
   Handle _class_data;
 
  public:
@@ -49,12 +58,20 @@ class ClassInstanceInfo : public StackObj {
   friend class ClassLoadInfo;
 };
 
+// ClassLoadInfo是类加载过程中用于管理类加载上下文的核心数据结构
 class ClassLoadInfo : public StackObj {
  private:
+  // 存储类的来源信息（如 JAR 文件、网络地址），用于安全管理器（SecurityManager）的权限校验。例如，验证类是否来自可信路径或签名是否有效。
   Handle                 _protection_domain;
+
+  // 持有类的实例信息（如动态嵌套宿主类、常量池、方法表），支持嵌套类（如内部类）的访问权限控制。
   ClassInstanceInfo      _class_hidden_info;
+
+  // 标记类是否被隐藏（如模块化系统中非导出包内的类）
   bool                   _is_hidden;
   bool                   _is_strong_hidden;
+
+  // 控制是否允许访问 JVM 级别注解（如 @InvisibleForSerialization）。
   bool                   _can_access_vm_annotations;
 
  public:

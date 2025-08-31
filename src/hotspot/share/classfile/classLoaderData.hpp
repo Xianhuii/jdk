@@ -62,7 +62,13 @@ class Dictionary;
 class ClassLoaderMetaspace;
 
 // ClassLoaderData class
-
+// 每个类加载器（包括 Bootstrap、Extension、Application 等）在首次加载类时都会创建一个对应的 CLD 实例。
+// 它存储了类加载器加载的所有类的元数据（如 InstanceKlass对象）和类加载器自身的私有数据。
+// 每个 CLD 维护一个链表，存储该加载器加载的所有 InstanceKlass对象。新加载的类会被插入链表头部，形成 LRU（最近最少使用） 顺序，便于垃圾回收时快速清理未使用的类。
+// 核心作用：
+//   类元数据存储：记录所有通过该加载器加载的类（InstanceKlass），并通过链表形式串联这些类。
+//   内存管理：与元空间（Metaspace）协作，管理类元数据的生命周期。
+//   隔离性保障：确保不同类加载器加载的类即使同名也被视为不同类（双亲委派模型的基础）。
 class ClassLoaderData : public CHeapObj<mtClass> {
   friend class VMStructs;
 
@@ -106,10 +112,12 @@ class ClassLoaderData : public CHeapObj<mtClass> {
   friend class MetaDataFactory;
   friend class Method;
 
-  // bootstrap类加载器的存储数据
+  // bootstrap类加载器的存储数据，由JVM内部直接创建
   static ClassLoaderData * _the_null_class_loader_data;
 
   WeakHandle _holder;       // The oop that determines lifetime of this class loader
+
+  // 关联的类加载器
   OopHandle  _class_loader; // The instance of java/lang/ClassLoader associated with
                             // this ClassLoaderData
 
@@ -137,6 +145,7 @@ class ClassLoaderData : public CHeapObj<mtClass> {
 
   NOT_PRODUCT(volatile int _dependency_count;)  // number of class loader dependencies
 
+  // 类加载器加载的类（链表的头指针）
   Klass* volatile _klasses;              // The classes defined by the class loader.
   PackageEntryTable* volatile _packages; // The packages defined by the class loader.
   ModuleEntryTable*  volatile _modules;  // The modules defined by the class loader.
@@ -173,7 +182,7 @@ class ClassLoaderData : public CHeapObj<mtClass> {
   // And finally, when no threads are using the unloading CLDs anymore, we
   // remove them from the class unloading list and delete them. See:
   // ClassLoaderDataGraph::purge();
-  ClassLoaderData* _next;
+  ClassLoaderData* _next; // 下一个CLD对象
   ClassLoaderData* _unloading_next;
 
   Klass*  _class_loader_klass;
