@@ -26,11 +26,11 @@
 #ifndef SHARE_MEMORY_METASPACE_METASPACEARENAGROWTHPOLICY_HPP
 #define SHARE_MEMORY_METASPACE_METASPACEARENAGROWTHPOLICY_HPP
 
-#include "memory/metaspace.hpp" // For Metaspace::MetaspaceType
-#include "memory/metaspace/chunklevel.hpp"
-#include "utilities/debug.hpp"
+#include "memory/metaspace.hpp" // For Metaspace::MetaspaceType 定义Metaspace类及其类型（如MetaspaceType枚举）
+#include "memory/metaspace/chunklevel.hpp" // 定义chunklevel_t类型，表示内存块级别或大小
+#include "utilities/debug.hpp" // 提供调试工具（如断言assert）
 
-namespace metaspace {
+namespace metaspace { // 命名空间：metaspace，属于JVM内存管理模块（Metaspace）
 
 // ArenaGrowthPolicy encodes the growth policy of a MetaspaceArena.
 //
@@ -43,13 +43,20 @@ namespace metaspace {
 // Note that when growing in large steps (in steps larger than a commit granule,
 // by default 64K), costs diminish somewhat since we do not commit the whole space
 // immediately.
-
+// 编码MetaspaceArena的内存增长策略，决定其如何按步骤（chunk）扩展内存
+/*
+  不同用途的MetaspaceArena采用不同的增长粒度：
+  ∙ 单类/少量类加载器：小步增长（精细控制）。
+  ∙ 普通类加载器：中等步长。
+  ∙ 引导类加载器：大步增长（预期加载大量类，减少提交开销）。
+  当步长超过提交粒度（默认64KB）时，延迟提交内存以降低成本。
+ */
 class ArenaGrowthPolicy {
 
   // const array specifying chunk level allocation progression (growth steps). Last
   //  chunk is to be an endlessly repeated allocation.
-  const chunklevel_t* const _entries;
-  const int _num_entries;
+  const chunklevel_t* const _entries; // 指向一个预定义的chunklevel_t数组，定义各步骤对应的块级别
+  const int _num_entries; // 数组的有效元素数量
 
 public:
 
@@ -60,6 +67,7 @@ public:
     assert(_num_entries > 0, "must not be empty.");
   }
 
+  // 根据已分配的块数num_allocated返回对应的块级别
   chunklevel_t get_level_at_step(int num_allocated) const {
     if (num_allocated >= _num_entries) {
       // Caller shall repeat last allocation
@@ -70,6 +78,7 @@ public:
 
   // Given a space type, return the correct policy to use.
   // The returned object is static and read only.
+  // 根据Metaspace类型和是否为类加载器，返回预定义的静态策略对象
   static const ArenaGrowthPolicy* policy_for_space_type(Metaspace::MetaspaceType space_type, bool is_class);
 
 };

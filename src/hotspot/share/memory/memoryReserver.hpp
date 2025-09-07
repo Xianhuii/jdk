@@ -30,13 +30,15 @@
 #include "nmt/memTag.hpp"
 #include "utilities/globalDefinitions.hpp"
 
+// 通用内存预留，支持多种配置
 class MemoryReserver : AllStatic {
+  // 基础预留逻辑，接受地址、大小、对齐、可执行标志和内存标签
   static ReservedSpace reserve_memory(char* requested_address,
                                       size_t size,
                                       size_t alignment,
                                       bool exec,
                                       MemTag mem_tag);
-
+  // 特殊预留，需指定页面大小
   static ReservedSpace reserve_memory_special(char* requested_address,
                                               size_t size,
                                               size_t alignment,
@@ -72,6 +74,7 @@ public:
   static bool release(const ReservedSpace& reserved);
 };
 
+// 专用于预留代码段内存（如JIT编译代码）
 class CodeMemoryReserver : AllStatic {
 public:
   static ReservedSpace reserve(size_t size,
@@ -79,6 +82,7 @@ public:
                               size_t page_size);
 };
 
+// 通过文件映射预留内存，直接访问文件内容
 class FileMappedMemoryReserver : AllStatic {
 public:
   static ReservedSpace reserve(char* requested_address,
@@ -88,6 +92,7 @@ public:
                                MemTag mem_tag);
 };
 
+// 管理堆内存分配，支持压缩与非压缩Oops（普通对象指针）
 class HeapReserver : AllStatic {
   class Instance {
     const int _fd;

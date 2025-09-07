@@ -29,10 +29,12 @@
 #include "memory/allStatic.hpp"
 
 // Perf Counters for Metaspace
-
+// 提供Metaspace内存管理的性能监控功能
 class MetaspaceCounters: public AllStatic {
  public:
+  // 初始化Metaspace相关的性能计数器
   static void initialize_performance_counters();
+  // 动态更新性能计数器的值（如内存使用量、分配次数等）
   static void update_performance_counters();
 };
 

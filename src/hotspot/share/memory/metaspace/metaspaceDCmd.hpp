@@ -32,15 +32,16 @@ class outputStream;
 
 namespace metaspace {
 
+// 继承自 DCmdWithParser，表明其是一个可解析参数的诊断命令
 class MetaspaceDCmd : public DCmdWithParser {
-  DCmdArgument<bool> _basic;
-  DCmdArgument<bool> _show_loaders;
-  DCmdArgument<bool> _by_spacetype;
-  DCmdArgument<bool> _by_chunktype;
-  DCmdArgument<bool> _show_vslist;
-  DCmdArgument<bool> _show_chunkfreelist;
-  DCmdArgument<char*> _scale;
-  DCmdArgument<bool> _show_classes;
+  DCmdArgument<bool> _basic; // 是否输出基础统计信息（如总大小、已用空间）
+  DCmdArgument<bool> _show_loaders; // 是否显示类加载器树状结构
+  DCmdArgument<bool> _by_spacetype; // 是否按空间类型（如Class Space、Non-Class Space）分类统计
+  DCmdArgument<bool> _by_chunktype; // 是否按内存块类型（如Free、Used）分类
+  DCmdArgument<bool> _show_vslist; // 是否列出所有虚拟空间（Virtual Space）
+  DCmdArgument<bool> _show_chunkfreelist; // 是否显示空闲内存块列表
+  DCmdArgument<char*> _scale; // 数值缩放参数（如输入 "MB" 则以MB为单位输出
+  DCmdArgument<bool> _show_classes; // 是否显示类加载的详细信息
 public:
   MetaspaceDCmd(outputStream* output, bool heap);
   static const char* name() {

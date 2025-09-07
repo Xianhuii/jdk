@@ -68,17 +68,19 @@ struct ChunkManagerStats;
 //     |    +-+   +-+
 //  12 +----| |---| |---...
 //          +-+   +-+
-
+// JVM 元空间（Metaspace）的内存管理核心组件 ChunkManager，负责高效分配、回收和合并元空间内存块（Chunk）。
+// 其设计目标是减少内存碎片化，适应动态类加载/卸载场景，并严格遵守内存限制（如 MaxMetaspaceSize）。
 class ChunkManager : public CHeapObj<mtMetaspace> {
 
   // A chunk manager is connected to a virtual space list which is used
   // to allocate new root chunks when no free chunks are found.
+  // 指向 VirtualSpaceList的指针，用于从底层虚拟空间分配新根块。
   VirtualSpaceList* const _vslist;
 
-  // Name
+  // Name 调试标识符（如 "class" 或 "non-class" 空间）
   const char* const _name;
 
-  // Freelists
+  // Freelists 按级别（Level）维护的双向链表，存储空闲块（Free Chunk），按提交状态分组（已提交块在前，未提交在后）
   FreeChunkListVector _chunks;
 
   // Returns true if this manager contains the given chunk. Slow (walks free lists) and
@@ -122,6 +124,7 @@ public:
   //   is non-expandable but needs expanding - aka out of compressed class space).
   // - Or, if the necessary space cannot be committed because we hit a commit limit.
   //   This may be either the GC threshold or MaxMetaspaceSize.
+  // 根据优先级级别（preferred_level）和最大级别（max_level）分配块，确保至少 min_committed_words已提交。失败时返回 nullptr。
   Metachunk* get_chunk(chunklevel_t preferred_level, chunklevel_t max_level, size_t min_committed_words);
 
   // Convenience function - get a chunk of a given level, uncommitted.

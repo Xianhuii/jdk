@@ -57,6 +57,7 @@
   class         ObjArrayKlass;
   class         TypeArrayKlass;
 
+// HotSpot 虚拟机中用于遍历元空间（Metaspace）对象的闭包框架，支持在垃圾回收、压缩（如 CDS 存档优化）等场景中高效处理元数据对象的引用关系
 // class MetaspaceClosure --
 //
 // This class is used for iterating the objects in the HotSpot Metaspaces. It
@@ -71,6 +72,8 @@
 // should call MetaspaceClosure::push() on every pointer fields of this
 // class that points to a MetaspaceObj. See Annotations::metaspace_pointers_do()
 // for an example.
+
+// 核心遍历器，提供 API 遍历从根对象（如 SystemDictionary中的 Klass）出发的所有可达元数据对象
 class MetaspaceClosure {
 public:
   enum Writability {
@@ -117,9 +120,10 @@ public:
   //
   // If you need to use the tags, you can access the tagged pointer with Ref::addr()
   // and manipulate its parts with strip_tags(), decode_tags() and add_tags()
+  // 抽象基类，封装对元数据对象的引用，处理指针标签（Tagging）
   class Ref : public CHeapObj<mtMetaspace> {
-    Writability _writability;
-    address _enclosing_obj;
+    Writability _writability; // 标记对象是否可写
+    address _enclosing_obj; // 记录外层对象地址（用于修复指针）
     Ref* _next;
     NONCOPYABLE(Ref);
 
@@ -159,6 +163,7 @@ public:
   // Pointer tagging support
   constexpr static uintx TAG_MASK = 0x03;
 
+  // 移除指针的标签位
   template <typename T>
   static T strip_tags(T ptr_with_tags) {
     uintx n = (uintx)ptr_with_tags;
@@ -181,6 +186,7 @@ public:
 
 private:
   // MSORef -- iterate an instance of MetaspaceObj
+  // 处理 MetaspaceObj实例
   template <class T> class MSORef : public Ref {
     T** _mpp;
     T* dereference() const {
@@ -230,6 +236,7 @@ private:
   // OtherArrayRef -- iterate an instance of Array<T>, where T is NOT a subtype of MetaspaceObj.
   // T can be a primitive type, such as int, or a structure. However, we do not scan
   // the fields inside T, so you should not embed any pointers inside T.
+  // 处理非元数据数组（如 int[]）
   template <class T> class OtherArrayRef : public ArrayRef<T> {
   public:
     OtherArrayRef(Array<T>** mpp, Writability w) : ArrayRef<T>(mpp, w) {}
@@ -246,6 +253,7 @@ private:
 
   // MSOArrayRef -- iterate an instance of Array<T>, where T is a subtype of MetaspaceObj.
   // We recursively call T::metaspace_pointers_do() for each element in this array.
+  // 处理元数据数组（如 Annotation[]）
   template <class T> class MSOArrayRef : public ArrayRef<T> {
   public:
     MSOArrayRef(Array<T>** mpp, Writability w) : ArrayRef<T>(mpp, w) {}
@@ -268,6 +276,7 @@ private:
 
   // MSOPointerArrayRef -- iterate an instance of Array<T*>, where T is a subtype of MetaspaceObj.
   // We recursively call MetaspaceClosure::push() for each pointer in this array.
+  // 处理元数据指针数组（如 Klass**）
   template <class T> class MSOPointerArrayRef : public ArrayRef<T*> {
   public:
     MSOPointerArrayRef(Array<T*>** mpp, Writability w) : ArrayRef<T*>(mpp, w) {}
@@ -361,6 +370,7 @@ public:
 };
 
 // This is a special MetaspaceClosure that visits each unique MetaspaceObj once.
+// 继承自 MetaspaceClosure，确保每个元数据对象仅被访问一次
 class UniqueMetaspaceClosure : public MetaspaceClosure {
   static const int INITIAL_TABLE_SIZE = 15889;
   static const int MAX_TABLE_SIZE     = 1000000;

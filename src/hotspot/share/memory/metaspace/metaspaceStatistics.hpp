@@ -33,7 +33,7 @@
 class outputStream;
 
 namespace metaspace {
-
+// 定义JVM元空间（Metaspace）的内存统计结构，用于追踪和分析元空间的内存分配、使用及碎片情况。属于JVM内存管理模块的核心组件。
 // Contains a number of data output structures:
 //
 // - cm_stats_t
@@ -42,24 +42,31 @@ namespace metaspace {
 // used for the various XXXX::add_to_statistic() methods in MetaspaceArena, ClassLoaderMetaspace
 //  and ChunkManager, respectively.
 
+// 统计ChunkManager管理的所有内存块（Chunk）的总体情况
 struct ChunkManagerStats {
 
   // How many chunks per level are checked in.
+  // 各内存块级别（Level）的块数量
   int _num_chunks[chunklevel::NUM_CHUNK_LEVELS];
 
   // Size, in words, of the sum of all committed areas in this chunk manager, per level.
+  // 各块级别的已提交内存总和（以字为单位）
   size_t _committed_word_size[chunklevel::NUM_CHUNK_LEVELS];
 
   ChunkManagerStats() : _num_chunks(), _committed_word_size() {}
 
+  // 合并另一个ChunkManagerStats的统计结果
   void add(const ChunkManagerStats& other);
 
   // Returns total word size of all chunks in this manager.
+  // 返回所有块的总容量（含已提交和未提交内存）
   size_t total_word_size() const;
 
   // Returns total committed word size of all chunks in this manager.
+  // 返回所有块的已提交内存总和
   size_t total_committed_word_size() const;
 
+  // 将统计信息格式化输出到流
   void print_on(outputStream* st, size_t scale) const;
 
   DEBUG_ONLY(void verify() const;)
@@ -67,9 +74,11 @@ struct ChunkManagerStats {
 };
 
 // Contains statistics for one or multiple chunks in use.
+// 描述单个或多个正在使用的内存块（Chunk）的详细统计
 struct InUseChunkStats {
 
   // Number of chunks
+  // 块数量
   int _num;
 
   // Note:
@@ -78,18 +87,23 @@ struct InUseChunkStats {
 
   // Capacity (total sum of all chunk sizes) in words.
   // May contain committed and uncommitted space.
+  // 块总容量（含已提交、未提交内存）
   size_t _word_size;
 
   // Total committed area, in words.
+  // 已提交内存总和
   size_t _committed_words;
 
   // Total used area, in words.
+  // 实际使用的内存
   size_t _used_words;
 
   // Total free committed area, in words.
+  // 空闲但已提交的内存
   size_t _free_words;
 
   // Total waste committed area, in words.
+  // 因碎片化导致的无法使用的内存
   size_t _waste_words;
 
   InUseChunkStats() :
@@ -101,6 +115,7 @@ struct InUseChunkStats {
     _waste_words(0)
   {}
 
+  // 合并另一个InUseChunkStats
   void add(const InUseChunkStats& other) {
     _num += other._num;
     _word_size += other._word_size;
@@ -111,6 +126,7 @@ struct InUseChunkStats {
 
   }
 
+  // 输出统计信息
   void print_on(outputStream* st, size_t scale) const;
 
   DEBUG_ONLY(void verify() const;)
@@ -118,11 +134,17 @@ struct InUseChunkStats {
 };
 
 // Class containing statistics for one or more MetaspaceArena objects.
+// 统计单个或多个MetaspaceArena对象的内存使用情况
 struct  ArenaStats {
 
   // chunk statistics by chunk level
+  // 按块级别分类的InUseChunkStats
   InUseChunkStats _stats[chunklevel::NUM_CHUNK_LEVELS];
+
+  // 空闲内存块数量
   uintx _free_blocks_num;
+
+  // 空闲内存块总大小
   size_t _free_blocks_word_size;
 
   ArenaStats() :
@@ -131,10 +153,13 @@ struct  ArenaStats {
     _free_blocks_word_size(0)
   {}
 
+  // 合并另一个ArenaStats
   void add(const ArenaStats& other);
 
+  // 输出统计信息（支持详细模式）
   void print_on(outputStream* st, size_t scale = K,  bool detailed = true) const;
 
+  // 返回所有块级别的汇总统计
   InUseChunkStats totals() const;
 
   DEBUG_ONLY(void verify() const;)
@@ -142,21 +167,27 @@ struct  ArenaStats {
 };
 
 // Statistics for one or multiple ClassLoaderMetaspace objects
+// 统计ClassLoaderMetaspace的整体内存使用情况，区分类（Class）和非类（Non-Class）元数据
 struct ClmsStats {
-
+  // 非类元数据的ArenaStats
   ArenaStats _arena_stats_nonclass;
+
+  // 类元数据的ArenaStats
   ArenaStats _arena_stats_class;
 
   ClmsStats() : _arena_stats_nonclass(), _arena_stats_class() {}
 
+  // 合并另一个ClmsStats
   void add(const ClmsStats& other) {
     _arena_stats_nonclass.add(other._arena_stats_nonclass);
     _arena_stats_class.add(other._arena_stats_class);
   }
 
+  // 输出统计信息
   void print_on(outputStream* st, size_t scale, bool detailed) const;
 
   // Returns total statistics for both class and non-class metaspace
+  // 返回类与非类元数据的汇总统计
   ArenaStats totals() const;
 
   DEBUG_ONLY(void verify() const;)

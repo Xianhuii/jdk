@@ -29,6 +29,12 @@
 #include "memory/arena.hpp"
 #include "runtime/javaThread.hpp"
 
+// 该代码是JVM（Java虚拟机）中内存管理的核心组件，主要用于实现资源区域（Resource Area）和资源标记（Resource Mark）机制。
+// 其核心目标是：
+// 1.管理VM（虚拟机）中的临时数据结构内存分配。
+// 2.提供安全的资源释放机制（通过RAII风格管理）。
+// 3.支持线程本地存储（TLS）和嵌套资源管理。
+
 // The resource area holds temporary data structures in the VM.
 // The actual allocation areas are thread local. Typical usage:
 //
@@ -42,6 +48,7 @@
 
 //------------------------------ResourceArea-----------------------------------
 // A ResourceArea is an Arena that supports safe usage of ResourceMark.
+// 继承自Arena类，扩展了安全资源管理功能
 class ResourceArea: public Arena {
 #ifdef ASSERT
   int _nesting;                 // current # of nested ResourceMarks
@@ -60,12 +67,14 @@ public:
     Arena(mem_tag, arena_tag) DEBUG_ONLY(COMMA _nesting(0)) {
   }
 
+  // 内存分配
   char* allocate_bytes(size_t size, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
 
   DEBUG_ONLY(int nesting() const { return _nesting; })
 
   // Capture the state of a ResourceArea needed by a ResourceMark for
   // rollback to that mark.
+  // SavedState内部类保存资源区域的当前状态（包括_chunk、_hwm、_max等），用于后续回滚
   class SavedState {
     friend class ResourceArea;
     Chunk* _chunk;
@@ -186,6 +195,8 @@ public:
   }
 };
 
+// 源标记对象，用于标记资源分配的起点。当对象销毁时（析构函数调用），自动释放标记之后分配的所有资源
+// 继承自StackObj，利用栈分配特性实现自动生命周期管理
 class ResourceMark: public StackObj {
   const ResourceMarkImpl _impl;
 #ifdef ASSERT
@@ -252,7 +263,8 @@ public:
 // and they would be stack allocated. This leaves open the possibility of accidental
 // misuse so we duplicate the ResourceMark functionality via a shared implementation
 // class.
-
+// 用于处理JVM的去优化（Deoptimization）过程，需在堆上分配以避免栈溢出
+// 继承自CHeapObj<mtInternal>，使用堆内存分配
 class DeoptResourceMark: public CHeapObj<mtInternal> {
   const ResourceMarkImpl _impl;
 

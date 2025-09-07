@@ -37,11 +37,11 @@ namespace metaspace {
 // A simple single-linked list of chunks, used in MetaspaceArena to keep
 //  a list of retired chunks, as well as in the ChunkHeaderPool to keep
 //  a cache of unused chunk headers.
-
+// 实现一个单链表结构，用于管理 Metachunk对象的存储与回收
 class MetachunkList {
 
-  Metachunk* _first;
-  IntCounter _num_chunks;
+  Metachunk* _first; // 指向链表的第一个节点
+  IntCounter _num_chunks; // 统计链表中 Metachunk的数量
 
   // Note: The chunks inside this list may be dead (->chunk header pool).
   // So, do not call c->word size on them or anything else which may not

@@ -41,8 +41,8 @@ class outputStream;
 
 namespace metaspace {
 
-class CommitLimiter;
-class FreeChunkListVector;
+class CommitLimiter; // 定义提交限制策略
+class FreeChunkListVector; // 管理空闲块的链表集合
 
 // VirtualSpaceNode manages a single contiguous address range of metaspace. Logically that memory
 //  region is split up into a sequence of "root chunk areas", each one containing one root chunk
@@ -83,18 +83,41 @@ class FreeChunkListVector;
 //
 // (x = committed)
 //
-
+/*
+  核心功能
+  1. 内存区域管理
+  ∙ 管理一个连续的虚拟内存区域（通过ReservedSpace），支持动态扩展。
+  ∙ 内存逻辑上分为两部分：
+  ∙ 根块区域（Root Chunk Areas）：为ChunkManager提供预留内存，用于分配类元数据。
+  ∙ 提交粒度（Commit Granules）：最小内存管理单位（默认64KB），可独立提交或取消提交。
+  2. 内存分配与释放
+  ∙ 分配根块：通过allocate_root_chunk()分配新的根块，失败时返回null（如超出CompressedClassSpaceSize限制）。
+  ∙ 块分割与合并：
+  ∙ split()：将大块递归分割为更小块，加入空闲列表。
+  ∙ merge()：合并相邻空闲块，减少内存碎片。
+  ∙ attempt_enlarge_chunk()：原地扩展块大小（若后续块为空闲）。
+  3. 提交策略控制
+  ∙ 提交与取消提交：
+  ∙ ensure_range_is_committed()：确保指定内存范围已提交，超限则失败。
+  ∙ uncommit_range()：释放未使用的内存区域。
+  ∙ 限制接口：通过CommitLimiter与外部交互（如GC阈值、MaxMetaspaceSize）。
+  4. 统计与计数
+  ∙ 维护已用、剩余、已提交字节数的计数器，供监控和调试使用。
+ */
 class VirtualSpaceNode : public CHeapObj<mtClass> {
 
   // Link to next VirtualSpaceNode
+  // 链表指针，支持多节点管理
   VirtualSpaceNode* _next;
 
   // The underlying space. This has been either created by this node
   //  and is owned by it, or has been handed in from outside (e.g. in
   //  case of CompressedClassSpace).
+  // 预留的虚拟内存区域
   ReservedSpace _rs;
 
   // True if the node owns the reserved space, false if not.
+  // 标识是否需释放_rs资源
   const bool _owns_rs;
 
   // Start pointer of the area.
@@ -109,9 +132,11 @@ class VirtualSpaceNode : public CHeapObj<mtClass> {
 
   // The bitmap describing the commit state of the region:
   // Each bit covers a region of 64K (see constants::commit_granule_size).
+  // 位图记录每个提交粒子的状态（提交/未提交）
   CommitMask _commit_mask;
 
   // An array/lookup table of RootChunkArea objects. Each one describes a root chunk area.
+  // 快速定位根块区域的查找表
   RootChunkAreaLUT _root_chunk_area_lut;
 
   // Limiter object to ask before expanding the committed size of this node.

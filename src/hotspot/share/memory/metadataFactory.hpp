@@ -32,13 +32,16 @@
 #include "utilities/globalDefinitions.hpp"
 #include <type_traits>
 
+// 提供元数据内存管理功能
 class MetadataFactory : AllStatic {
  public:
+  // 在指定类加载器的数据区域分配类型为T的数组
   template <typename T>
   static Array<T>* new_array(ClassLoaderData* loader_data, int length, TRAPS) {
     return new (loader_data, length, THREAD) Array<T>(length);
   }
 
+  // 建并初始化数组
   template <typename T>
   static Array<T>* new_array(ClassLoaderData* loader_data, int length, T value, TRAPS) {
     Array<T>* array = new_array<T>(loader_data, length, CHECK_NULL);
@@ -48,12 +51,14 @@ class MetadataFactory : AllStatic {
     return array;
   }
 
-  // This API should be used for TrainingData only.
+  // This API should be used for TrainingData only. 明确标注仅供训练数据使用
+  // 从C堆分配数组（特殊用途）
   template <typename T>
   static Array<T>* new_array_from_c_heap(int length, MemTag flags) {
     return new (length, flags) Array<T>(length);
   }
 
+  // 释放数组内
   template <typename T>
   static void free_array(ClassLoaderData* loader_data, Array<T>* data) {
     if (data != nullptr) {
@@ -64,6 +69,7 @@ class MetadataFactory : AllStatic {
     }
   }
 
+  // 释放元数据对象
   // Deallocation method for metadata
   template <class T>
   static void free_metadata(ClassLoaderData* loader_data, T* md) {

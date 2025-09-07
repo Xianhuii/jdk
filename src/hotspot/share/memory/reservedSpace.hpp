@@ -30,14 +30,14 @@
 #include "utilities/globalDefinitions.hpp"
 
 // ReservedSpace is a data structure for describing a reserved contiguous address range.
-
+// 表示一个保留的连续地址空间，提供内存分区管理能力
 class ReservedSpace {
-  char*  _base;
-  size_t _size;
-  size_t _alignment;
-  size_t _page_size;
-  bool   _executable;
-  bool   _special;
+  char*  _base; // 内存区域的基地址
+  size_t _size; // 内存区域的大小
+  size_t _alignment; // 内存对齐要求
+  size_t _page_size; // 页面大小（可能用于内存映射）
+  bool   _executable; // 是否可执行
+  bool   _special; // 是否为特殊内存（如保留但不实际分配物理内存）
 
   void sanity_checks() NOT_DEBUG_RETURN;
 
@@ -135,9 +135,10 @@ public:
 };
 
 // Class encapsulating behavior specific to memory reserved for the Java heap.
+// 专为Java堆设计，扩展ReservedSpace以支持压缩指针（Compressed Oops）的基地址调整
 class ReservedHeapSpace : public ReservedSpace {
 private:
-  const size_t _noaccess_prefix;
+  const size_t _noaccess_prefix; // 不可访问的前缀长度，用于确保压缩指针的安全性
 
 public:
   // Constructor for non-reserved memory.
@@ -153,6 +154,7 @@ public:
 
   // Returns the base to be used for compression, i.e. so that null can be
   // encoded safely and implicit null checks can work.
+  // 返回调整后的基地址
   char* compressed_oop_base() const { return base() - _noaccess_prefix; }
 };
 

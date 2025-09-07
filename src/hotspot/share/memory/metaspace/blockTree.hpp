@@ -34,6 +34,8 @@
 #include "utilities/globalDefinitions.hpp"
 
 namespace metaspace {
+// JVM Metaspace（元空间）的内存管理组件，实现了一个用于管理中大型空闲内存块的二叉搜索树（BlockTree）。
+// 核心功能是高效分配/回收内存块，支持快速查找最适大小的空闲块。
 
 // BlockTree is a rather simple binary search tree. It is used to
 //  manage medium to large free memory blocks.
@@ -72,11 +74,11 @@ namespace metaspace {
 //  swap payloads of their nodes at some point, see e.g. j.u.TreeSet).
 // A good example is the Linux kernel rbtree, which is a clean, easy-to-read
 //  implementation.
-
+// 继承自CHeapObj<mtMetaspace>，表示对象在元空间堆上分配
 class BlockTree: public CHeapObj<mtMetaspace> {
-
+  // 既是树节点，又是被管理的内存块（Payload）
   struct Node {
-
+    // 内存保护哨兵，用于检测内存损坏
     static const intptr_t _canary_value =
         NOT_LP64(0x4e4f4445) LP64_ONLY(0x4e4f44454e4f4445ULL); // "NODE" resp "NODENODE"
 
@@ -88,16 +90,19 @@ class BlockTree: public CHeapObj<mtMetaspace> {
 
     // Normal tree node stuff...
     //  (Note: all null if this is a stacked node)
+    // 二叉树指针
     Node* _parent;
     Node* _left;
     Node* _right;
 
     // Blocks with the same size are put in a list with this node as head.
+    // 链表指针，用于串联相同大小的节点
     Node* _next;
 
     // Word size of node. Note that size cannot be larger than max metaspace size,
     // so this could be very well a 32bit value (in case we ever make this a balancing
     // tree and need additional space for weighting information).
+    // 块的大小（以MetaWord为单位）
     const size_t _word_size;
 
     Node(size_t word_size) :
@@ -133,9 +138,10 @@ public:
       (sizeof(Node) + sizeof(MetaWord) - 1) / sizeof(MetaWord);
 
 private:
-
+  // 树的根节点
   Node* _root;
 
+  // 统计块数量和总大小的计数器
   MemRangeCounter _counter;
 
   // Given a node n, add it to the list starting at head

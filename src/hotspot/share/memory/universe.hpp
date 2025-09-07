@@ -45,6 +45,12 @@ class DeferredObjAllocEvent;
 class OopStorage;
 class SerializeClosure;
 
+// Universe类是JVM内存管理的核心组件，负责系统类、基本类型、异常对象及堆内存的初始化与管理。
+// 核心职责：
+// 系统类与对象管理：维护JVM启动时创建的基础类（如java.lang.ThreadGroup）和特殊对象（如空字符串""、null哨兵对象）
+// 内存管理：通过CollectedHeap接口管理堆内存，支持垃圾回收（GC）及内存分配策略
+// 异常处理：预分配常见错误对象（如OutOfMemoryError），提升异常处理性能
+// 类型系统支持：初始化基本类型（如int、boolean）的镜像对象及类型数组（如IntArrayKlass）
 class Universe: AllStatic {
   // Ugh.  Universe is much too friendly.
   friend class SerialFullGC;
@@ -57,6 +63,7 @@ class Universe: AllStatic {
   friend class MetaspaceShared;
   friend class vmClasses;
 
+  // JVM启动时的初始化阶段
   friend jint  universe_init();
   friend void  universe2_init();
   friend bool  universe_post_init();
@@ -64,23 +71,23 @@ class Universe: AllStatic {
 
  private:
   // Known classes in the VM
-  static TypeArrayKlass* _typeArrayKlasses[T_LONG+1];
-  static ObjArrayKlass* _objectArrayKlass;
+  static TypeArrayKlass* _typeArrayKlasses[T_LONG+1]; // 存储所有基本类型的数组类（如int[]、double[]）
+  static ObjArrayKlass* _objectArrayKlass; // 对象数组类（如Object[]）
   // Special int-Array that represents filler objects that are used by GC to overwrite
   // dead objects. References to them are generally an error.
-  static Klass* _fillerArrayKlass;
+  static Klass* _fillerArrayKlass; // GC使用的填充对象数组类
 
   // Known objects in the VM
-  static OopHandle    _main_thread_group;             // Reference to the main thread group object
-  static OopHandle    _system_thread_group;           // Reference to the system thread group object
+  static OopHandle    _main_thread_group;             // Reference to the main thread group object 主线程组
+  static OopHandle    _system_thread_group;           // Reference to the system thread group object 系统线程组
 
   static OopHandle    _the_empty_class_array;         // Canonicalized obj array of type java.lang.Class
-  static OopHandle    _the_null_string;               // A cache of "null" as a Java string
-  static OopHandle    _the_min_jint_string;           // A cache of "-2147483648" as a Java string
+  static OopHandle    _the_null_string;               // A cache of "null" as a Java string 缓存的空字符串
+  static OopHandle    _the_min_jint_string;           // A cache of "-2147483648" as a Java string 缓存的"-2147483648"字符串
 
-  static OopHandle    _the_null_sentinel;             // A unique object pointer unused except as a sentinel for null.
+  static OopHandle    _the_null_sentinel;             // A unique object pointer unused except as a sentinel for null. 表示null的唯一哨兵对象
 
-  // preallocated error objects (no backtrace)
+  // preallocated error objects (no backtrace) 预分配的错误对象（如OutOfMemoryError及其变种），支持带/不带回溯信息的快速创建
   static OopHandle    _out_of_memory_errors;
   static OopHandle    _class_init_stack_overflow_error;
 
@@ -98,7 +105,7 @@ class Universe: AllStatic {
   static uintx _the_array_interfaces_bitmap;
   static uintx _the_empty_klass_bitmap;
 
-  // array of preallocated error objects with backtrace
+  // array of preallocated error objects with backtrace 存储预分配的OOM错误实例
   static OopHandle     _preallocated_out_of_memory_error_array;
 
   // number of preallocated error objects available for use
@@ -111,10 +118,10 @@ class Universe: AllStatic {
   // References waiting to be transferred to the ReferenceHandler
   static OopHandle    _reference_pending_list;
 
-  // The particular choice of collected heap.
+  // The particular choice of collected heap. 当前使用的堆实现（如ParallelGC、G1）
   static CollectedHeap* _collectedHeap;
 
-  static intptr_t _non_oop_bits;
+  static intptr_t _non_oop_bits; // 标记非对象指针的模式，用于GC验证
 
   // array of dummy objects used with +FullGCAlot
   DEBUG_ONLY(static OopHandle   _fullgc_alot_dummy_array;)
@@ -139,14 +146,14 @@ class Universe: AllStatic {
   static OopStorage* _vm_weak;
   static OopStorage* _vm_global;
 
-  static jint initialize_heap();
-  static void initialize_tlab();
-  static void initialize_basic_type_mirrors(TRAPS);
+  static jint initialize_heap(); // 分配并初始化堆内存
+  static void initialize_tlab(); // 分配并初始化tlab
+  static void initialize_basic_type_mirrors(TRAPS); // 创建基本类型的镜像对象
   static void fixup_mirrors(TRAPS);
 
   static void compute_base_vtable_size();             // compute vtable size of class Object
 
-  static void genesis(TRAPS);                         // Create the initial world
+  static void genesis(TRAPS);                         // Create the initial world 创建初始类加载器、系统字典等核心对象
 
   // Mirrors for primitive classes (created eagerly)
   static oop check_mirror(oop m) {
@@ -163,12 +170,12 @@ class Universe: AllStatic {
 
   // Table of primitive type mirrors, excluding T_OBJECT and T_ARRAY
   // but including T_VOID, hence the index including T_VOID
-  static OopHandle _basic_type_mirrors[T_VOID+1];
+  static OopHandle _basic_type_mirrors[T_VOID+1]; // 保存基本类型的镜像对象（如Integer.TYPE对应int）
 
 #if INCLUDE_CDS_JAVA_HEAP
   // Each slot i stores an index that can be used to restore _basic_type_mirrors[i]
   // from the archive heap using HeapShared::get_root(int)
-  static int _archived_basic_type_mirror_indices[T_VOID+1];
+  static int _archived_basic_type_mirror_indices[T_VOID+1]; // CDS（类数据共享）下用于恢复镜像的索引
 #endif
 
  public:

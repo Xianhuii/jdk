@@ -35,10 +35,13 @@ class InstanceKlass;
 namespace metaspace {
 
 // Helper class for MetaspaceUtils::print_report()
+// 继承自 KlassClosure，表示这是一个用于遍历类（Klass）的闭包类
+// 在遍历元空间中的类时，收集并输出统计信息
+// 识别与反射调用相关的类（如 magic_accessor_impl_class）
 class PrintMetaspaceInfoKlassClosure : public KlassClosure {
 private:
-  outputStream* const _out;
-  uintx _cnt;
+  outputStream* const _out; // 输出流指针，用于将结果写入日志或控制台
+  uintx _cnt; // 计数器，记录已处理的类数量
 
   bool print_reflection_invocation_target(outputStream* out, InstanceKlass* magic_accessor_impl_class);
 

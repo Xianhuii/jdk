@@ -33,7 +33,7 @@
 #include <type_traits>
 
 namespace metaspace {
-
+// 为JVM的Metaspace（类元数据空间）提供高效、线程安全的内存使用统计工具，包含基础计数器和内存范围统计组件。
 // We seem to be counting a lot of things which makes it worthwhile to
 // make helper classes for all that boilerplate coding.
 

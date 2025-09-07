@@ -41,32 +41,35 @@ class ReservedSpace;
 
 // Namespace for important central static functions
 // (auxiliary stuff goes into MetaspaceUtils)
+// 定义 JVM 元空间（Metaspace）的核心管理逻辑，用于存储类元数据（如类结构、方法信息等），替代早期版本的永久代（PermGen）
 class Metaspace : public AllStatic {
 
   friend class MetaspaceShared;
 
 public:
   enum MetadataType {
-    ClassType,
-    NonClassType,
+    ClassType, // 表示类元数据（如 java.lang.Class实例）
+    NonClassType, // 其他元数据（如方法、字段等）
     MetadataTypeCount
   };
   enum MetaspaceType {
-    ZeroMetaspaceType = 0,
-    StandardMetaspaceType = ZeroMetaspaceType,
-    BootMetaspaceType = StandardMetaspaceType + 1,
-    ClassMirrorHolderMetaspaceType = BootMetaspaceType + 1,
+    ZeroMetaspaceType = 0, // 基础类型
+    StandardMetaspaceType = ZeroMetaspaceType, // 标准元空间
+    BootMetaspaceType = StandardMetaspaceType + 1, // 引导类加载器使用的元空间
+    ClassMirrorHolderMetaspaceType = BootMetaspaceType + 1, // 持有类镜像的元空间
     MetaspaceTypeCount
   };
 
 private:
-
+  // 元空间追踪器，用于监控内存使用
   static const MetaspaceTracer* _tracer;
 
   // For quick pointer testing: extent of class space; nullptr if no class space.
+  // 压缩类空间的地址范围（仅在启用压缩指针时有效）
   static const void* _class_space_start;
   static const void* _class_space_end;
 
+  // 标记元空间是否已完成初始化
   static bool _initialized;
 
 public:
@@ -79,9 +82,11 @@ public:
 
   // Reserve a range of memory that is to contain narrow Klass IDs. If "try_in_low_address_ranges"
   // is true, we will attempt to reserve memory suitable for zero-based encoding.
+  // 预留地址空间
   static ReservedSpace reserve_address_space_for_compressed_classes(size_t size, bool optimize_for_zero_base);
 
   // Given a prereserved space, use that to set up the compressed class space list.
+  // 初始化类空间
   static void initialize_class_space(ReservedSpace rs);
 
   // Returns true if class space has been setup (initialize_class_space).
@@ -119,8 +124,14 @@ public:
   // Every allocation will get rounded up to the minimum word size.
   static constexpr size_t min_allocation_word_size = min_allocation_alignment_words;
 
-  static MetaWord* allocate(ClassLoaderData* loader_data, size_t word_size,
-                            MetaspaceObj::Type type, bool use_class_space, TRAPS);
+  // 分配元数据内存
+  // 带 TRAPS参数：抛出异常处理 OOM
+  // 无 TRAPS参数：静默失败（返回 nullptr）
+  static MetaWord* allocate(ClassLoaderData* loader_data, // 关联的类加载器数据
+                            size_t word_size, // 分配大小（以单词数为单位）
+                            MetaspaceObj::Type type, // 元数据类型（类或非类）
+                            bool use_class_space, // 是否使用压缩类空间
+                            TRAPS);
 
   // Non-TRAPS version of allocate which can be called by a non-Java thread, that returns
   // null on failure.
@@ -129,6 +140,7 @@ public:
 
   // Returns true if the pointer points into class space, non-class metaspace, or the
   // metadata portion of the CDS archive.
+  // 判断指针是否位于元空间、类空间或共享元空间（CDS 存档）
   static bool contains(const void* ptr) {
     return is_in_shared_metaspace(ptr) || // in cds
            is_in_class_space(ptr) ||      // in class space
@@ -155,6 +167,7 @@ public:
   }
 
   // Free empty virtualspaces
+  // 释放空闲的虚拟内存空间，需传入类是否卸载的标
   static void purge(bool classes_unloaded);
 
   static void report_metadata_oome(ClassLoaderData* loader_data, size_t word_size,

@@ -59,7 +59,7 @@ namespace metaspace {
 //  internally of two separate structures to keep very small blocks and other blocks.
 //  Very small blocks are kept in a bin list (see binlist.hpp) and larger blocks in
 //  a BST (see blocktree.hpp).
-
+// FreeBlocks负责管理 Metaspace 中被释放的内存块（MetaBlock），以便后续重用。
 class FreeBlocks : public CHeapObj<mtMetaspace> {
 
   // _small_blocks takes care of small to very small blocks.

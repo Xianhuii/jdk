@@ -38,7 +38,9 @@ namespace metaspace {
 class ChunkManager;
 class VirtualSpaceList;
 class CommitLimiter;
-
+// 管理JVM元空间（Metaspace）的内存分配与回收，支持类元数据（如类信息、方法等）的动态存储。
+// 非类空间（Non-class Space）：存储非压缩类元数据
+// 类空间（Class Space）：存储压缩类指针的元数据（若启用压缩）
 // MetaspaceContext is a convenience bracket around:
 //
 // - a VirtualSpaceList managing a memory area used for Metaspace
@@ -57,12 +59,13 @@ class CommitLimiter;
 //     can have different alignment between class space and non-class metaspace. That could
 //     help optimize compressed class pointer encoding, see discussion for JDK-8244943).
 
+// 作为元空间管理的上下文容器，封装内存分配逻辑
 class MetaspaceContext : public CHeapObj<mtMetaspace> {
 
-  const char* const _name;
-  VirtualSpaceList* const _vslist;
-  ChunkManager* const _cm;
-  SizeAtomicCounter _used_words_counter;
+  const char* const _name; // 标识上下文类型（"nonclass"或"class"）
+  VirtualSpaceList* const _vslist; // 管理虚拟内存区域的分配与回收
+  ChunkManager* const _cm; // 维护内存块（Chunk）的空闲链表
+  SizeAtomicCounter _used_words_counter; // 原子计数器，统计已使用的字节数（按指针大小对齐）
 
   MetaspaceContext(const char* name, VirtualSpaceList* vslist, ChunkManager* cm) :
     _name(name),

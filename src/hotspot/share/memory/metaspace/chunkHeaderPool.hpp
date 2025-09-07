@@ -34,20 +34,24 @@
 #include "utilities/globalDefinitions.hpp"
 
 namespace metaspace {
-
+// JVM（Java虚拟机）中元空间（Metaspace）内存管理的关键组件，实现了Metachunk头部对象的高效内存池化分配机制。
+// 核心目标是优化频繁创建/销毁Metachunk头部对象时的性能，减少动态内存分配的开销。
 // Chunk headers (Metachunk objects) are separate entities from their payload.
 //  Since they are allocated and released frequently in the course of buddy allocation
 //  (splitting, merging chunks happens often) we want allocation of them fast. Therefore
 //  we keep them in a simple pool (somewhat like a primitive slab allocator).
 
+// 管理Metachunk头部对象的内存池
+// 继承自CHeapObj<mtMetaspace>，表示对象在元空间堆（Metaspace Heap）上分配
 class ChunkHeaderPool : public CHeapObj<mtMetaspace> {
 
-  static const int SlabCapacity = 128;
+  static const int SlabCapacity = 128; // 每个Slab可容纳的Metachunk数量
 
+  // 内存池的基本分配单元，批量预分配Metachunk对象
   struct Slab : public CHeapObj<mtMetaspace> {
-    Slab* _next;
-    int _top;
-    Metachunk _elems [SlabCapacity];
+    Slab* _next; // 指向下一个Slab的指针
+    int _top; // 当前Slab中已分配的Metachunk索引
+    Metachunk _elems [SlabCapacity]; // 存储Metachunk对象的数组
     Slab() : _next(nullptr), _top(0) {
       for (int i = 0; i < SlabCapacity; i++) {
         _elems[i].clear();
@@ -55,17 +59,17 @@ class ChunkHeaderPool : public CHeapObj<mtMetaspace> {
     }
   };
 
-  IntCounter _num_slabs;
-  Slab* _first_slab;
-  Slab* _current_slab;
+  IntCounter _num_slabs; // 已分配的Slab数量
+  Slab* _first_slab; // 指向第一个Slab的指针
+  Slab* _current_slab; // 当前正在使用的Slab
 
-  IntCounter _num_handed_out;
+  IntCounter _num_handed_out; // 已分配但未归还的Metachunk数量
 
-  MetachunkList _freelist;
+  MetachunkList _freelist; // 空闲Metachunk链表
 
   void allocate_new_slab();
 
-  static ChunkHeaderPool* _chunkHeaderPool;
+  static ChunkHeaderPool* _chunkHeaderPool; // 全局唯一的ChunkHeaderPool实例
 
 public:
 
@@ -74,12 +78,14 @@ public:
   ~ChunkHeaderPool();
 
   // Allocates a Metachunk structure. The structure is uninitialized.
+  // 内存分配
   Metachunk* allocate_chunk_header() {
     DEBUG_ONLY(verify());
 
     Metachunk* c = nullptr;
-    c = _freelist.remove_first();
+    c = _freelist.remove_first(); // 优先从空闲链表获取
     assert(c == nullptr || c->is_dead(), "Not a freelist chunk header?");
+    // 按需分配新Slab
     if (c == nullptr) {
       if (_current_slab == nullptr ||
           _current_slab->_top == SlabCapacity) {
@@ -97,6 +103,7 @@ public:
     return c;
   }
 
+  // 内存回收
   void return_chunk_header(Metachunk* c) {
     // We only ever should return free chunks, since returning chunks
     // happens only on merging and merging only works with free chunks.

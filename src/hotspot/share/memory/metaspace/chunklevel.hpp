@@ -33,15 +33,17 @@
 class outputStream;
 
 namespace metaspace {
-
+// Chunk：内存管理的基本单元，由二进制伙伴分配器（Binary Buddy Allocator）管理。
 // Chunks are managed by a binary buddy allocator.
 
 // Chunk sizes range from 1K to 4MB (64bit).
 //
 
 // Each chunk has a level; the level corresponds to its position in the tree
-// and describes its size.
+// and describes its size. 每个chunk对应一个层级，标识其大小。级别与尺寸呈指数关系。
 //
+// 最大chunk：4MB（16 * M），对应级别0（ROOT_CHUNK_LEVEL）。
+// 最小chunk：1KB，对应级别14（HIGHEST_CHUNK_LEVEL）。
 // The largest chunks are called root chunks, of 4MB in size, and have level 0.
 // From there on it goes:
 //

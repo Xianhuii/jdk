@@ -34,14 +34,16 @@ class outputStream;
 
 namespace metaspace {
 
+// 管理元空间（Metaspace）中内存提交的位图掩码，用于跟踪每个内存单元（granule）的提交状态。
 // The CommitMask is a bitmask used to store the commit state of commit granules.
 // It keeps one bit per granule; 1 means committed, 0 means uncommitted.
 
+// 继承自CHeapBitMap，表明其底层基于堆分配的位图实现。
 class CommitMask : public CHeapBitMap {
 
-  const MetaWord* const _base;
-  const size_t _word_size;
-  const size_t _words_per_bit;
+  const MetaWord* const _base; // 指向元空间内存区域的起始地址
+  const size_t _word_size; // 元空间区域的总字节数
+  const size_t _words_per_bit; // 每个位（bit）代表的字节数（即一个granule的大小
 
   // Given an offset, in words, into the area, return the number of the bit
   // covering it.

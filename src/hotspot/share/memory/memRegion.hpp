@@ -40,6 +40,8 @@
 // create MemRegions (in CardTable and G1CMRootMemRegions) on the heap so operator
 // new and operator new [] were added for these special cases.
 
+// 连续地址空间区域，用于内存管理（如垃圾回收组件）
+// 轻量高效，通过值传递（非引用），无动态分配对象，禁止堆分配（特殊场景除外）
 class MemRegion {
   friend class VMStructs;
 private:

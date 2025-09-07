@@ -33,10 +33,11 @@ class outputStream;
 namespace metaspace {
 
 // Tiny structure to be passed by value
+// 表示元空间中的一个连续内存块，设计为轻量级值类型，支持高效传递
 class MetaBlock {
 
-  MetaWord* _base;
-  size_t _word_size;
+  MetaWord* _base; // 内存块的起始地址
+  size_t _word_size; // 内存块的大小（以字为单位）
 
 public:
 

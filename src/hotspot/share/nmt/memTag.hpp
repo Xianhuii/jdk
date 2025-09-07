@@ -26,7 +26,7 @@
 #define SHARE_NMT_MEM_TAG_HPP
 
 #include "utilities/globalDefinitions.hpp"
-
+// 内存标签
 #define MEMORY_TAG_DO(f)                                                             \
   /* Memory tag by sub systems. It occupies lower byte. */                           \
   f(mtJavaHeap,       "Java Heap")   /* Java heap                                 */ \

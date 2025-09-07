@@ -28,11 +28,13 @@
 #include "utilities/globalDefinitions.hpp"
 
 // Todo: will need to rework this, see JDK-8251342
+// MetaspaceChunkFreeListSummary 用于统计元空间（Metaspace）中空闲内存块的分类汇总信息，帮助管理元空间内存分配与回收策略。
+// 元空间是JVM存储类元数据（如类定义、常量池等）的区域，替代了早期版本的永久代（PermGen）
 class MetaspaceChunkFreeListSummary {
-  size_t _num_specialized_chunks;
-  size_t _num_small_chunks;
-  size_t _num_medium_chunks;
-  size_t _num_humongous_chunks;
+  size_t _num_specialized_chunks; // 特殊尺寸空闲块的数量
+  size_t _num_small_chunks; // 小尺寸空闲块的数量
+  size_t _num_medium_chunks; // 中等尺寸空闲块的数量
+  size_t _num_humongous_chunks; // 巨型尺寸空闲块的数量
 
   size_t _specialized_chunks_size_in_bytes;
   size_t _small_chunks_size_in_bytes;

@@ -32,26 +32,27 @@ class outputStream;
 class ReservedSpace;
 
 // VirtualSpace is data structure for committing a previously reserved address range in smaller chunks.
-
+// 该类用于高效管理一块预先保留（Reserved）的地址范围，支持按需分块提交（Commit）物理内存。适用于需要动态调整内存使用场景（如 JVM 堆内存管理）
 class VirtualSpace {
   friend class VMStructs;
  private:
-  // Reserved area
+  // Reserved area 预留内存的起始和结束地址
   char* _low_boundary;
   char* _high_boundary;
 
-  // Committed area
+  // Committed area 当前已提交内存的起始和结束地址
   char* _low;
   char* _high;
 
   // The entire space has been committed and pinned in memory, no
   // os::commit_memory() or os::uncommit_memory().
+  // 若为 true，表示内存已全部提交且不可修改（无需后续 OS 操作）
   bool _special;
 
-  // Need to know if commit should be executable.
+  // Need to know if commit should be executable. 标识提交的内存是否可执行（安全性相关）
   bool   _executable;
 
-  // MPSS Support
+  // MPSS Support 多页大小支持
   // Each virtualspace region has a lower, middle, and upper region.
   // Each region has an end boundary and a high pointer which is the
   // high water mark for the last allocated byte.
@@ -96,27 +97,32 @@ class VirtualSpace {
  public:
   // Initialization
   VirtualSpace();
+  // 按指定粒度和最大承诺大小初始化空间
   bool initialize_with_granularity(ReservedSpace rs, size_t committed_byte_size, size_t max_commit_ganularity);
+  // 简化版初始化（无粒度参数）
   bool initialize(ReservedSpace rs, size_t committed_byte_size);
 
   // Destruction
   ~VirtualSpace();
 
-  // Reserved memory
+  // Reserved memory 预留内存总大小
   size_t reserved_size() const;
-  // Actually committed OS memory
+  // Actually committed OS memory 实际已提交物理内存大小
   size_t actual_committed_size() const;
-  // Memory used/expanded in this virtual space
+  // Memory used/expanded in this virtual space 当前已使用内存大小
   size_t committed_size() const;
-  // Memory left to use/expand in this virtual space
+  // Memory left to use/expand in this virtual space 剩余可提交内存大小
   size_t uncommitted_size() const;
 
-  bool   contains(const void* p) const;
+  bool   contains(const void* p) const; // 检查指针是否在管理范围内
 
   // Operations
   // returns true on success, false otherwise
+  // 动态扩展已提交内存（可选预触达 pre_touch）
   bool expand_by(size_t bytes, bool pre_touch = false);
+  // 缩减已提交内存
   void shrink_by(size_t bytes);
+  // 释放所有资源
   void release();
 
   void check_for_contiguity() PRODUCT_RETURN;

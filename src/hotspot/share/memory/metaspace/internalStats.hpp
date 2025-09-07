@@ -33,7 +33,7 @@
 class outputStream;
 
 namespace metaspace {
-
+// 这是一个用于统计元空间（Metaspace）内存管理行为的工具类，提供调试和性能分析支持。其统计数据会集成到JVM的Metaspace报告中（如通过 jcmd VM.metaspace命令查看）
 // These are some counters useful for debugging and analyzing Metaspace problems.
 // They get printed as part of the Metaspace report (e.g. via jcmd VM.metaspace)
 

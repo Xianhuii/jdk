@@ -29,18 +29,20 @@
 #include "memory/allStatic.hpp"
 
 namespace metaspace {
-
+// 提供了元空间内存使用的实时统计功能
 // This class is a convenience interface for accessing global metaspace counters.
 struct RunningCounters : public AllStatic {
 
   // ---- virtual memory -----
 
   // Return reserved size, in words, for Metaspace
+  // 元空间已向OS申请的总内存容量（单位：单词数，通常为8字节）
   static size_t reserved_words();
   static size_t reserved_words_class();
   static size_t reserved_words_nonclass();
 
   // Return total committed size, in words, for Metaspace
+  // 实际分配给元空间的物理内存/交换空间容量
   static size_t committed_words();
   static size_t committed_words_class();
   static size_t committed_words_nonclass();
@@ -48,6 +50,7 @@ struct RunningCounters : public AllStatic {
   // ---- used chunks -----
 
   // Returns size, in words, used for metadata.
+  // 当前被类元数据占用的内存量
   static size_t used_words();
   static size_t used_words_class();
   static size_t used_words_nonclass();
@@ -55,6 +58,7 @@ struct RunningCounters : public AllStatic {
   // ---- free chunks -----
 
   // Returns size, in words, of all chunks in all freelists.
+  // 可用内存块总容量（尚未分配给具体对象的内存）
   static size_t free_chunks_words();
   static size_t free_chunks_words_class();
   static size_t free_chunks_words_nonclass();

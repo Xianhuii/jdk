@@ -60,24 +60,40 @@ class ClassLoaderData;
 // yields a full synchronous GC that unloads metaspace. And it is only intended to be used
 // by GCs with concurrent class unloading.
 
+// 防止元空间分配饥饿：确保需要触发GC的元空间分配（如类加载）在并发GC过程中不会因其他普通分配而被无限期延迟
+// 优先保障关键分配：对于即将因内存不足而抛出OOM（Out Of Memory Error）的分配请求，优先满足其需求，避免因并发操作导致其被“饿死”
 class MetaspaceCriticalAllocation : public AllStatic {
   friend class MetadataAllocationRequest;
 
+  // 标记是否存在未处理的临界分配请求
   static volatile bool _has_critical_allocation;
+
+  // 双向链表的头尾指针，用于管理待处理的MetadataAllocationRequest对象
   static MetadataAllocationRequest* _requests_head;
   static MetadataAllocationRequest* _requests_tail;
 
+  // 辅助方法，用于从链表中移除节点
   static void unlink(MetadataAllocationRequest* curr, MetadataAllocationRequest* prev);
 
+  // 将新请求加入队列尾部
   static void add(MetadataAllocationRequest* request);
+  // 从队列中移除指定请求
   static void remove(MetadataAllocationRequest* request);
 
+  // 锁机制：通过竞争全局锁，阻止普通元空间分配在GC期间干扰关键分配
+  // 在并发purge操作期间阻塞新分配，防止竞争
   static bool try_allocate_critical(MetadataAllocationRequest* request);
+  // 等待当前GC完成purge操作，释放元空间
   static void wait_for_purge(MetadataAllocationRequest* request);
 
 public:
   static void block_if_concurrent_purge();
   static void process();
+
+  // 1. 尝试直接分配元空间
+  // 2. 若失败且需要触发GC，则注册为关键分配请求
+  // 3. 执行并发Full GC（需满足GCCause::_metadata_GC_clear_soft_refs条件）
+  // 4. 在GC完成后，优先从释放的空间中满足关键分配
   static MetaWord* allocate(ClassLoaderData* loader_data, size_t word_size, Metaspace::MetadataType type);
 };
 

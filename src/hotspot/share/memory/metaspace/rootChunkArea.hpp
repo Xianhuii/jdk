@@ -35,10 +35,10 @@ class outputStream;
 
 namespace metaspace {
 
-class Metachunk;
+class Metachunk; // 表示内存块，包含级别（chunklevel_t）、大小、伙伴指针等信息，是内存分配的基本单位。
 class MetachunkClosure;
-class FreeChunkListVector;
-class VirtualSpaceNode;
+class FreeChunkListVector; // 空闲块链表集合，按级别分类存储空闲块，加速分配。
+class VirtualSpaceNode; // 表示虚拟内存空间节点，负责实际物理内存的申请与释放。
 
 // RootChunkArea manages a memory area covering a single root chunk.
 //
@@ -48,7 +48,13 @@ class VirtualSpaceNode;
 // RootChunkArea contains the functionality to merge and split chunks in
 //  buddy allocator fashion.
 //
-
+/*
+  管理单个根内存块区域（Root Chunk Area），包含以下关键功能：
+  ∙ 内存块分割（Split）：将大块递归分割为指定级别的子块，碎片加入空闲列表。
+  ∙ 内存块合并（Merge）：尝试与相邻空闲块合并，返回合并后的新块（原块失效）。
+  ∙ 原地扩容（Enlarge）：尝试合并后续伙伴块以扩大当前块。
+  ∙ 调试与验证：提供断言检查（VERIFY）和状态输出（print_on）。
+ */
 class RootChunkArea {
 
   // The base address of this area.
@@ -137,6 +143,11 @@ public:
 //  root chunk for any given memory address. It allows for easy iteration over all
 //  root chunks.
 // Beyond that it is unexciting.
+/*
+  查找表（Lookup Table），管理多个连续的RootChunkArea：
+  ∙ 根据内存地址快速定位所属的RootChunkArea。
+  ∙ 动态创建或复用区域，支持高效遍历所有根区域。
+ */
 class RootChunkAreaLUT {
 
   // Base address of the whole area.

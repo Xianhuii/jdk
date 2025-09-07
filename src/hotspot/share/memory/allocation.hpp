@@ -37,6 +37,7 @@ class outputStream;
 class Thread;
 class JavaThread;
 
+// 分配内存失败时的策略
 class AllocFailStrategy {
 public:
   enum AllocFailEnum { EXIT_OOM, RETURN_NULL };
@@ -53,19 +54,19 @@ typedef AllocFailStrategy::AllocFailEnum AllocFailType;
 
 //
 // For objects allocated in the resource area (see resourceArea.hpp).
-// - ResourceObj
+// - ResourceObj 资源区
 //
 // For objects allocated in the C-heap (managed by: free & malloc and tracked with NMT)
-// - CHeapObj
+// - CHeapObj C-堆
 //
 // For objects allocated on the stack.
-// - StackObj
+// - StackObj 栈
 //
 // For classes used as name spaces.
 // - AllStatic
 //
 // For classes in Metaspace (class data)
-// - MetaspaceObj
+// - MetaspaceObj 元空间（类数据）
 //
 // The printable subclasses are used for debugging and define virtual
 // member functions for printing. Classes that avoid allocating the
@@ -104,7 +105,7 @@ extern bool NMT_track_callsite;
 
 class NativeCallStack;
 
-
+// 分配堆内存
 char* AllocateHeap(size_t size,
                    MemTag mem_tag,
                    const NativeCallStack& stack,
@@ -119,8 +120,10 @@ char* ReallocateHeap(char *old,
                      AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
 
 // handles null pointers
+// 释放堆内存
 void FreeHeap(void* p);
 
+// C-堆空间的基类
 class CHeapObjBase {
  public:
   ALWAYSINLINE void* operator new(size_t size, MemTag mem_tag) {
@@ -173,6 +176,7 @@ class CHeapObjBase {
   void operator delete [] (void* p) { FreeHeap(p); }
 };
 
+// C-堆空间模版类
 // Uses the implicitly static new and delete operators of CHeapObjBase
 template<MemTag MT>
 class CHeapObj {
@@ -224,7 +228,7 @@ class CHeapObj {
 
 // Base class for objects allocated on the stack only.
 // Calling new or delete will result in fatal error.
-
+// 栈空间基类
 class StackObj {
  public:
   void* operator new(size_t size) = delete;
@@ -243,7 +247,7 @@ class StackObj {
 
 class ClassLoaderData;
 class MetaspaceClosure;
-
+// 元空间
 class MetaspaceObj {
   // There are functions that all subtypes of MetaspaceObj are expected
   // to implement, so that templates which are defined for this class hierarchy

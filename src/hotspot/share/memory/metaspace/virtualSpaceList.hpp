@@ -58,30 +58,37 @@ class FreeChunkListVector;
 //  in that case it degenerates to a one-node-list (used for
 //  class space).
 //
-
+// 管理一系列连续的虚拟内存区域（VirtualSpaceNode），用于元空间的动态分配。
 class VirtualSpaceList : public CHeapObj<mtClass> {
 
   // Name
+  // 列表的名称（如"Class"或"NonClass"）
   const char* const _name;
 
   // Head of the list (last added).
+  // 指向当前活动节点（最新添加的节点）
   VirtualSpaceNode* volatile _first_node;
 
   // Number of nodes (kept for statistics only).
+  // 统计节点总数的计数器（仅用于统计）
   IntCounter _nodes_counter;
 
   // Whether this list can expand by allocating new nodes.
+  // 标志位，表示是否允许扩展新节点
   const bool _can_expand;
 
   // Used to check limits before committing memory.
+  // 内存提交限制器，用于控制内存分配上限
   CommitLimiter* const _commit_limiter;
 
   // Statistics
 
   // Holds sum of reserved space, in words, over all list nodes.
+  // 所有节点保留内存总和（以字为单位）
   SizeCounter _reserved_words_counter;
 
   // Holds sum of committed space, in words, over all list nodes.
+  // 所有节点已提交内存总和（以字为单位）
   SizeCounter _committed_words_counter;
 
   // Create a new node and append it to the list. After

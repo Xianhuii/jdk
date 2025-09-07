@@ -46,7 +46,7 @@ namespace metaspace {
 //
 // On 64-bit platforms, we align to word size; on 32-bit, we align to two words.
 
-static const size_t AllocationAlignmentByteSize = 8;
+static const size_t AllocationAlignmentByteSize = 8; // 元空间分配的最小对齐单位为 8字节（保证64位值正确对齐）
 
 static const size_t AllocationAlignmentWordSize = AllocationAlignmentByteSize / BytesPerWord;
 

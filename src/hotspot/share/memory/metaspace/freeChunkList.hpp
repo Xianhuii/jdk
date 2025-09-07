@@ -55,12 +55,13 @@ namespace metaspace {
 //
 // Therefore in all likelihood the chunk lists only contain fully committed or
 // fully uncommitted chunks; either way search will stop at the first chunk.
-
+// 单级空闲块链表：维护同一级别（ChunkLevel）的空闲内存块双向链表。
 class FreeChunkList {
-
+  // 链表头尾指针
   Metachunk* _first;
   Metachunk* _last;
 
+  // 统计链表中的块数量
   IntCounter _num_chunks;
 
   void add_front(Metachunk* c) {
@@ -183,6 +184,7 @@ public:
 };
 
 // A vector of free chunk lists, one per chunk level
+// 多级空闲块管理：管理所有Chunk级别的FreeChunkList，形成分层结构
 class FreeChunkListVector {
 
   FreeChunkList _lists[chunklevel::NUM_CHUNK_LEVELS];

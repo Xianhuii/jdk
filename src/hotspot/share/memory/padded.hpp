@@ -33,6 +33,9 @@
 // expected cache line size (a power of two).  The first addend avoids sharing
 // when the start address is not a multiple of alignment; the second maintains
 // alignment of starting addresses that happen to be a multiple.
+// 计算类型 type需要填充的字节数，使其总大小对齐到 alignment（通常为缓存行大小，如64字节）
+// 公式为：alignment + align_up(sizeof(type), alignment)
+// 第一部分避免起始地址未对齐时的共享，第二部分确保起始地址已对齐时的正确填充
 #define PADDING_SIZE(type, alignment)                           \
   ((alignment) + align_up(sizeof(type), (alignment)))
 
@@ -40,6 +43,9 @@
 // effective only when applied to derived-most (leaf) classes.
 
 // When no args are passed to the base ctor.
+// 继承自类型 T，添加 _pad_buf_数组作为填充
+// 适用场景：基类无参数构造函数
+// 目的：确保实例总大小对齐，避免多个实例因起始地址落在同一缓存行导致伪共享
 template <class T, size_t alignment = DEFAULT_PADDING_SIZE>
 class Padded : public T {
  private:
@@ -47,6 +53,9 @@ class Padded : public T {
 };
 
 // When either 0 or 1 args may be passed to the base ctor.
+// 继承自 T，支持0或1个参数的构造函数
+// 同样通过 _pad_buf_实现填充
+// 适用场景：基类构造函数可接受1个参数（如初始化操作）
 template <class T, typename Arg1T, size_t alignment = DEFAULT_PADDING_SIZE>
 class Padded01 : public T {
  public:
@@ -75,6 +84,7 @@ class PaddedEndImpl<T, /*pad_size*/ 0> : public T {
 // minimal amount of padding needed to make the size of the objects be aligned.
 // This will help reducing false sharing,
 // if the start address is a multiple of alignment.
+// 通过继承 PaddedEndImpl实现更紧凑的填充
 template <class T, size_t alignment = DEFAULT_PADDING_SIZE>
 class PaddedEnd : public PaddedEndImpl<T, PADDED_END_SIZE(T, alignment)> {
   // C++ doesn't allow zero-length arrays. The padding is put in a

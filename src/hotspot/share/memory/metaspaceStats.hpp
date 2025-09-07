@@ -37,11 +37,11 @@
 //                      retrieve with MetaspaceUtils::get_combined_statistics()
 
 // (Note: just for NMT these objects need to be mutable)
-
+// 表示单个元空间（非类空间或类空间）的内存统计信息
 class MetaspaceStats {
-  size_t _reserved;
-  size_t _committed;
-  size_t _used;
+  size_t _reserved; // 预留的虚拟内存大小（字节）
+  size_t _committed; // 已提交的内存大小（已分配给操作系统的物理内存或交换空间）
+  size_t _used; // 实际已使用的内存大小（由JVM分配的对象占用）
 public:
   MetaspaceStats() : _reserved(0), _committed(0), _used(0) {}
   MetaspaceStats(size_t r, size_t c, size_t u) : _reserved(r), _committed(c), _used(u) {}
@@ -51,9 +51,10 @@ public:
 };
 
 // Class holds combined statistics for both non-class and class space.
+// 组合统计类空间（Class Space）和非类空间（Non-Class Space）的内存使用
 class MetaspaceCombinedStats : public MetaspaceStats {
-  MetaspaceStats _cstats;  // class space stats
-  MetaspaceStats _ncstats; // non-class space stats
+  MetaspaceStats _cstats;  // class space stats 类空间的MetaspaceStats对象
+  MetaspaceStats _ncstats; // non-class space stats 非类空间的MetaspaceStats对象
 public:
   MetaspaceCombinedStats() {}
   MetaspaceCombinedStats(const MetaspaceStats& cstats, const MetaspaceStats& ncstats) :

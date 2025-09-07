@@ -31,7 +31,7 @@
 #include "utilities/exceptions.hpp"
 
 // oopFactory is a class used for creating new objects.
-
+// 提供一组静态方法，用于在 JVM 堆上高效创建各种类型的 Java 数组对象（如基本类型数组、对象数组）
 class oopFactory: AllStatic {
  public:
   // Basic type leaf array allocation

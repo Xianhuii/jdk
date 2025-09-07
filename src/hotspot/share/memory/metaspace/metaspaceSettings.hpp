@@ -31,13 +31,15 @@
 #include "utilities/globalDefinitions.hpp"
 
 namespace metaspace {
-
+// 定义Metaspace的静态配置参数，控制元数据空间的内存分配策略。
 class Settings : public AllStatic {
 
   // Granularity, in bytes, metaspace is committed with.
+  // Metaspace内存分配的最小单位，每次提交内存页时以此为粒度
   static constexpr size_t _commit_granule_bytes = 64 * K;
 
   // Granularity, in words, metaspace is committed with.
+  // 以“字”（Word，通常为4或8字节）为单位的提交粒度，适配不同架构
   static constexpr size_t _commit_granule_words = _commit_granule_bytes / BytesPerWord;
 
   // The default size of a VirtualSpaceNode, unless created with an explicitly specified size.
@@ -46,14 +48,17 @@ class Settings : public AllStatic {
   //  increases. Matters mostly for 32bit platforms due to limited address space.
   // Note that this only affects the non-class metaspace. Class space ignores this size (it is one
   //  single large mapping).
+  // 虚拟空间节点的默认大小，影响进程虚拟内存的分配粒度
   static const size_t _virtual_space_node_default_word_size =
       chunklevel::MAX_CHUNK_WORD_SIZE * NOT_LP64(1) LP64_ONLY(4); // 16MB (32-bit) / 64MB (64-bit)
 
   // Alignment of the base address of a virtual space node
+  // 虚拟空间节点内存预留的对齐要求，优化内存布局效率
   static const size_t _virtual_space_node_reserve_alignment_words = chunklevel::MAX_CHUNK_WORD_SIZE;
 
   // When allocating from a chunk, if the remaining area in the chunk is too small to hold
   // the requested size, we attempt to double the chunk size in place...
+  // 当Chunk剩余空间不足时，尝试原地扩展而非重新分配，减少内存碎片
   static const bool _enlarge_chunks_in_place = true;
 
 public:

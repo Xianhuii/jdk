@@ -40,22 +40,26 @@ class Metadata;
 class Thread;
 
 // The following classes are C++ `closures` for iterating over objects, roots and spaces
-
+// 所有闭包的基类，继承自StackObj（栈上分配对象）
 class Closure : public StackObj { };
 
-// Thread iterator
+// 遍历线程的接口，定义do_thread(Thread*)方法
 class ThreadClosure {
  public:
   virtual void do_thread(Thread* thread) = 0;
 };
 
 // OopClosure is used for iterating through references to Java objects.
+// 处理Java对象引用的核心接口
 class OopClosure : public Closure {
  public:
+  // 处理普通对象指针
   virtual void do_oop(oop* o) = 0;
+  // 处理压缩对象指针（32位模式下）
   virtual void do_oop(narrowOop* o) = 0;
 };
 
+// 空闭包
 class DoNothingClosure : public OopClosure {
  public:
   virtual void do_oop(oop* p)       {}
@@ -66,6 +70,7 @@ extern DoNothingClosure do_nothing_cl;
 // OopIterateClosure adds extra code to be run during oop iterations.
 // This is needed by the GC and is extracted to a separate type to not
 // pollute the OopClosure interface.
+// 继承自OopClosure，扩展元数据处理能力
 class OopIterateClosure : public OopClosure {
  private:
   ReferenceDiscoverer* _ref_discoverer;
@@ -82,6 +87,7 @@ class OopIterateClosure : public OopClosure {
 
   // Iteration of InstanceRefKlasses differ depending on the closure,
   // the below enum describes the different alternatives.
+  // 迭代模式
   enum ReferenceIterationMode {
     DO_DISCOVERY,                // Apply closure and discover references
     DO_FIELDS,                   // Apply closure to all fields
@@ -89,6 +95,7 @@ class OopIterateClosure : public OopClosure {
   };
 
   // The default iteration mode is to do discovery.
+  // 定义引用处理策略（发现引用/遍历字段/忽略referent字段）
   virtual ReferenceIterationMode reference_iteration_mode() { return DO_DISCOVERY; }
 
   // If the do_metadata functions return "true",
@@ -100,17 +107,23 @@ class OopIterateClosure : public OopClosure {
   //
   // Used to determine metadata liveness for class unloading GCs.
 
+  // 是否处理类元数据
   virtual bool do_metadata() = 0;
+  // 处理类数据
   virtual void do_klass(Klass* k) = 0;
+  // 处理类加载器数据
   virtual void do_cld(ClassLoaderData* cld) = 0;
 
   // Class redefinition needs to get notified about methods from stackChunkOops
+  // 处理方法
   virtual void do_method(Method* m) = 0;
   // The code cache unloading needs to get notified about methods from stackChunkOops
+  // 处理JIT编译代码
   virtual void do_nmethod(nmethod* nm) = 0;
 };
 
 // An OopIterateClosure that can be used when there's no need to visit the Metadata.
+// 简单实现OopIterateClosure，默认不处理元数据（抛出ShouldNotReachHere异常）
 class BasicOopIterateClosure : public OopIterateClosure {
 public:
   BasicOopIterateClosure(ReferenceDiscoverer* rd = nullptr) : OopIterateClosure(rd) {}
@@ -123,6 +136,7 @@ public:
 };
 
 // Interface for applying an OopClosure to a set of oops.
+// 定义oops_do(OopClosure*)方法，用于对对象集合执行闭包操作
 class OopIterator {
 public:
   virtual void oops_do(OopClosure* cl) = 0;
@@ -130,6 +144,7 @@ public:
 
 enum class derived_base : intptr_t;
 enum class derived_pointer : intptr_t;
+// 处理压缩指针（derived pointers）的特殊场景，需实现do_derived_oop(derived_base*, derived_pointer*)
 class DerivedOopClosure : public Closure {
  public:
   enum { SkipNull = true };
@@ -141,6 +156,7 @@ class KlassClosure : public Closure {
   virtual void do_klass(Klass* k) = 0;
 };
 
+// 处理类加载器数据（ClassLoaderData
 class CLDClosure : public Closure {
  public:
   virtual void do_cld(ClassLoaderData* cld) = 0;
@@ -196,7 +212,7 @@ class MetadataVisitingOopIterateClosure: public ClaimMetadataVisitingOopIterateC
 };
 
 // ObjectClosure is used for iterating through an object space
-
+// 遍历对象空间的接口，定义do_object(oop)方法
 class ObjectClosure : public Closure {
  public:
   // Called for each object.
@@ -225,6 +241,7 @@ class AlwaysFalseClosure : public BoolObjectClosure {
 
 // Applies an oop closure to all ref fields in objects iterated over in an
 // object iteration.
+// 将对象转换为oop并应用OopIterateClosure
 class ObjectToOopClosure: public ObjectClosure {
   OopIterateClosure* _cl;
 public:
@@ -234,7 +251,7 @@ public:
 
 // NMethodClosure is used for iterating through nmethods
 // in the code cache or on thread stacks
-
+// 处理JIT编译后的代码（nmethod）
 class NMethodClosure : public Closure {
  public:
   virtual void do_nmethod(nmethod* n) = 0;
@@ -242,6 +259,7 @@ class NMethodClosure : public Closure {
 
 // Applies an oop closure to all ref fields in nmethods
 // iterated over in an object iteration.
+// 处理JIT编译后的代码（nmethod）
 class NMethodToOopClosure : public NMethodClosure {
  protected:
   OopClosure* _cl;
@@ -271,7 +289,7 @@ class MarkingNMethodClosure : public NMethodToOopClosure {
 // MonitorClosure is used for iterating over monitors in the monitors cache
 
 class ObjectMonitor;
-
+// 遍历监视器（ObjectMonitor）
 class MonitorClosure : public StackObj {
  public:
   // called for each monitor in cache
@@ -293,6 +311,7 @@ class VoidClosure : public StackObj {
 // closure also allows for aborting an ongoing iteration
 // by means of checking the return value from the polling
 // call.
+// 支持迭代过程中的中断和恢复，通过should_return()控制流程
 class YieldClosure : public StackObj {
 public:
  virtual bool should_return() = 0;
@@ -301,11 +320,13 @@ public:
  virtual bool should_return_fine_grain() { return false; }
 };
 
+// 处理符号表（Symbol）
 class SymbolClosure : public StackObj {
  public:
   virtual void do_symbol(Symbol**) = 0;
 };
 
+// 泛型比较接口，用于自定义对象比较逻辑
 template <typename E>
 class CompareClosure : public Closure {
 public:

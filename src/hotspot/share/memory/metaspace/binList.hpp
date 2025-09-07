@@ -35,6 +35,8 @@
 #include "utilities/globalDefinitions.hpp"
 
 namespace metaspace {
+// JVM（Java虚拟机）中Metaspace模块的内存管理组件，具体实现了一个名为BinList的小内存块管理结构。
+// 它用于高效管理小至极小尺寸（仅数个字长）的内存块回收与重用，属于内存分配器的优化部分。
 
 // BinList is a data structure to manage small to very small memory blocks
 // (only a few words). It is used to manage deallocated small blocks.
@@ -70,6 +72,7 @@ namespace metaspace {
 // This structure is a bit expensive in memory costs (we pay one pointer per managed
 // block size) so we only use it for a small number of sizes.
 
+// 模板参数：num_lists表示支持管理的块大小种类数（最大可管理块大小为num_lists字）
 template <int num_lists>
 class BinListImpl {
 

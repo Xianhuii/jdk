@@ -164,13 +164,16 @@ class VirtualSpaceNode;
 // |  chunk  |  chunk  |      chunk        |
 // +---------+---------+-------------------+
 //
-
+// JVM元空间（Metaspace）的核心组件Metachunk，用于管理类元数据的物理内存分配。
+// Metachunk采用伙伴系统（Buddy System）的内存分配策略，支持高效的内存碎片管理和动态调整。
 class Metachunk {
 
   // start of chunk memory; null if dead.
+  // 指向块负载内存的起始地址（若为死亡块则为nullptr）
   MetaWord* _base;
 
   // Used words.
+  // 已使用的字节数
   size_t _used_words;
 
   // Size of the region, starting from base, which is guaranteed to be committed. In words.
@@ -178,8 +181,10 @@ class Metachunk {
   //
   //  (This is a performance optimization. The underlying VirtualSpaceNode knows
   //   which granules are committed; but we want to avoid having to ask.)
+  // 从基地址开始已提交（可访问）的连续字节数
   size_t _committed_words;
 
+  // 块的层次（Level），决定块大小（最小1KB，最大4MB，按2的幂次递增）
   chunklevel_t _level; // aka size.
 
   // state_free:    free, owned by a ChunkManager
@@ -187,14 +192,15 @@ class Metachunk {
   // dead:          just a hollow chunk header without associated memory, owned
   //                 by chunk header pool.
   enum class State : uint8_t {
-    Free = 0,
-    InUse = 1,
-    Dead = 2
+    Free = 0, // （空闲，由ChunkManager管理）
+    InUse = 1, // （使用中，由MetaspaceArena管理）
+    Dead = 2 // 死亡，无有效负载，存于ChunkHeaderPool）
   };
-  State _state;
+  State _state; // 表示块的状态
 
   // We need unfortunately a back link to the virtual space node
   // for splitting and merging nodes.
+  // 关联的VirtualSpaceNode，用于管理底层内存的提交与释放
   VirtualSpaceNode* _vsnode;
 
   // A chunk header is kept in a list:
@@ -203,6 +209,7 @@ class Metachunk {
   // 3 in the freelist of unused headers inside the ChunkHeaderPool,
   //   if it is unused (e.g. result of chunk merging) and has no associated
   //   memory area.
+  // 链表指针，用于连接同一链表中的块（如MetaspaceArena的使用中块列表或ChunkManager的空闲块列表）
   Metachunk* _prev;
   Metachunk* _next;
 
@@ -212,6 +219,7 @@ class Metachunk {
   // Note: These members can be modified concurrently while a chunk is alive and in use.
   // This can happen if a neighboring chunk is added or removed.
   // This means only read or modify these members under expand lock protection.
+  // 物理邻居指针，用于链接虚拟空间（Virtual Space）中相邻的块
   Metachunk* _prev_in_vs;
   Metachunk* _next_in_vs;
 
@@ -235,6 +243,7 @@ public:
     _next_in_vs(nullptr)
   {}
 
+  // 重置块的所有属性
   void clear() {
     _base = nullptr;
     _used_words = 0; _committed_words = 0;
@@ -298,6 +307,7 @@ public:
 
   // Ensure that chunk is committed up to at least new_committed_words words.
   // Fails if we hit a commit limit.
+  // 确保块至少提交指定数量的连续字节（避免超出提交限制）
   bool ensure_committed(size_t new_committed_words);
   bool ensure_committed_locked(size_t new_committed_words);
 
@@ -309,6 +319,7 @@ public:
   // Uncommit chunk area. The area must be a common multiple of the
   // commit granule size (in other words, we cannot uncommit chunks smaller than
   // a commit granule size).
+  // 释放未使用的提交内存（需满足粒度对齐）
   void uncommit();
   void uncommit_locked();
 
@@ -320,9 +331,11 @@ public:
   // Caller must make sure the chunk is both large enough and committed far enough
   // to hold the allocation. Will always work.
   //
+  // 从块中分配指定大小的连续内存（需对齐）
   MetaWord* allocate(size_t request_word_size);
 
   // Initialize structure for reuse.
+  // 初始化块，关联虚拟空间节点和基地址
   void initialize(VirtualSpaceNode* node, MetaWord* base, chunklevel_t lvl) {
     clear();
     _vsnode = node; _base = base; _level = lvl;

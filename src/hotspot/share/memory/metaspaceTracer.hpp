@@ -31,20 +31,31 @@
 
 class ClassLoaderData;
 
+// 继承自CHeapObj<mtTracing>
+// 表示对象在C堆（非Java堆）上分配，mtTracing是内存类型标识符，用于区分不同用途的内存分配
 class MetaspaceTracer : public CHeapObj<mtTracing> {
+  // 模板函数，用于发送具体的分配失败事件。
+  // 可能根据不同的事件类型（如OOM、普通失败）生成不同格式的事件数据，供外部系统（如监控工具）消费。
   template <typename E>
   void send_allocation_failure_event(ClassLoaderData *cld,
                                      size_t word_size,
                                      MetaspaceObj::Type objtype,
                                      Metaspace::MetadataType mdtype) const;
  public:
-  void report_gc_threshold(size_t old_val,
-                           size_t new_val,
-                           MetaspaceGCThresholdUpdater::Type updater) const;
-  void report_metaspace_allocation_failure(ClassLoaderData *cld,
-                                           size_t word_size,
-                                           MetaspaceObj::Type objtype,
-                                           Metaspace::MetadataType mdtype) const;
+  // 当元空间GC阈值变化时触发
+  void report_gc_threshold(size_t old_val, // 旧阈值
+                           size_t new_val, // 新阈值
+                           MetaspaceGCThresholdUpdater::Type updater // 触发更新的类型
+                           ) const;
+
+  // 元空间分配失败时报告
+  void report_metaspace_allocation_failure(ClassLoaderData *cld, // 关联的类加载器数据
+                                           size_t word_size, // 分配失败的内存大小（以字为单位）
+                                           MetaspaceObj::Type objtype, // 分配对象的类型（如类、方法等）
+                                           Metaspace::MetadataType mdtype // 元数据类型（如类元数据、常量池等）
+                                           ) const;
+
+  // 元数据内存耗尽（OOM）时触发
   void report_metadata_oom(ClassLoaderData *cld,
                            size_t word_size,
                            MetaspaceObj::Type objtype,
