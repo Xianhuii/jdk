@@ -319,7 +319,7 @@ class ClassLoader: AllStatic {
                                                 PackageEntry* pkg_entry, // Java package entry derived from the class name
                                                 const char* const file_name);
 
-  // Load individual .class file 加载单个.class文件
+  // Load individual .class file 使用启动类加载器加载单个.class文件
   static InstanceKlass* load_class(Symbol* class_name, PackageEntry* pkg_entry, bool search_append_only, TRAPS);
 
   // If the specified package has been loaded by the system, then returns

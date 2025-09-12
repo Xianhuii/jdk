@@ -1120,6 +1120,7 @@ void java_lang_Class::allocate_mirror(Klass* k, bool is_scratch, Handle protecti
   }
 }
 
+// 根据Klass创建对应的java.lang.Class的Klass
 void java_lang_Class::create_mirror(Klass* k, Handle class_loader,
                                     Handle module, Handle protection_domain,
                                     Handle classData, TRAPS) {
@@ -1132,6 +1133,7 @@ void java_lang_Class::create_mirror(Klass* k, Handle class_loader,
     Handle mirror;
     Handle comp_mirror;
 
+    // 分配内存
     allocate_mirror(k, /*is_scratch=*/false, protection_domain, classData, mirror, comp_mirror, CHECK);
 
     // set the classLoader field in the java_lang_Class instance

@@ -1155,14 +1155,16 @@ void SystemDictionary::load_shared_class_misc(InstanceKlass* ik, ClassLoaderData
 
 InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Handle class_loader, TRAPS) {
 
-  if (class_loader.is_null()) {
+  if (class_loader.is_null()) { // 启动类加载器
     ResourceMark rm(THREAD);
     PackageEntry* pkg_entry = nullptr;
     bool search_only_bootloader_append = false;
 
     // Find the package in the boot loader's package entry table.
+    // 获取包名
     TempNewSymbol pkg_name = ClassLoader::package_from_class_name(class_name);
     if (pkg_name != nullptr) {
+      // 根据包名获取路径
       pkg_entry = class_loader_data(class_loader)->packages()->lookup_only(pkg_name);
     }
 
@@ -1235,6 +1237,7 @@ InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Ha
     if (k == nullptr) {
       // Use VM class loader
       PerfTraceTime vmtimer(ClassLoader::perf_sys_classload_time());
+      // 使用启动类加载器加载
       k = ClassLoader::load_class(class_name, pkg_entry, search_only_bootloader_append, CHECK_NULL);
     }
 
@@ -1244,7 +1247,7 @@ InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Ha
       k = find_or_define_instance_class(class_name, class_loader, k, CHECK_NULL);
     }
     return k;
-  } else {
+  } else { // 用户自定义类加载器
     // Use user specified class loader to load class. Call loadClass operation on class_loader.
     ResourceMark rm(THREAD);
 
@@ -1262,12 +1265,14 @@ InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Ha
 
     JavaValue result(T_OBJECT);
 
+    // java_lang_ClassLoader的InstanceKlass
     InstanceKlass* spec_klass = vmClasses::ClassLoader_klass();
 
     // Call public unsynchronized loadClass(String) directly for all class loaders.
     // For parallelCapable class loaders, JDK >=7, loadClass(String, boolean) will
     // acquire a class-name based lock rather than the class loader object lock.
     // JDK < 7 already acquire the class loader lock in loadClass(String, boolean).
+    // 调用java_lang_ClassLoader的loadClass方法
     JavaCalls::call_virtual(&result,
                             class_loader,
                             spec_klass,
@@ -1277,6 +1282,7 @@ InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Ha
                             CHECK_NULL);
 
     assert(result.get_type() == T_OBJECT, "just checking");
+    // 加载结果
     oop obj = result.get_oop();
 
     // Primitive classes return null since forName() can not be
@@ -1295,10 +1301,11 @@ InstanceKlass* SystemDictionary::load_instance_class_impl(Symbol* class_name, Ha
   }
 }
 
+// 加载
 InstanceKlass* SystemDictionary::load_instance_class(Symbol* name,
                                                      Handle class_loader,
                                                      TRAPS) {
-
+  // 加载类
   InstanceKlass* loaded_class = load_instance_class_impl(name, class_loader, CHECK_NULL);
 
   // If everything was OK (no exceptions, no null return value), and
@@ -1307,6 +1314,7 @@ InstanceKlass* SystemDictionary::load_instance_class(Symbol* name,
       loaded_class->class_loader() != class_loader()) {
 
     ClassLoaderData* loader_data = class_loader_data(class_loader);
+    // 检查约束
     check_constraints(loaded_class, loader_data, false, CHECK_NULL);
 
     // Record dependency for non-parent delegation.
@@ -1592,7 +1600,7 @@ void SystemDictionary::check_constraints(InstanceKlass* k,
     Symbol* name = k->name();
 
     MutexLocker mu(THREAD, SystemDictionary_lock);
-
+    // 检查是否已存在相同的类
     InstanceKlass* check = loader_data->dictionary()->find_class(THREAD, name);
     if (check != nullptr) {
       // If different InstanceKlass - duplicate class definition,

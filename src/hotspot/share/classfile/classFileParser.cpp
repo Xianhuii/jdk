@@ -453,7 +453,7 @@ static inline Symbol* check_symbol_at(const ConstantPool* cp, int index) {
 }
 
 /**
-* 解析常量池数据 https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4
+* 解析&校验常量池数据 https://docs.oracle.com/javase/specs/jvms/se19/html/jvms-4.html#jvms-4.4
 */
 void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream, // 字节码文件流
                                          ConstantPool* const cp, // 虚拟机中的常量池对象
@@ -646,6 +646,7 @@ void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream, /
     } // switch(tag)
   } // end of for
 
+  // 为Klass分配内存
   cp->allocate_resolved_klasses(_loader_data, num_klasses, CHECK);
 
   if (!_need_verify) {
@@ -3782,11 +3783,15 @@ void ClassFileParser::apply_parsed_class_metadata(
   assert(this_klass != nullptr, "invariant");
 
   _cp->set_pool_holder(this_klass);
+  // 常量池
   this_klass->set_constants(_cp);
+  // 属性
   this_klass->set_fieldinfo_stream(_fieldinfo_stream);
   this_klass->set_fieldinfo_search_table(_fieldinfo_search_table);
   this_klass->set_fields_status(_fields_status);
+  // 方法
   this_klass->set_methods(_methods);
+  // 其他
   this_klass->set_inner_classes(_inner_classes);
   this_klass->set_nest_members(_nest_members);
   this_klass->set_nest_host_index(_nest_host);
@@ -5043,7 +5048,7 @@ InstanceKlass* ClassFileParser::create_instance_klass(bool changed_by_loadhook,
     return _klass;
   }
 
-  // 根据类名创建对应的InstanceKlass实现类
+  // 根据类名创建对应的InstanceKlass实现类（只是创建对象，没有设置数据）
   InstanceKlass* const ik =
     InstanceKlass::allocate_instance_klass(*this, CHECK_NULL);
 
@@ -5097,6 +5102,7 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
 
   // this transfers ownership of a lot of arrays from
   // the parser onto the InstanceKlass*
+  // 设置解析后的元数据
   apply_parsed_class_metadata(ik, _java_fields_count);
 
   // can only set dynamic nest-host after static nest information is set

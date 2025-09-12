@@ -248,6 +248,7 @@ void ConstantPool::allocate_resolved_klasses(ClassLoaderData* loader_data, int n
   set_resolved_klasses(rk);
 }
 
+// 初始化kalss
 void ConstantPool::initialize_unresolved_klasses(ClassLoaderData* loader_data, TRAPS) {
   int len = length();
   int num_klasses = 0;
