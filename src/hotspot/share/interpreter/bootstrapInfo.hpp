@@ -30,25 +30,41 @@
 
 // BootstrapInfo provides condensed information from the constant pool
 // necessary to invoke a bootstrap method.
+// BootstrapInfo类是JVM中处理invokedynamic指令的核心组件，用于封装引导方法（Bootstrap Method）的解析与执行上下文。
+// 核心功能
+// 引导方法解析：管理invokedynamic指令的引导方法（Bootstrap Method）及其参数的解析流程。
+// 状态维护：跟踪解析前后的状态，包括引导方法句柄、静态参数、解析结果（直接值或方法句柄）等。
+// 符号表操作：通过常量池（constantPoolHandle）访问方法名、描述符等符号信息。
 class BootstrapInfo : public StackObj {
+  // 指向包含引导方法引用的常量池
   constantPoolHandle _pool;     // constant pool containing the bootstrap specifier
+  // 常量池中引导方法指定符（Bootstrap Specifier）的索引
   const int   _bss_index;       // index of bootstrap specifier in CP (condy or indy)
+  // 内部invokedynamic调用点的索引（若为-1则为CondY调用）
   const int   _indy_index;      // internal index of indy call site, or -1 if a condy call
   const int   _argc;            // number of static arguments
   Symbol*     _name;            // extracted from JVM_CONSTANT_NameAndType
   Symbol*     _signature;
 
   // pre-bootstrap resolution state:
+  // 引导方法句柄（BootstrapMethodHandle），需延迟解析
   Handle      _bsm;             // resolved bootstrap method
+  // 解析后的方法名（String对象）
   Handle      _name_arg;        // resolved String
+  // 解析后的方法类型或类（Class或MethodType对象）
   Handle      _type_arg;        // resolved Class or MethodType
+  // 静态参数数组（Object[]），可能为空
   Handle      _arg_values;      // array of static arguments; null implies either
                                 // uresolved or zero static arguments are specified
 
   // post-bootstrap resolution state:
+  // 标记是否已完成解析
   bool        _is_resolved;       // set true when any of the next fields are set
+  // CondY调用解析后的直接值
   Handle      _resolved_value;    // bind this as condy constant
+  // Indy调用解析后的目标方法句柄
   methodHandle _resolved_method;  // bind this as indy behavior
+  // 附加参数（如方法句柄的额外信息
   Handle      _resolved_appendix; // extra opaque static argument for _resolved_method
 
  public:

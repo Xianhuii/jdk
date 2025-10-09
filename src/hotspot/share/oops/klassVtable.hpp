@@ -40,6 +40,7 @@
 
 class vtableEntry;
 
+// 虚方法表，用于记录类中非静态、非 final的实例方法入口
 class klassVtable {
   Klass*       _klass;            // my klass
   int          _tableOffset;      // offset of start of vtable data within klass
@@ -179,6 +180,7 @@ class klassVtable {
 //    destination is compiled:
 //      from_compiled_code_entry_point -> nmethod entry point
 //      from_interpreter_entry_point   -> i2cadapter
+// 虚方法
 class vtableEntry {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -241,7 +243,7 @@ class itableOffsetEntry {
   friend class klassItable;
 };
 
-
+// 接口方法
 class itableMethodEntry {
  private:
   Method* _method;
@@ -279,6 +281,7 @@ class itableMethodEntry {
 //    -- vtable for interface 2 ---
 //    ...
 //
+// 接口方法表，记录类实现的接口方法入口
 class klassItable {
  private:
   InstanceKlass*       _klass;             // my klass

@@ -84,7 +84,7 @@ class TemplateInterpreterGenerator: public AbstractInterpreterGenerator {
 
   void generate_all();
 
-  // entry point generator
+  // entry point generator 生成方法入口
   address generate_method_entry(AbstractInterpreter::MethodKind kind, bool native);
 
   // generate intrinsic method entries

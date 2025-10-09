@@ -33,22 +33,27 @@
 
 class ciBytecodeStream;
 class ResolvedIndyEntry;
-
+// 实现Java虚拟机（JVM）的解释器字节码处理框架，提供对Java字节码的解析、验证和操作能力。
 // The base class for different kinds of bytecode abstractions.
 // Provides the primitive operations to manipulate code relative
 // to the bcp.
 
+// 所有字节码操作的基类，封装通用方法和属性
 class Bytecode: public StackObj {
  protected:
+  // 当前字节码指针（bytecode pointer）
   const address   _bcp;
+  // 字节码类型（如_aload_0、_invokevirtual等）
   const Bytecodes::Code _code;
 
   // Address computation
+  // 计算相对地址
   address addr_at            (int offset)        const     { return (address)_bcp + offset; }
   u_char byte_at(int offset) const               { return *addr_at(offset); }
   address aligned_addr_at    (int offset)        const     { return align_up(addr_at(offset), jintSize); }
 
   // Word access:
+  // 按Java字节序读取无符号16位整数
   int     get_Java_u2_at     (int offset)        const     { return Bytes::get_Java_u2(addr_at(offset)); }
   int     get_Java_u4_at     (int offset)        const     { return Bytes::get_Java_u4(addr_at(offset)); }
   int     get_aligned_Java_u4_at(int offset)     const     { return Bytes::get_Java_u4(aligned_addr_at(offset)); }
@@ -112,6 +117,7 @@ class Bytecode: public StackObj {
   }
 
   // These are used locally and also from bytecode streams.
+  // 验证字节码格式一致性
   void assert_same_format_as(Bytecodes::Code testbc, bool is_wide = false) const NOT_DEBUG_RETURN;
   static void assert_index_size(int required_size, Bytecodes::Code bc, bool is_wide = false) NOT_DEBUG_RETURN;
   static void assert_offset_size(int required_size, Bytecodes::Code bc, bool is_wide = false) NOT_DEBUG_RETURN;
@@ -137,7 +143,7 @@ class LookupswitchPair {
   int  offset() const                            { return get_Java_u4_at(1 * jintSize); }
 };
 
-
+// 对应lookupswitch指令，解析默认偏移量和匹配项列表
 class Bytecode_lookupswitch: public Bytecode {
  public:
   Bytecode_lookupswitch(Method* method, address bcp): Bytecode(method, bcp) { verify(); }
@@ -154,6 +160,7 @@ class Bytecode_lookupswitch: public Bytecode {
   }
 };
 
+// 对应tableswitch指令，解析默认偏移量、键范围和目标偏移量数组
 class Bytecode_tableswitch: public Bytecode {
  public:
   Bytecode_tableswitch(Method* method, address bcp): Bytecode(method, bcp) { verify(); }
@@ -171,6 +178,7 @@ class Bytecode_tableswitch: public Bytecode {
 
 // Common code for decoding invokes and field references.
 
+// 处理方法或字段引用的公共逻辑，如解析常量池、获取类名、方法名等
 class Bytecode_member_ref: public Bytecode {
  protected:
   const Method* _method;                          // method containing the bytecode
@@ -195,6 +203,7 @@ class Bytecode_member_ref: public Bytecode {
 
 // Abstraction for invoke_{virtual, static, interface, special, dynamic, handle}
 
+// 处理调用指令（如invokevirtual、invokestatic）
 class Bytecode_invoke: public Bytecode_member_ref {
  protected:
   // Constructor that skips verification
@@ -241,6 +250,7 @@ inline Bytecode_invoke Bytecode_invoke_check(const methodHandle& method, int bci
 
 
 // Abstraction for all field accesses (put/get field/static)
+// 处理字段访问指令（如getfield、putfield）
 class Bytecode_field: public Bytecode_member_ref {
  public:
   Bytecode_field(const methodHandle& method, int bci)  : Bytecode_member_ref(method, bci) { verify(); }
@@ -262,6 +272,7 @@ class Bytecode_field: public Bytecode_member_ref {
 };
 
 // Abstraction for checkcast
+// 处理checkcast指令，返回类型索引
 class Bytecode_checkcast: public Bytecode {
  public:
   Bytecode_checkcast(Method* method, address bcp): Bytecode(method, bcp) { verify(); }
@@ -272,6 +283,7 @@ class Bytecode_checkcast: public Bytecode {
 };
 
 // Abstraction for instanceof
+// 处理instanceof指令，返回类型索引
 class Bytecode_instanceof: public Bytecode {
  public:
   Bytecode_instanceof(Method* method, address bcp): Bytecode(method, bcp) { verify(); }
@@ -281,6 +293,7 @@ class Bytecode_instanceof: public Bytecode {
   u2 index() const   { return get_index_u2(Bytecodes::_instanceof); };
 };
 
+// 处理new指令，返回类索引
 class Bytecode_new: public Bytecode {
  public:
   Bytecode_new(Method* method, address bcp): Bytecode(method, bcp) { verify(); }
@@ -290,6 +303,7 @@ class Bytecode_new: public Bytecode {
   u2 index() const   { return get_index_u2(Bytecodes::_new); };
 };
 
+// 处理多维数组创建指令，返回数组类型索引
 class Bytecode_multianewarray: public Bytecode {
  public:
   Bytecode_multianewarray(Method* method, address bcp): Bytecode(method, bcp) { verify(); }
@@ -309,6 +323,8 @@ class Bytecode_anewarray: public Bytecode {
 };
 
 // Abstraction for ldc, ldc_w and ldc2_w
+// 处理ldc、ldc_w、ldc2_w指令，支持快速路径（如has_cache_index()）
+// 解析常量类型（如result_type()），通过resolve_constant()获取常量值
 class Bytecode_loadconstant: public Bytecode {
  private:
   const Method* _method;

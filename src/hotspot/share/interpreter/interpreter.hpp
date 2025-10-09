@@ -41,7 +41,8 @@ class InterpreterMacroAssembler;
 // An InterpreterCodelet is a piece of interpreter code. All
 // interpreter code is generated into little codelets which
 // contain extra information for debugging and printing purposes.
-
+// 表示解释器生成的独立代码片段（codelet），包含调试信息和元数据。
+// 继承自Stub类，用于生成可执行代码块。
 class InterpreterCodelet: public Stub {
   friend class VMStructs;
  private:

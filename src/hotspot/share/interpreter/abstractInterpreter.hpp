@@ -25,10 +25,10 @@
 #ifndef SHARE_INTERPRETER_ABSTRACTINTERPRETER_HPP
 #define SHARE_INTERPRETER_ABSTRACTINTERPRETER_HPP
 
-#include "asm/macroAssembler.hpp"
-#include "classfile/vmIntrinsics.hpp"
-#include "code/stubs.hpp"
-#include "interpreter/bytecodes.hpp"
+#include "asm/macroAssembler.hpp" // 汇编宏操作
+#include "classfile/vmIntrinsics.hpp" // 类文件与虚拟机内部定义
+#include "code/stubs.hpp" // 代码存根
+#include "interpreter/bytecodes.hpp" // 字节码定义
 #include "oops/method.hpp"
 #include "runtime/frame.hpp"
 #include "runtime/javaThread.hpp"
@@ -51,11 +51,13 @@
 
 class InterpreterMacroAssembler;
 
+// 提供平台无关的解释器核心逻辑，包含静态方法和常量。
 class AbstractInterpreter: AllStatic {
   friend class VMStructs;
   friend class ZeroInterpreterGenerator;
   friend class TemplateInterpreterGenerator;
  public:
+  // 方法类型
   enum MethodKind {
     zerolocals,                                                 // method needs locals initialization
     zerolocals_synchronized,                                    // method needs locals initialization & is synchronized
@@ -97,6 +99,7 @@ class AbstractInterpreter: AllStatic {
   };
 
   // Conversion from the part of the above enum to vmIntrinsics::_invokeExact, etc.
+  // 将 MethodKind映射到 JVM 内置方法（如 sin, cos等）
   static vmIntrinsics::ID method_handle_intrinsic(MethodKind kind) {
     if (kind >= method_handle_invoke_FIRST && kind <= method_handle_invoke_LAST)
       return vmIntrinsics::ID_from(static_cast<int>(vmIntrinsics::FIRST_MH_SIG_POLY) + (kind - method_handle_invoke_FIRST));
@@ -117,8 +120,11 @@ class AbstractInterpreter: AllStatic {
   static bool       _notice_safepoints;                         // true if safepoints are activated
 
   // method entry points
+  // 不同方法类型的入口地址数组
   static address    _entry_table[number_of_method_entries];     // entry points for a given method
+  // 本地方法结果处理器数组
   static address    _native_abi_to_tosca[number_of_result_handlers];  // for native method result handlers
+  // 本地方法签名处理的慢速路径入口
   static address    _slow_signature_handler;                              // the native method generic (slow) signature handler
 
   static address    _rethrow_exception_entry;                   // rethrows an activation in previous frame
@@ -219,7 +225,7 @@ class AbstractInterpreter: AllStatic {
 
   // Runtime support
   static bool       is_not_reached(const methodHandle& method, int bci);
-  // Safepoint support
+  // Safepoint support 安全点控制
   static void       notice_safepoints()                         { ShouldNotReachHere(); } // stops the thread when reaching a safepoint
   static void       ignore_safepoints()                         { ShouldNotReachHere(); } // ignores safepoints
 
@@ -295,11 +301,11 @@ class AbstractInterpreter: AllStatic {
 
 //------------------------------------------------------------------------------------------------------------------------
 // The interpreter generator.
-
+// 抽象解释器的代码生成器基类，用于生成平台相关的解释器代码（如模板解释器）
 class Template;
 class AbstractInterpreterGenerator: public StackObj {
  protected:
-  InterpreterMacroAssembler* _masm;
+  InterpreterMacroAssembler* _masm; // 指向汇编宏操作器的指针，用于生成机器码
 
  public:
   AbstractInterpreterGenerator();

@@ -35,7 +35,7 @@
 // made from within the bytecodes of a method to an object outside of
 // that method. If the info is invalid, the link has not been resolved
 // successfully.
-
+// 存储方法调用解析后的完整信息。
 class CallInfo : public StackObj {
  public:
   // Ways that a method call might be selected (or not) based on receiver type.
@@ -48,13 +48,20 @@ class CallInfo : public StackObj {
     unknown_kind = -1
   };
  private:
+  // 解析后的静态接收者类
   Klass*       _resolved_klass;         // static receiver klass, resolved from a symbolic reference
+  // 静态绑定的目标方法（可能未最终确定）
   methodHandle _resolved_method;        // static target method
+  // 动态选择的最终方法（根据接收者类型决定）
   methodHandle _selected_method;        // dynamic (actual) target method
+  // 调用类型（直接调用、vtable调用、itable调用）
   CallKind     _call_kind;              // kind of call (static(=bytecode static/special +
                                         //               others inferred), vtable, itable)
+  // vtable/itable索引
   int          _call_index;             // vtable or itable index of selected class method (if any)
+  // 常量池附加参数（如invokedynamic的引导方法）
   Handle       _resolved_appendix;      // extra argument in constant pool (if CPCE::has_appendix)
+  // 解析后的方法名对象
   Handle       _resolved_method_name;   // Object holding the ResolvedMethodName
 
   void set_static(Klass* resolved_klass, const methodHandle& resolved_method, TRAPS);
@@ -131,13 +138,21 @@ class CallInfo : public StackObj {
 //   current_klass  = sending method holder (i.e., class containing the method
 //                    containing the call being resolved)
 //   current_method = sending method (relevant for field resolution)
+// 封装常量池解析所需上下文信息
 class LinkInfo : public StackObj {
+  // 方法或字段的符号名称
   Symbol*     _name;            // extracted from JVM_CONSTANT_NameAndType
+  // 方法或字段的描述符
   Symbol*     _signature;
+  // 常量池引用的初始类
   Klass*      _resolved_klass;  // class that the constant pool entry points to
+  // 发出调用的类（用于访问权限检查）
   Klass*      _current_klass;   // class that owns the constant pool
+  // 发出调用的方法（用于私有方法访问）
   methodHandle _current_method;  // sending method
+  // 是否执行访问权限检查
   bool        _check_access;
+  // 是否检查类加载器约束
   bool        _check_loader_constraints;
   constantTag _tag;
 
@@ -194,7 +209,7 @@ class LinkInfo : public StackObj {
 
 // The LinkResolver is used to resolve constant-pool references at run-time.
 // It does all necessary link-time checks & throws exceptions if necessary.
-
+// 统一处理所有运行时常量池解析逻辑
 class LinkResolver: AllStatic {
   friend class klassVtable;
   friend class klassItable;
