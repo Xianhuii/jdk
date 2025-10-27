@@ -44,6 +44,7 @@ typedef void (*TraceTimerLogPrintFunc)(const char*, ...);
 #define TRACETIME_LOG(TT_LEVEL, ...) \
     log_is_enabled(TT_LEVEL, __VA_ARGS__) ? static_cast<TraceTimerLogPrintFunc>(&LogImpl<LOG_TAGS(__VA_ARGS__)>::write<LogLevel::TT_LEVEL>) : (TraceTimerLogPrintFunc)nullptr
 
+// 提供性能追踪（Timing Trace）功能，用于测量代码块的执行时间，并支持灵活的日志记录与累积计时机制。
 class TraceTime: public StackObj {
  private:
   bool          _active;    // do timing

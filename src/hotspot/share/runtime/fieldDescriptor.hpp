@@ -35,10 +35,12 @@
 // A fieldDescriptor describes the attributes of a single field (instance or class variable).
 // It needs the class constant pool to work (because it only holds indices into the pool
 // rather than the actual info).
-
+// 用于描述Java类中字段（实例变量或静态变量）的元数据信息
 class fieldDescriptor {
  private:
+  // FieldInfo对象，存储字段的原始数据（来自类文件的字段表）
   FieldInfo           _fieldinfo;
+  // 常量池句柄，用于解析符号引用
   constantPoolHandle  _cp;
 
   inline FieldInfo field() const { return _fieldinfo; };

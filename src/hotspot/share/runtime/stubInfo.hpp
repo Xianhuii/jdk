@@ -43,10 +43,10 @@
 // blobs, stubs and entries.
 
 enum class StubGroup : int {
-  SHARED,
-  C1,
-  C2,
-  STUBGEN,
+  SHARED, // 共享代码
+  C1, // C1编译器生成
+  C2, // C2编译器生成
+  STUBGEN, // 动态生成的存根，如内联缓存
   NUM_STUBGROUPS
 };
 
@@ -169,6 +169,7 @@ enum class StubGroup : int {
 #define C2_DECLARE_TAG4(name, _1, _2, _3) JOIN3(c2, name, id) ,
 #define STUBGEN_DECLARE_TAG(name) JOIN3(stubgen, name, id) ,
 
+// 全局唯一标识符
 enum class BlobId : int {
   NO_BLOBID = -1,
   // declare an enum tag for each shared runtime blob
@@ -219,6 +220,7 @@ enum class BlobId : int {
 #define C2_DECLARE_TAG4(name, _1, _2, _3) JOIN3(c2, name, id) ,
 #define STUBGEN_DECLARE_TAG(blob, name) JOIN3(stubgen, name, id) ,
 
+// 全局唯一标识符
 enum class StubId : int {
   NO_STUBID = -1,
   // declare an enum tag for each shared runtime blob
@@ -357,7 +359,7 @@ enum class StubId : int {
   JOIN4(stubgen, arch_name, field_name, id),                            \
 
 // the above macros are enough to declare the enum
-
+// 全局唯一标识符
 enum class EntryId : int {
   NO_ENTRYID = -1,
   // declare an enum tag for each shared runtime blob
@@ -484,9 +486,13 @@ private:
   static const int STUB_TABLE_SIZE = static_cast<int>(StubId::NUM_STUBIDS);
   static const int ENTRY_TABLE_SIZE = static_cast<int>(EntryId::NUM_ENTRYIDS);
 
+  // 记录每个组的基本信息（首尾blob ID、首尾entry ID、组名）
   static struct GroupDetails _group_table[GROUP_TABLE_SIZE];
+  // 记录每个blob的所属组、首尾stub ID、首尾entry ID、名称
   static struct BlobDetails _blob_table[BLOB_TABLE_SIZE];
+  // 记录每个stub所属blob、首尾entry ID、是否为数组入口、名称
   static struct StubDetails _stub_table[STUB_TABLE_SIZE];
+  // 记录每个entry所属stub及数组基址（若为数组入口）
   static struct EntryDetails _entry_table[ENTRY_TABLE_SIZE];
 
   // helpers to access table elements using enums as indices

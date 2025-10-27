@@ -33,16 +33,17 @@
 #include "runtime/perfData.hpp"
 #include "runtime/perfDataTypes.hpp"
 
+// 定义CPU时间统计的分类枚举
 class CPUTimeGroups : public AllStatic {
 public:
   enum class CPUTimeType {
-    gc_total,
-    gc_parallel_workers,
-    gc_conc_mark,
-    gc_conc_refine,
-    gc_service,
-    vm,
-    conc_dedup,
+    gc_total, // 总GC时间
+    gc_parallel_workers, // 并行GC工作线程时间
+    gc_conc_mark, // 并发标记阶段时间
+    gc_conc_refine, // 并发引用处理时间
+    gc_service, // GC服务线程时间
+    vm, // JVM其他部分时间
+    conc_dedup, // 并发去重操作时间
     COUNT,
   };
 
@@ -50,22 +51,26 @@ public:
   static bool is_gc_counter(CPUTimeType val);
 };
 
+// 单例类，管理所有CPU时间计数器
 class CPUTimeCounters: public CHeapObj<mtServiceability> {
 private:
   // CPUTimeCounters is a singleton instance.
   CPUTimeCounters();
   NONCOPYABLE(CPUTimeCounters);
 
+  // 单例实例
   static CPUTimeCounters* _instance;
 
   // An array of PerfCounters which correspond to the various counters we want
   // to track. Indexed by the enum value `CPUTimeType`.
+  // PerfCounter数组，按CPUTimeType索引
   PerfCounter* _cpu_time_counters[static_cast<int>(CPUTimeGroups::CPUTimeType::COUNT)];
 
   // A long which atomically tracks how much CPU time has been spent doing GC
   // since the last time we called `publish_total_cpu_time()`.
   // It is incremented using Atomic::add() to prevent race conditions, and
   // is added to the `gc_total` CPUTimeType at the end of GC.
+  // 原子变量，记录GC期间的CPU时间差值
   volatile jlong _gc_total_cpu_time_diff;
 
   static void create_counter(CounterNS ns, CPUTimeGroups::CPUTimeType name);
@@ -78,6 +83,7 @@ private:
   static void inc_gc_total_cpu_time(jlong diff);
 
 public:
+  // 初始化单例，创建基础计数器（需启用UsePerfData且系统支持线程CPU时间）
   static void initialize() {
     assert(_instance == nullptr, "we can only allocate one CPUTimeCounters object");
     if (UsePerfData && os::is_thread_cpu_time_supported()) {
@@ -86,15 +92,19 @@ public:
     }
   }
 
+  // 根据命名空间和类型创建PerfCounter
   static void create_counter(CPUTimeGroups::CPUTimeType name);
+  // 获取指定类型的计数器指针
   static PerfCounter* get_counter(CPUTimeGroups::CPUTimeType name);
+  // 更新计数器值
   static void update_counter(CPUTimeGroups::CPUTimeType name, jlong total);
-
+  // 将累计的GC时间差值发布到gc_total计数器
   static void publish_gc_total_cpu_time();
 };
 
 // Class to compute the total CPU time for a set of threads, then update an
 // hsperfdata counter.
+// 计算一组线程的总CPU时间，并更新hsperfdata计数器
 class ThreadTotalCPUTimeClosure: public ThreadClosure {
  private:
   jlong _total;
@@ -108,6 +118,7 @@ class ThreadTotalCPUTimeClosure: public ThreadClosure {
 
   ~ThreadTotalCPUTimeClosure();
 
+  // 遍历线程列表，累加各线程的CPU时间
   virtual void do_thread(Thread* thread);
 };
 

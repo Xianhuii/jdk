@@ -38,12 +38,15 @@ class outputStream;
 template<typename>
 class GrowableArray;
 class Thread;
+// JVM（Java虚拟机）中与线程锁管理相关的核心实现，主要用于高效跟踪和管理线程持有的锁
 
+// 管理线程的锁栈，记录线程当前持有的所有锁（通过oop对象表示）
 class LockStack {
   friend class LockStackTest;
   friend class VMStructs;
   JVMCI_ONLY(friend class JVMCIVMStructs;)
  public:
+  // 限制锁栈最大深度，防止无限递归或过多锁持有
   static const int CAPACITY = 8;
  private:
 
@@ -60,6 +63,7 @@ class LockStack {
   uint32_t _top;
   // The _bad_oop_sentinel acts as a sentinel value to elide underflow checks in generated code.
   // The correct layout is statically asserted in the constructor.
+  // 用于标记栈底，避免下溢检查，提升性能
   const uintptr_t _bad_oop_sentinel = badOopVal;
   oop _base[CAPACITY];
 
@@ -89,6 +93,7 @@ class LockStack {
   inline bool is_full() const;
 
   // Pushes an oop on this lock-stack.
+  // 将对象压入锁栈（需检查递归）
   inline void push(oop o);
 
   // Get the oldest oop from this lock-stack.
@@ -100,6 +105,7 @@ class LockStack {
 
   // Check if object is recursive.
   // Precondition: This lock-stack must contain the oop.
+  // 判断是否为重复加锁
   inline bool is_recursive(oop o) const;
 
   // Try recursive enter.
@@ -116,6 +122,7 @@ class LockStack {
   inline size_t remove(oop o);
 
   // Tests whether the oop is on this lock-stack.
+  // 检查对象是否在锁栈中
   inline bool contains(oop o) const;
 
   inline int monitor_count() const;
@@ -123,12 +130,14 @@ class LockStack {
   inline void move_from_address(oop* start, int count);
 
   // GC support
+  // 垃圾回收时遍历锁栈中的对象
   inline void oops_do(OopClosure* cl);
 
   // Printing
   void print_on(outputStream* st);
 };
 
+// 缓存对象到其监视器（ObjectMonitor）的映射，加速锁竞争时的监视器查找
 class OMCache {
   friend class VMStructs;
  public:
@@ -148,7 +157,9 @@ class OMCache {
 
   explicit OMCache(JavaThread* jt);
 
+  // 快速获取对象的监视器
   inline ObjectMonitor* get_monitor(oop o);
+  // 更新缓存条目
   inline void set_monitor(ObjectMonitor* monitor);
   inline void clear();
 

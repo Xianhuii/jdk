@@ -28,29 +28,37 @@
 
 #include "memory/allocation.hpp"
 #include "oops/oopsHierarchy.hpp"
-
+// 通过周期性采样线程的堆内存分配活动，收集内存使用数据（如分配速率、TLAB 使用率等），为 JVM 的内存管理优化（如 GC 策略调整、内存泄漏检测）提供依据。
 class ThreadHeapSampler {
  private:
   // Amount of bytes to allocate before taking the next sample
+  // 下次触发采样的字节数阈值。当线程分配内存超过此值时，触发采样逻辑。
   size_t _sample_threshold;
 
   // The TLAB top address when the last sampling happened, or
   // TLAB start if a new TLAB is allocated
+  // 上次采样时 TLAB（Thread-Local Allocation Buffer）的顶部地址。若为新分配的 TLAB，则指向其起始地址。
   HeapWord* _tlab_top_at_sample_start;
 
   // The accumulated amount of allocated bytes in a TLAB since the last sampling
   // excluding the amount between _tlab_sample_start and top
+  // 自上次采样以来，TLAB 内部累计分配的字节数（不含 _tlab_top_at_sample_start到当前 TLAB 顶部的增量）。
   size_t _accumulated_tlab_bytes_since_sample;
 
   // The accumulated amount of allocated bytes outside TLABs since last sample point
+  // 自上次采样以来，TLAB 外部（如直接分配到老年代的大对象）累计分配的字节数。
   size_t _accumulated_outside_tlab_bytes_since_sample;
 
   // Cheap random number generator
+  // 静态随机数种子，用于生成几何分布的采样间隔，降低采样频率波动。
   static uint64_t _rnd;
 
+  // 静态采样间隔参数，控制采样触发的平均时间间隔。
   static volatile int _sampling_interval;
 
+  // 基于几何分布计算下一个采样间隔，实现随机但平均可控的采样频率。
   void pick_next_geometric_sample();
+  // 结合 _sampling_interval和随机数生成器 _rnd，确定具体的采样阈值。
   void pick_next_sample();
 
   static double fast_log2(const double& d);
@@ -125,6 +133,7 @@ class ThreadHeapSampler {
 
   void log_sample_decision(HeapWord* tlab_top) PRODUCT_RETURN;
 
+  // 核心采样方法，接收当前分配对象 obj和 TLAB 顶部地址 tlab_top，执行实际采样逻辑（如记录分配事件、更新统计信息）
   void sample(oop obj, HeapWord* tlab_top);
 
   static void set_sampling_interval(int sampling_interval);

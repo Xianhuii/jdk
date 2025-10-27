@@ -34,16 +34,21 @@
 // Helper, all-static
 class ContinuationEntry;
 
+// 通过封装栈帧操作、寄存器映射、内存对齐等功能，实现高效且安全的延续切换。
 class ContinuationHelper {
 public:
+  // 设置 Java 帧锚点（JavaFrameAnchor），用于跟踪栈帧状态
   static inline void set_anchor_pd(JavaFrameAnchor* anchor, intptr_t* sp);
   static inline void set_anchor_to_entry_pd(JavaFrameAnchor* anchor, ContinuationEntry* entry);
 
+  // 更新寄存器映射表（RegisterMap），关联栈帧与寄存器值，支持垃圾回收（GC）和调试
   template<typename FKind> static void update_register_map(const frame& f, RegisterMap* map);
   static inline void update_register_map_with_callee(const frame& f, RegisterMap* map);
 
+  // 将栈帧推入执行栈
   static inline void push_pd(const frame& f);
 
+  // 读写栈帧的返回地址，用于控制执行流
   static inline address return_address_at(intptr_t* sp);
   static inline void patch_return_address_at(intptr_t* sp, address pc);
 
@@ -62,6 +67,7 @@ public:
   class StubFrame;
 };
 
+// 定义通用栈帧操作接口，如获取方法指针（frame_method）、实际 PC 寄存器值（real_pc）、栈顶位置（frame_top）等
 class ContinuationHelper::Frame : public AllStatic {
 public:
   static const bool interpreted = false;
@@ -83,6 +89,7 @@ public:
 #endif
 };
 
+// 解释执行型栈帧
 class ContinuationHelper::InterpretedFrame : public ContinuationHelper::Frame {
 public:
   static const bool interpreted = true;
@@ -125,6 +132,7 @@ public:
   static bool is_instance(const frame& f);
 };
 
+// 编译型栈帧
 class ContinuationHelper::CompiledFrame : public ContinuationHelper::NonInterpretedFrame {
 public:
   static bool is_instance(const frame& f);
@@ -135,6 +143,7 @@ public:
 #endif
 };
 
+// 本地方法栈帧
 class ContinuationHelper::NativeFrame : public ContinuationHelper::NonInterpretedFrame {
 public:
   static const bool native = true;
@@ -148,6 +157,7 @@ public:
   static int stack_argsize(const frame& f) { return 0; }
 };
 
+// 桩代码栈帧（如解释器入口），标记为桩（stub）
 class ContinuationHelper::StubFrame : public ContinuationHelper::NonInterpretedFrame {
 public:
   static const bool stub = true;

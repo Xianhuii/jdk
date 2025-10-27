@@ -32,6 +32,7 @@
 class Thread;
 
 // Mutexes used in the VM.
+// 定义了JVM运行时使用的互斥锁（Mutex）和监视器（Monitor）的全局实例及配套的锁管理类，用于实现多线程环境下的同步与资源保护
 
 extern Mutex*   NMethodState_lock;               // a lock used to guard a compiled method state
 extern Mutex*   NMethodEntryBarrier_lock;        // protects nmethod entry barrier

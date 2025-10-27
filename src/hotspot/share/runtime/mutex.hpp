@@ -58,12 +58,13 @@
 
 // Having a fence does not have any significant impact on peformance, as this is an internal VM
 // mutex and is generally not in hot code paths.
-
+// 定义JVM中使用的互斥锁（Mutex）和监视器（Monitor）类，用于线程同步和资源保护
 class Mutex : public CHeapObj<mtSynchronizer> {
 
   friend class VMStructs;
  public:
   // Special low level locks are given names and ranges avoid overlap.
+  // 锁等级（如safepoint、nosafepoint），用于死锁检测和优先级控制
   enum class Rank {
        event,
        service        = event          +   6,
@@ -103,11 +104,14 @@ class Mutex : public CHeapObj<mtSynchronizer> {
   // The _owner field is only set by the current thread, either to itself after it has acquired
   // the low-level _lock, or to null before it has released the _lock. Accesses by any thread other
   // than the lock owner are inherently racy.
+  // 当前持有锁的线程（原子操作保证线程安全）
   Thread* volatile _owner;
   void raw_set_owner(Thread* new_owner) { Atomic::store(&_owner, new_owner); }
 
  protected:                              // Monitor-Mutex metadata
+  // 底层原生锁实现（如POSIX mutex）
   PlatformMonitor _lock;                 // Native monitor implementation
+  // 锁的名称，用于调试
   const char* _name;                     // Name of mutex/monitor
 
   // Debugging fields for naming, deadlock detection, etc. (some only used in debug mode)
@@ -180,6 +184,7 @@ class Mutex : public CHeapObj<mtSynchronizer> {
 
   ~Mutex();
 
+  // 加锁和解锁，支持阻塞和非阻塞版本（try_lock()）
   void lock(); // prints out warning if VM thread blocks
   void lock(Thread *thread); // overloaded with current thread
   void unlock();
@@ -191,6 +196,7 @@ class Mutex : public CHeapObj<mtSynchronizer> {
   bool try_lock_inner(bool do_rank_checks);
  public:
 
+  // 在安全点释放锁，避免阻塞
   void release_for_safepoint();
 
   // Lock without safepoint check. Should ONLY be used by safepoint code and other code
@@ -234,6 +240,7 @@ class Monitor : public Mutex {
   // Wait until monitor is notified (or times out).
   // Defaults are to make safepoint checks, wait time is forever (i.e.,
   // zero). Returns true if wait times out; otherwise returns false.
+  // 条件等待和通知（仅在Monitor类中实现）
   bool wait(uint64_t timeout = 0);
   bool wait_without_safepoint_check(uint64_t timeout = 0);
   void notify();

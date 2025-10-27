@@ -32,10 +32,14 @@ class Handle;
 class JavaThread;
 class Symbol;
 
+// 提供多种退出策略，确保资源释放和状态处理的健壮性
+
 // Execute code before all handles are released and thread is killed; prologue to vm_exit
+// 在所有资源释放前执行预处理逻辑（如清理Handles），作为vm_exit的前置钩子
 extern void before_exit(JavaThread * thread, bool halt = false);
 
 // Forced VM exit (i.e, internal error or JVM_Exit)
+// 强制终止JVM，根据code返回退出状态。若halt=true，会立即停止进程
 extern void vm_exit(int code);
 
 // Wrapper for ::exit()
@@ -43,14 +47,17 @@ extern void vm_direct_exit(int code);
 extern void vm_direct_exit(int code, const char* message);
 
 // Shutdown the VM but do not exit the process
+// 关闭JVM但不退出进程（如保留服务进程）
 extern void vm_shutdown();
 // Shutdown the VM and abort the process
+// 终止进程并可选生成核心转储文件（用于调试）
 extern void vm_abort(bool dump_core=true);
 
 // Trigger any necessary notification of the VM being shutdown
 extern void notify_vm_shutdown();
 
 // VM exit if error occurs during initialization of VM
+// vm_exit_during_initialization()系列函数在JVM启动阶段检测到致命错误时触发退出，支持传递异常信息或错误描述
 extern void vm_exit_during_initialization();
 extern void vm_exit_during_initialization(Handle exception);
 extern void vm_exit_during_initialization(Symbol* exception_name, const char* message);
@@ -67,6 +74,7 @@ extern bool is_vm_statically_linked();
  * as defined by JEP-223, most of the code related to handle the version
  * string prior to JDK 1.6 was removed (partial initialization)
  */
+ // 封装JDK版本信息，支持精细化版本比较和格式化输出
 class JDK_Version {
   friend class VMStructs;
   friend class Universe;

@@ -38,6 +38,7 @@ template <typename T> class GrowableArray;
  * containing the corresponding name space string. Only the top level
  * subsystem name spaces are represented here.
  */
+ // 命名空间枚举
 enum CounterNS {
   // top level name spaces
   JAVA_NS,
@@ -225,6 +226,7 @@ enum CounterNS {
  *   }
  * }
  */
+ // 用于管理性能数据的创建、访问和更新
 class PerfData : public CHeapObj<mtInternal> {
 
   friend class PerfDataManager;  // for access to protected destructor
@@ -260,12 +262,17 @@ class PerfData : public CHeapObj<mtInternal> {
     };
 
   private:
+    // 数据项名称
     char* _name;
+    // 变异性（V_Constant/V_Monotonic/V_Variable）
     Variability _v;
+    // 单位（U_None/U_Bytes/U_Ticks等）
     Units _u;
     bool _on_c_heap;
+    // 支持属性（如F_Supported表示稳定接口）
     Flags _flags;
 
+    // 指向内存区域的指针
     PerfDataEntry* _pdep;
 
   protected:

@@ -38,22 +38,28 @@
 // A JavaCallWrapper is constructed before each JavaCall and destructed after the call.
 // Its purpose is to allocate/deallocate a new handle block and to save/restore the last
 // Java fp/sp. A pointer to the JavaCallWrapper is stored on the stack.
-
+// 管理Java方法调用的上下文环境，包括资源分配与恢复
 class JavaCallWrapper: StackObj {
   friend class VMStructs;
  private:
+  // 所属的Java线程
   JavaThread*      _thread;                 // the thread to which this call belongs
+  // 保存的JNI句柄块，用于临时存储对象引用
   JNIHandleBlock*  _handles;                // the saved handle block
+  // 被调用的方法对象
   Method*          _callee_method;          // to be able to collect arguments if entry frame is top frame
+  // 非静态调用的接收者对象
   oop              _receiver;               // the receiver of the call (if a non-static call)
-
+  // 保存调用前后的帧锚点状态（如last_Java_sp）
   JavaFrameAnchor  _anchor;                 // last thread anchor state that we must restore
-
+  // 存储方法返回值
   JavaValue*       _result;                 // result value
 
  public:
   // Construction/destruction
+  // 构造时分配新的句柄块并保存当前帧状态
    JavaCallWrapper(const methodHandle& callee_method, Handle receiver, JavaValue* result, TRAPS);
+  // 析构时释放句柄块并恢复原始帧状态
   ~JavaCallWrapper();
 
   // Accessors
@@ -64,6 +70,7 @@ class JavaCallWrapper: StackObj {
   JavaValue*       result() const           { return _result; }
   // GC support
   Method*          callee_method()          { return _callee_method; }
+  // 通过oops_do方法遍历Oop对象，供垃圾回收器处理
   void             oops_do(OopClosure* f);
 
   bool             is_first_frame() const   { return _anchor.last_Java_sp() == nullptr; }
@@ -72,6 +79,7 @@ class JavaCallWrapper: StackObj {
 
 
 // Encapsulates arguments to a JavaCall (faster, safer, and more convenient than using var-args)
+// 封装Java方法调用的参数列表，提供类型安全的参数传递
 class JavaCallArguments : public StackObj {
  private:
   enum Constants {
@@ -209,7 +217,8 @@ class JavaCallArguments : public StackObj {
 // All calls to Java have to go via JavaCalls. Sets up the stack frame
 // and makes sure that the last_Java_frame pointers are chained correctly.
 //
-
+// 提供静态方法调用入口，统一处理不同调用场景（静态、虚方法、特殊方法等）
+// 所有调用最终通过call_helper完成，负责设置栈帧、传递参数并执行方法
 class JavaCalls: AllStatic {
   static void call_helper(JavaValue* result, const methodHandle& method, JavaCallArguments* args, TRAPS);
  public:

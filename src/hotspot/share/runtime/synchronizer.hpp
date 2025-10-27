@@ -32,12 +32,29 @@
 #include "runtime/javaThread.hpp"
 #include "utilities/resourceHash.hpp"
 
+// JVM中对象同步机制的核心实现，包含：
+// 锁管理：轻量级锁（BasicLock）与重量级锁（ObjectMonitor）的转换
+// 线程同步：wait/notify/notifyAll的底层实现
+// 诊断支持：异步锁膨胀监控、锁使用统计、内存审计
+// JNI交互：处理JNI环境下的锁操作
+
+// 锁升级路径
+// 轻量级锁（Mark Word标记）
+// 重量级锁（ObjectMonitor实例化）
+// 通过inflate()方法触发
+// 原因包括：monitor_enter、wait/notify、hashCode等
+
+// 锁降级路径
+// 通过异步回收机制（async deflation）
+// 定期清理未使用的ObjectMonitor实例
 template <typename T> class GrowableArray;
 class LogStream;
+// 表示重量级锁的内部结构
 class ObjectMonitor;
 class ObjectMonitorDeflationSafepointer;
 class ThreadsList;
 
+// 维护ObjectMonitor链表
 class MonitorList {
   friend class VMStructs;
 
@@ -68,6 +85,7 @@ public:
   ObjectMonitor* next();
 };
 
+// 所有同步操作的入口类
 class ObjectSynchronizer : AllStatic {
   friend class VMStructs;
   friend class ObjectMonitorDeflationLogging;
@@ -95,6 +113,7 @@ class ObjectSynchronizer : AllStatic {
   // deoptimization at monitor exit. Hence, it does not take a Handle argument.
 
   // This is the "slow path" version of monitor enter and exit.
+  // 锁进入/退出
   static inline void enter(Handle obj, BasicLock* lock, JavaThread* current);
   static inline void exit(oop obj, BasicLock* lock, JavaThread* current);
 
@@ -115,10 +134,12 @@ private:
 public:
   // Used only to handle jni locks or other unmatched monitor enter/exit
   // Internally they will use heavy weight monitor.
+  // JNI锁处理
   static void jni_enter(Handle obj, JavaThread* current);
   static void jni_exit(oop obj, TRAPS);
 
   // Handle all interpreter, compiler and jni cases
+  // 等待/唤醒
   static int  wait(Handle obj, jlong millis, TRAPS);
   static void notify(Handle obj, TRAPS);
   static void notifyall(Handle obj, TRAPS);
@@ -132,6 +153,7 @@ public:
   static void waitUninterruptibly(Handle obj, jlong Millis, TRAPS);
 
   // Inflate light weight monitor to heavy weight monitor
+  // 锁膨胀
   static ObjectMonitor* inflate(Thread* current, oop obj, const InflateCause cause);
   // Used to inflate a monitor as if it was done from the thread JavaThread.
   static ObjectMonitor* inflate_for(JavaThread* thread, oop obj, const InflateCause cause);
@@ -161,6 +183,7 @@ public:
   static void release_monitors_owned_by_thread(JavaThread* current);
 
   // Iterate over all ObjectMonitors.
+  // 监视器迭代
   template <typename Function>
   static void monitors_iterate(Function function);
 
@@ -184,6 +207,7 @@ public:
 
   // We currently use aggressive monitor deflation policy;
   // basically we try to deflate all monitors that are not busy.
+  // 异步锁回收
   static size_t deflate_idle_monitors();
 
   // Deflate idle monitors:

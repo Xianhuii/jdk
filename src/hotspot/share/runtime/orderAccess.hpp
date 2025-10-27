@@ -234,19 +234,27 @@
 // Finally, we define an "instruction_fence" operation, which ensures that all
 // instructions that come after the fence in program order are fetched
 // from the cache or memory after the fence has completed.
-
+// 提供内存屏障（Memory Barrier）操作，确保多线程环境下内存操作的有序性和可见性，符合JSR-133内存模型规范
 class OrderAccess : public AllStatic {
  public:
   // barriers
+  // 插入LoadLoad屏障，防止读-读重排序。确保当前读操作在后续读操作前完成。
   static void     loadload();
+  // 插入StoreStore屏障，确保写操作的可见性。确保当前写操作在后续写操作前对其他处理器可见。
   static void     storestore();
+  // 插入LoadStore屏障，防止读后写重排序。防止读操作后插入选址写操作。
   static void     loadstore();
+  // 插入StoreLoad屏障（最全面），防止写-读重排序。防止写操作后插入读操作（最耗时的屏障）。
   static void     storeload();
 
+  // 执行Acquire语义，确保后续操作不重排到当前操作前。后续内存操作不能重排到此操作之前。
   static void     acquire();
+  // 执行Release语义，确保当前操作不重排到后续操作后。此前内存操作不能重排到此操作之后。
   static void     release();
+  // 双向屏障，阻止所有内存操作的重排序。双向屏障，阻止所有前后内存操作的重排序。
   static void     fence();
 
+  // 解决跨处理器IRIW问题，结合cross_modify_fence_impl()和验证逻辑。解决跨处理器独立读写（IRIW）问题，确保全局一致性。
   static void     cross_modify_fence() {
     cross_modify_fence_impl();
     cross_modify_fence_verify();

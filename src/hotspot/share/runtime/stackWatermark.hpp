@@ -45,16 +45,22 @@ class StackWatermarkFramesIterator;
 // stack snapshot, and trigger processing on it as needed, due to the cached
 // epoch of the state being outdated. When the snapshot is_done for the current
 // epoch_id(), there is no need to do anything further.
+// 表示栈水印的状态
+// Epoch（时代）：uint32_t的高31位，用于标记水印处理的阶段。每个新阶段通过递增Epoch触发重新处理。
+// IsDone（完成标志）：最低位表示当前Epoch的处理是否完成
 class StackWatermarkState : public AllStatic {
 public:
+  // 检查状态是否已完成
   inline static bool is_done(uint32_t state) {
     return state & 1;
   }
 
+  // 提取Epoch值
   inline static uint32_t epoch(uint32_t state) {
     return state >> 1;
   }
 
+  // 构造状态值
   inline static uint32_t create(uint32_t epoch, bool is_done) {
     return (epoch << 1) | (is_done ? 1u : 0u);
   }
@@ -84,16 +90,25 @@ public:
 //  ----------  <-- watermark (callee SP from the snapshot, SP at the
 //                             point of unwinding, might be above or below
 //                             due to frame resizing)
+// 栈水印的主体类，管理单个水印的生命周期和状态
 class StackWatermark : public CHeapObj<mtThread> {
   friend class StackWatermarkFramesIterator;
 protected:
+  // 当前水印状态（基于StackWatermarkState）
   volatile uint32_t _state;
+  // 栈指针（SP），标记水印位置
   volatile uintptr_t _watermark;
+  // 链式水印的下一个节点
   StackWatermark* _next;
+  // 关联的JavaThread对象
   JavaThread* _jt;
+  // 用于遍历栈帧的迭代器
   StackWatermarkFramesIterator* _iterator;
+  // 保护水印操作的互斥锁
   Mutex _lock;
+  // 水印类型（如GC、调试等）
   StackWatermarkKind _kind;
+  // 链式水印列表
   GrowableArrayCHeap<StackWatermark*, mtThread> _linked_watermarks;
 
   void process_one();
@@ -131,23 +146,29 @@ public:
   StackWatermark* next() const { return _next; }
   void set_next(StackWatermark* n) { _next = n; }
 
+  // 管理链式水印
   void push_linked_watermark(StackWatermark* watermark);
   void pop_linked_watermark();
 
+  // 获取当前水印位置
   uintptr_t watermark();
   uintptr_t last_processed();
   uintptr_t last_processed_raw();
 
+  // 检查处理阶段
   bool processing_started() const;
   bool processing_started_acquire() const;
   bool processing_completed() const;
   bool processing_completed_acquire() const;
 
+  // 栈展开前后的钩子方法
   void before_unwind();
   void after_unwind();
 
+  // 在每次栈帧迭代时触发处理
   void on_iteration(const frame& f);
   void on_safepoint();
+  // 控制处理的启动与结束
   void start_processing();
   void finish_processing(void* context);
 

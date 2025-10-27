@@ -61,26 +61,36 @@ class JavaThread;
 //      only need the static properties such as frame type, pc, and such.
 //      Updating of the RegisterMap can be turned off by instantiating the
 //      register map with RegisterMap::UpdateMap::skip
-
+// 用于 JVM 运行时栈遍历过程中的寄存器状态管理。它跟踪栈帧中的寄存器位置、延续栈（continuation stack）信息，并控制遍历行为（如是否更新寄存器映射、处理水印屏障等），是垃圾回收（GC）和栈遍历的核心组件。
 class RegisterMap : public StackObj {
  public:
     typedef julong LocationValidType;
   enum {
+    // 寄存器总数
     reg_count = ConcreteRegisterImpl::number_of_registers,
     location_valid_type_size = sizeof(LocationValidType)*8,
     location_valid_size = (reg_count+location_valid_type_size-1)/location_valid_type_size
   };
+  // 控制是否更新寄存器映射
   enum class UpdateMap { skip, include };
+  // 决定是否处理栈帧的水印屏障
   enum class ProcessFrames { skip, include };
+  // 控制是否遍历延续栈
   enum class WalkContinuation { skip, include };
  private:
+  // 数组，存储各寄存器的实际地址
   intptr_t*         _location[reg_count];     // Location of registers (intptr_t* looks better than address in the debugger)
+  // 位掩码数组，标记寄存器位置的有效性（每寄存器占用若干位）
   LocationValidType _location_valid[location_valid_size];
+  // 标记是否包含编译器标记的参数对象指针（oop）
   bool              _include_argument_oops;   // Should include argument_oop marked locations for compiler
+  // 当前关联的 JavaThread对象指针
   JavaThread*       _thread;                  // Reference to current thread
+  // 延续栈块及其索引，用于协程或轻量级线程的栈管理
   stackChunkHandle  _chunk;                   // The current continuation stack chunk, if any
   int               _chunk_index;             // incremented whenever a new chunk is set
 
+  // 控制遍历行为的布尔标志
   bool              _update_map;              // Tells if the register map need to be
                                               // updated when traversing the stack
   bool              _process_frames;          // Should frames be processed by stack watermark barriers?
@@ -97,10 +107,13 @@ class RegisterMap : public StackObj {
 
  public:
   DEBUG_ONLY(intptr_t* _update_for_id;) // Assert that RegisterMap is not updated twice for same frame
+  // 基于线程和遍历选项初始化
   RegisterMap(JavaThread *thread, UpdateMap update_map, ProcessFrames process_frames, WalkContinuation walk_cont);
+  // 从延续对象初始化
   RegisterMap(oop continuation, UpdateMap update_map);
   RegisterMap(const RegisterMap* map);
 
+  // 获取指定寄存器的地址
   address location(VMReg reg, intptr_t* sp) const {
     int index = reg->value() / location_valid_type_size;
     assert(0 <= reg->value() && reg->value() < reg_count, "range check");
@@ -120,6 +133,7 @@ class RegisterMap : public StackObj {
     }
   }
 
+  // 设置寄存器地址并更新有效性标记
   void set_location(VMReg reg, address loc) {
     int index = reg->value() / location_valid_type_size;
     assert(0 <= reg->value() && reg->value() < reg_count, "range check");
@@ -131,21 +145,27 @@ class RegisterMap : public StackObj {
   }
 
   // Called by an entry frame.
+  // 清除寄存器映射（如进入入口帧时调用）
   void clear();
 
+  // 获取/设置是否处理参数 oop
   bool include_argument_oops() const      { return _include_argument_oops; }
   void set_include_argument_oops(bool f)  { _include_argument_oops = f; }
 
   JavaThread *thread()  const { return _thread; }
+  // 获取当前遍历选项的状态
   bool update_map()     const { return _update_map; }
   bool process_frames() const { return _process_frames; }
   bool walk_cont()      const { return _walk_cont; }
 
   void set_walk_cont(bool value) { _walk_cont = value; }
 
+  // 判断是否在延续栈中
   bool in_cont()        const { return _chunk() != nullptr; } // Whether we are currently on the hstack; if true, frames are relativized
+  // 返回当前延续栈的 oop对象
   oop cont() const;
   stackChunkHandle stack_chunk() const { return _chunk; }
+  // 设置延续栈块及其索引
   void set_stack_chunk(stackChunkOop chunk);
   int stack_chunk_index() const { return _chunk_index; }
   void set_stack_chunk_index(int index) { _chunk_index = index; }

@@ -29,6 +29,11 @@
 #include "memory/allocation.hpp"
 #include "oops/method.hpp"
 
+// 处理Java类型签名（Method/Field Descriptors）的核心实现
+// 语法解析
+// 将签名字符映射为内部类型编码（BasicType枚举）
+// 高效迭代机制
+// 符号解析
 // Static routines and parsing loops for processing field and method
 // descriptors.  In the HotSpot sources we call them "signatures".
 //
@@ -79,7 +84,7 @@
 // For historical reasons some API points that accept class names and
 // array names also look for class names wrapped inside an envelope
 // (like "LFoo;") and unwrap them on the fly (to a name like "Foo").
-
+// 静态工具类，提供基础解析能力
 class Signature : AllStatic {
  private:
   static bool is_valid_array_signature(const Symbol* sig);
@@ -467,7 +472,7 @@ class NativeSignatureIterator: public SignatureIterator {
 
 // This is the core parsing logic for iterating over signatures.
 // All of the previous classes use this for doing their work.
-
+// 核心解析引擎，维护解析状态机
 class SignatureStream : public StackObj {
  private:
   const Symbol* _signature;

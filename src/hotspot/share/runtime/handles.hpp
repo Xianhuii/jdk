@@ -33,6 +33,7 @@ class InstanceKlass;
 class Klass;
 class Thread;
 
+// 处理对象引用管理的核心组件，主要用于在垃圾回收（GC）期间维护对象引用的有效性
 //------------------------------------------------------------------------------------------------------------------------
 // In order to preserve oops during garbage collection, they should be
 // allocated and passed around via Handles within the VM. A handle is
@@ -61,7 +62,7 @@ class Thread;
 //------------------------------------------------------------------------------------------------------------------------
 // Base class for all handles. Provides overloading of frequently
 // used operators for ease of use.
-
+// 基础引用类，提供通用操作接口
 class Handle {
  private:
   oop* _handle;
@@ -73,12 +74,15 @@ class Handle {
  public:
   // Constructors
   Handle()                                       { _handle = nullptr; }
+  // 通过Handle(Thread*, oop)在当前线程的句柄区域分配内存
   inline Handle(Thread* thread, oop obj);
 
   // General access
+  // 重载operator()和operator->，支持直接访问对象（如handle->print()）
   oop     operator () () const                   { return obj(); }
   oop     operator -> () const                   { return non_null_obj(); }
 
+  // 支持与oop或另一Handle的比较（==, !=）
   bool operator == (oop o) const                 { return obj() == o; }
   bool operator != (oop o) const                 { return obj() != o; }
   bool operator == (const Handle& h) const       { return obj() == h.obj(); }
@@ -98,6 +102,7 @@ class Handle {
 
   // Raw handle access. Allows easy duplication of Handles. This can be very unsafe
   // since duplicates is only valid as long as original handle is alive.
+  // raw_value()返回原始oop*指针，用于底层操作
   oop* raw_value() const                         { return _handle; }
   static oop raw_resolve(oop *handle)            { return handle == nullptr ? (oop)nullptr : *handle; }
 
@@ -105,6 +110,7 @@ class Handle {
 };
 
 // Specific Handles for different oop types
+// 为不同对象类型（如实例、数组、栈块）生成特化Handle子类（如instanceHandle），提供类型安全的强类型检查
 #define DEF_HANDLE(type, is_a)                   \
   class type##Handle: public Handle {            \
    protected:                                    \
@@ -137,6 +143,7 @@ DEF_HANDLE(typeArray        , is_typeArray_noinline        )
 // and destruction for parameters.
 
 // Specific Handles for different oop types
+// 防止元数据（如方法、常量池）在类重定义时被回收
 #define DEF_METADATA_HANDLE(name, type)          \
   class name##Handle;                            \
   class name##Handle : public StackObj {         \
@@ -176,6 +183,7 @@ DEF_METADATA_HANDLE(constantPool, ConstantPool)
 
 //------------------------------------------------------------------------------------------------------------------------
 // Thread local handle area
+// 线程本地的句柄内存区域，继承自Arena（内存分配器）
 class HandleArea: public Arena {
   friend class HandleMark;
   friend class NoHandleMark;
@@ -237,7 +245,7 @@ class HandleArea: public Arena {
 
 // The base class of HandleMark should have been StackObj but we also heap allocate
 // a HandleMark when a thread is created. The operator new is for this special case.
-
+// 管理HandleArea的生命周期，自动释放句柄
 class HandleMark {
  private:
   Thread *_thread;              // thread that owns this mark

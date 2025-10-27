@@ -39,7 +39,8 @@ class ParkEvent;
 class BasicLock;
 class ContinuationWrapper;
 
-
+// ObjectMonitor是 JVM 中实现重量级锁（如 synchronized关键字）的核心数据结构，负责处理线程的同步、等待与通知机制。
+// 当轻量级锁（如栈锁）因竞争或调用 wait()而膨胀时，会转换为 ObjectMonitor实例。
 class ObjectWaiter : public CHeapObj<mtThread> {
  public:
   enum TStates : uint8_t { TS_UNDEF, TS_READY, TS_RUN, TS_WAIT, TS_ENTER };
@@ -164,7 +165,9 @@ class ObjectMonitor : public CHeapObj<mtObjectMonitor> {
   // Contains the _object's hashCode.
   // * LM_LEGACY, LM_MONITOR, LM_LIGHTWEIGHT without UseObjectMonitorTable:
   // Contains the displaced object header word - mark
+  // 对象元数据（如哈希码或被替换的 mark word），位于偏移量 0 以优化性能。
   volatile uintptr_t _metadata;     // metadata
+  // 弱引用指向关联的 Java 对象。
   WeakHandle _object;               // backward object pointer
   // Separate _metadata and _owner on different cache lines since both can
   // have busy multi-threaded access. _metadata and _object are set at initial
@@ -177,6 +180,7 @@ class ObjectMonitor : public CHeapObj<mtObjectMonitor> {
   static const int64_t ANONYMOUS_OWNER = 1;
   static const int64_t DEFLATER_MARKER = 2;
 
+  // 当前持有锁的线程 ID 或特殊标记（如 NO_OWNER、DEFLATER_MARKER）。
   int64_t volatile _owner;  // Either owner_id of owner, NO_OWNER, ANONYMOUS_OWNER or DEFLATER_MARKER.
   volatile uint64_t _previous_owner_tid;  // thread id of the previous owner of the monitor
   // Separate _owner and _next_om on different cache lines since
@@ -186,20 +190,25 @@ class ObjectMonitor : public CHeapObj<mtObjectMonitor> {
   DEFINE_PAD_MINUS_SIZE(1, OM_CACHE_LINE_SIZE, sizeof(void* volatile) +
                         sizeof(volatile uint64_t));
   ObjectMonitor* _next_om;          // Next ObjectMonitor* linkage
+  // 锁的重入次数。
   volatile intx _recursions;        // recursion count, 0 for first entry
+  // 等待进入锁的线程队列（Entry List）。
   ObjectWaiter* volatile _entry_list;  // Threads blocked on entry or reentry.
                                        // The list is actually composed of wait-nodes,
                                        // acting as proxies for Threads.
   ObjectWaiter* volatile _entry_list_tail; // _entry_list is the head, this is the tail.
+  // 记录下一个可能获取锁的线程（用于减少无效唤醒）。
   int64_t volatile _succ;           // Heir presumptive thread - used for futile wakeup throttling
 
   volatile int _SpinDuration;
 
+  // 记录锁竞争次数，用于异步释放（Deflation）判断。
   int _contentions;                 // Number of active contentions in enter(). It is used by is_busy()
                                     // along with other fields to determine if an ObjectMonitor can be
                                     // deflated. It is also used by the async deflation protocol. See
                                     // ObjectMonitor::deflate_monitor().
 
+  // 因 wait()而阻塞的线程队列（Wait Set）。
   ObjectWaiter* volatile _wait_set; // LL of threads waiting on the monitor - wait()
   volatile int  _waiters;           // number of waiting threads
   volatile int _wait_set_lock;      // protects wait set queue - simple spinlock
@@ -373,15 +382,23 @@ class ObjectMonitor : public CHeapObj<mtObjectMonitor> {
   void      notify_contended_enter(JavaThread *current);
  public:
   void      enter_for_with_contention_mark(JavaThread* locking_thread, ObjectMonitorContentionMark& contention_mark);
+  // 处理锁的进入逻辑，包括竞争标记（Contention Mark）
   bool      enter_for(JavaThread* locking_thread);
+  // 尝试获取锁，若失败则进入竞争流程
   bool      enter(JavaThread* current);
+  // 非阻塞尝试获取锁
   bool      try_enter(JavaThread* current, bool check_for_recursion = true);
+  // 自旋尝试获取锁（适用于短时间竞争）
   bool      spin_enter(JavaThread* current);
   void      enter_with_contention_mark(JavaThread* current, ObjectMonitorContentionMark& contention_mark);
+  // 释放锁，唤醒后续线程
   void      exit(JavaThread* current, bool not_suspended = true);
   bool      resume_operation(JavaThread* current, ObjectWaiter* node, ContinuationWrapper& cont);
+  // 线程进入等待状态，可指定超时
   void      wait(jlong millis, bool interruptible, TRAPS);
+  // 唤醒一个等待线程
   void      notify(TRAPS);
+  // 唤醒所有等待线程
   void      notifyAll(TRAPS);
   void      quick_notify(JavaThread* current);
   void      quick_notifyAll(JavaThread* current);
@@ -393,6 +410,7 @@ class ObjectMonitor : public CHeapObj<mtObjectMonitor> {
   void      print_on(outputStream* st) const;
 
   // Use the following at your own risk
+  // 完全退出锁（可能涉及异步释放）
   intx      complete_exit(JavaThread* current);
 
  private:

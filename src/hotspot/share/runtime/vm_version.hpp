@@ -27,6 +27,6 @@
 
 #include "runtime/globals.hpp"
 #include "utilities/macros.hpp"
-#include CPU_HEADER(vm_version)
+#include CPU_HEADER(vm_version) // 根据目标CPU架构动态包含特定实现（如vm_version_x86.hpp或vm_version_arm.hpp），实现跨平台兼容性
 
 #endif // SHARE_RUNTIME_VM_VERSION_HPP

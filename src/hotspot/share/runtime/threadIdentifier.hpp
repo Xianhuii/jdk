@@ -33,9 +33,12 @@
  * Java uses unsafe to initialize the tid field for Thread and VirtualThread on construction.
  * JFR uses next() for a non-reusable id for non-java threads.
  */
+ // 为线程提供唯一的单调递增标识符
 class ThreadIdentifier : AllStatic {
  public:
+  // 生成全局唯一且不可重用的64位整数ID，供非Java线程（如JFR内部线程）使用。
   static int64_t next();
+  // 获取当前Java线程的ID（通过Thread对象的tid字段，利用sun.misc.Unsafe直接访问内存）
   static int64_t current();
   static int64_t unsafe_offset();
   static int64_t initial();

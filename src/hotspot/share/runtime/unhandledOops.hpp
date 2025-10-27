@@ -44,16 +44,28 @@
 //
 // This code implements the details of the unhandled oop list on the thread.
 //
-
+// 检测未处理oop：在JVM运行过程中，若栈上的oop引用在安全点后被错误使用（如GC后对象已移动但栈上仍有残留引用），会导致未定义行为。
+// 该机制通过覆盖无效oop地址，在后续非法访问时触发崩溃，从而暴露问题。
+// 实现机制
+// 栈上局部变量封装：
+// 开发者在栈上声明oop变量时，实际创建UnhandledOopEntry实例，其构造函数将oop地址注册到当前线程的UnhandledOops列表。
+// 变量离开作用域时，析构函数自动注销oop。
+// 安全点处理：
+// JVM在安全点（如GC前）调用clear_unhandled_oops()，遍历所有线程的_oop_list，将其中_oop_ptr指向的地址覆盖为BAD_OOP_ADDR（如0xfffffff1）。
+// 若后续代码错误使用该oop（如通过悬空指针访问），会立即触发内存访问异常（如Segfault），便于调试定位问题。
 class oop;
 class Thread;
 
+// 表示单个未处理oop的记录项
 class UnhandledOopEntry : public CHeapObj<mtThread> {
  friend class UnhandledOops;
  private:
+  // 指向oop的指针
   oop* _oop_ptr;
+  // 标记是否允许GC处理该oop（默认false）
   bool _ok_for_gc;
 
+  // 匹配指定oop指针是否属于当前记录
   bool match_oop_entry(oop* op) const {
     return _oop_ptr == op;
   }
@@ -64,20 +76,28 @@ class UnhandledOopEntry : public CHeapObj<mtThread> {
                         _oop_ptr(op),   _ok_for_gc(false) {}
 };
 
+// 管理线程内所有未处理oop的列表
 class UnhandledOops : public CHeapObj<mtThread> {
  friend class Thread;
  private:
+  // 所属线程
   Thread* _thread;
+  // 记录嵌套层级（可能与异常处理或同步块相关）
   int _level;
+  // 动态数组，存储UnhandledOopEntry实例
   GrowableArray<UnhandledOopEntry> *_oop_list;
   void allow_unhandled_oop(oop* op);
+  // 安全点时触发，覆盖所有oop地址为BAD_OOP_ADDR
   void clear_unhandled_oops();
   UnhandledOops(Thread* thread);
   ~UnhandledOops();
 
  public:
+  // 静态方法，输出所有未处理oop信息
   static void dump_oops(UnhandledOops* list);
+  // 将oop加入列表
   void register_unhandled_oop(oop* op);
+  // 从列表移除oop
   void unregister_unhandled_oop(oop* op);
 };
 

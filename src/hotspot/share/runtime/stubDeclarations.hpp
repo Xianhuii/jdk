@@ -74,6 +74,7 @@
 // Stubs are provided with names in the format "Shared Runtime
 // <stubname> _blob".
 //
+// 管理JVM运行时所需的存根（Stubs）和Blob（代码块）声明，为不同编译器（C1/C2）、共享代码及StubGenerator生成统一的枚举、字段和方法定义。
 
 #if INCLUDE_JFR
 // do_blob(name, type)
@@ -85,9 +86,11 @@
 #define SHARED_JFR_STUBS_DO(do_blob)
 #endif
 
+// 共享存根：跨组件共享的存根（如异常处理、解析失败等）
 // client macro to operate on shared stubs
 //
 // do_blob(name, type)
+// 遍历共享存根列表，生成全局枚举、Blob字段和名称字符串
 #define SHARED_STUBS_DO(do_blob)                                       \
   do_blob(deopt, DeoptimizationBlob)                                   \
   /* resolve stubs */                                                  \
@@ -121,6 +124,7 @@
 // client macro to operate on c1 stubs
 //
 // do_blob(name)
+// C1编译器生成的特定存根（如对象分配、异常处理）
 #define C1_STUBS_DO(do_blob)                                           \
   do_blob(dtrace_object_alloc)                                         \
   do_blob(unwind_exception)                                            \
@@ -197,7 +201,7 @@
 // A stub creation method OptoRuntime::generate(ciEnv* env) is
 // generated which invokes the C2 compiler to generate each stub in
 // declaration order.
-
+// C2编译器生成的存根，分普通存根和JVMTI相关存根
 #ifdef COMPILER2
 // do_jvmti_stub(name)
 #if INCLUDE_JVMTI

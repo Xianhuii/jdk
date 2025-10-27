@@ -57,6 +57,9 @@ class Thread;
  *
  */
 
+// 线程阻塞控制
+// 每个Parker实例与特定JavaThread绑定，仅在线程存活时有效
+// 替代传统的wait/notify机制，提供更高效的线程间通信
 class Parker : public PlatformParker {
  private:
   NONCOPYABLE(Parker);
@@ -65,7 +68,9 @@ class Parker : public PlatformParker {
 
   // For simplicity of interface with Java, all forms of park (indefinite,
   // relative, and absolute) are multiplexed into one call.
+  // 阻塞当前线程，支持绝对/相对超时时间
   void park(bool isAbsolute, jlong time);
+  // 唤醒被阻塞的线程
   void unpark();
 };
 
@@ -109,7 +114,7 @@ class Parker : public PlatformParker {
 //
 // We'll want to eventually merge these redundant facilities and use ParkEvent.
 
-
+// 可重用事件对象
 class ParkEvent : public PlatformEvent {
   private:
     ParkEvent * FreeNext ;

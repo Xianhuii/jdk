@@ -26,7 +26,7 @@
 #define SHARE_RUNTIME_INIT_HPP
 
 #include "utilities/globalDefinitions.hpp"
-
+// 运行时初始化模块的核心头文件
 // init_globals replaces C++ global objects so we can use the standard linker
 // to link Delta (which is at least twice as fast as using the GNU C++ linker).
 // Also, init.c gives explicit control over the sequence of initialization.

@@ -40,7 +40,7 @@
 //
 // The code for the ICache class and for generate_icache_flush() must be in
 // architecture-specific files, i.e., icache_<arch>.hpp/.cpp
-
+// 提供平台无关的指令缓存管理接口
 class AbstractICache : AllStatic {
  public:
   // The flush stub signature
@@ -48,16 +48,18 @@ class AbstractICache : AllStatic {
 
  protected:
   // The flush stub function address
+  // 指向具体实现的缓存刷新函数指针
   static flush_icache_stub_t _flush_icache_stub;
 
   // Call the flush stub
+  // 通过函数指针调用实际刷新逻辑
   static void call_flush_stub(address start, int lines);
 
  public:
   enum {
-    stub_size      = 0, // Size of the icache flush stub in bytes
-    line_size      = 0, // Icache line size in bytes
-    log2_line_size = 0  // log2(line_size)
+    stub_size      = 0, // Size of the icache flush stub in bytes 缓存刷新存根的大小（字节）
+    line_size      = 0, // Icache line size in bytes 缓存行大小（字节）
+    log2_line_size = 0  // log2(line_size) 缓存行大小的以2为底的对数
   };
 
   // Initialization phases:
@@ -66,8 +68,11 @@ class AbstractICache : AllStatic {
   //      until optimized final stub is generated.
   //  2 = Final stub that uses the optimized flush mechanism. Happens after
   //      CPU feature detection determines which mechanism is usable.
+  // 分阶段初始化（阶段1基础实现/阶段2优化实现
   static void initialize(int phase);
+  // 使单个地址失效
   static void invalidate_word(address addr);
+  // 使地址范围失效
   static void invalidate_range(address start, int nbytes);
 };
 
@@ -76,7 +81,7 @@ class AbstractICache : AllStatic {
 // because ICacheStubGenerator uses ICache definitions.
 
 #include CPU_HEADER(icache)
-
+// 存根生成器，负责生成平台相关的缓存刷新存根代码
 class ICacheStubGenerator : public StubCodeGenerator {
  private:
    const char* _stub_name;

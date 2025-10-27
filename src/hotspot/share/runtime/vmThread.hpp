@@ -32,22 +32,30 @@
 #include "runtime/task.hpp"
 #include "runtime/vmOperation.hpp"
 
+// JVM（Java虚拟机）中VMThread的核心实现，负责执行虚拟机级别的重量级操作
 // VM operation timeout handling: warn or abort the VM when VM operation takes
 // too long. Periodic tasks do not participate in safepoint protocol, and therefore
 // can fire when application threads are stopped.
 
+// 超时监控：周期性检查VM操作是否超时
 class VMOperationTimeoutTask : public PeriodicTask {
 private:
+  // 标记是否激活超时检测
   volatile int _armed;
+  // 超时检测启动时间
   jlong _arm_time;
+  // 当前操作的名称
   const char* _vm_op_name;
 public:
   VMOperationTimeoutTask(size_t interval_time) :
           PeriodicTask(interval_time), _armed(0), _arm_time(0), _vm_op_name(nullptr) {}
 
+  // 周期性执行的任务逻辑
   virtual void task();
 
+  // 检查是否处于监控状态
   bool is_armed();
+  // 启动/停止超时监控
   void arm(const char* vm_op_name);
   void disarm();
 };
@@ -72,6 +80,7 @@ class VMThread: public NamedThread {
 
   static bool handshake_or_safepoint_alot();
 
+  // 评估并执行具体操作（如GC、线程栈处理等）
   void evaluate_operation(VM_Operation* op);
   void inner_execute(VM_Operation* op);
   void wait_for_operation();
@@ -85,6 +94,7 @@ class VMThread: public NamedThread {
   }
 
   // The ever running loop for the VMThread
+  // 主线程循环，不断从队列中取出并执行操作
   void loop();
 
  public:
@@ -94,11 +104,14 @@ class VMThread: public NamedThread {
   bool is_VM_thread() const                      { return true; }
 
   // Called to stop the VM thread
+  // 等待VMThread安全退出
   static void wait_for_vm_thread_exit();
+  // 检查终止状态
   static bool should_terminate()                  { return _should_terminate; }
   static bool is_terminated()                     { return _terminated == true; }
 
   // Execution of vm operation
+  // 提交新操作到队列
   static void execute(VM_Operation* op);
 
   // Returns the current vm operation if any.
@@ -124,9 +137,11 @@ class VMThread: public NamedThread {
   }
 
   // Entry for starting vm thread
+  // 线程入口，启动主循环loop()
   virtual void run();
 
   // Creations/Destructions
+  // 创建和销毁VMThread
   static void create();
   static void destroy();
 
@@ -137,12 +152,15 @@ class VMThread: public NamedThread {
 
  private:
   // VM_Operation support
+  // 当前正在执行的VM操作
   static VM_Operation*     _cur_vm_operation;   // Current VM operation
+  // 待处理的下一操作
   static VM_Operation*     _next_vm_operation;  // Next VM operation
 
   bool set_next_operation(VM_Operation *op);    // Set the _next_vm_operation if possible.
 
   // Pointer to single-instance of VM thread
+  // 通过静态成员_vm_thread维护唯一的VMThread实例
   static VMThread*     _vm_thread;
 };
 

@@ -48,10 +48,11 @@ class methodHandle;
 class RegisterMap;
 class vframeArray;
 
+// 定义派生指针迭代策略
 enum class DerivedPointerIterationMode {
-  _with_table,
-  _directly,
-  _ignore
+  _with_table, // 通过派生指针表处理
+  _directly, // 直接处理派生指针
+  _ignore // 忽略派生指针
 };
 
 // A frame represents a physical stack frame (an activation).  Frames
@@ -59,29 +60,36 @@ enum class DerivedPointerIterationMode {
 // compiled.  In contrast, vframes represent source-level activations,
 // so that one physical frame can correspond to multiple source level
 // frames because of inlining.
-
+// JVM中栈帧（frame）的核心数据结构和操作接口，用于表示物理栈帧（activation），涵盖解释执行、编译执行、本地方法调用等多种场景。
+// 栈帧管理是JVM运行时栈管理的核心组件，与垃圾回收、去优化、调试等功能深度集成。
 class frame {
  private:
   // Instance variables:
   union {
+    // 栈指针（绝对地址或堆上相对偏移）
     intptr_t* _sp; // stack pointer (from Thread::last_Java_sp)
     int _offset_sp; // used by frames in stack chunks
   };
+  // 下一条指令地址（程序计数器）
   address   _pc; // program counter (the next instruction after the call)
+  // 所属的CodeBlob（代码块，如方法、存根）
   mutable CodeBlob* _cb; // CodeBlob that "owns" pc
+  // 编译帧的OopMap（用于GC根定位）
   mutable const ImmutableOopMap* _oop_map; // oop map, for compiled/stubs frames only
   enum deopt_state {
     not_deoptimized,
     is_deoptimized,
     unknown
   };
-
+  // 去优化状态（未去优化/已去优化/未知）
   deopt_state _deopt_state;
 
   // Do internal pointers in interpreter frames use absolute adddresses or relative (to fp)?
   // Frames in stack chunks are on the Java heap and use relative addressing; on the stack
   // they use absolute addressing
+  // 是否位于堆上的栈块（chunk）
   bool        _on_heap;  // This frame represents a frame on the heap.
+  // 堆上栈块中的帧索引（调试模式专用）
   DEBUG_ONLY(int _frame_index;) // the frame index in a stack chunk; -1 when on a thread stack
 
   // We use different assertions to allow for intermediate states (e.g. during thawing or relativizing the frame)

@@ -31,8 +31,10 @@
 #include "utilities/macros.hpp"
 
 class SerializeClosure;
+// 实现JVM内部对jdk.internal.vm.ContinuationScope、jdk.internal.vm.Continuation和jdk.internal.vm.StackChunk三个Java类的底层支持
 
 // Interface to jdk.internal.vm.ContinuationScope objects
+// 表示延续作用域（Continuation Scope），用于管理延续的生命周期
 class jdk_internal_vm_ContinuationScope: AllStatic {
   friend class JavaClasses;
  private:
@@ -44,6 +46,7 @@ class jdk_internal_vm_ContinuationScope: AllStatic {
 };
 
 // Interface to jdk.internal.vm.Continuation objects
+// 表示延续对象（Continuation），封装执行上下文（如调用栈、局部变量）
 class jdk_internal_vm_Continuation: AllStatic {
   friend class JavaClasses;
  private:
@@ -77,6 +80,7 @@ class jdk_internal_vm_Continuation: AllStatic {
   macro(jdk_internal_vm_StackChunk, maxThawingSize,  int_signature,          false) \
   macro(jdk_internal_vm_StackChunk, lockStackSize,   byte_signature,         false) \
 
+// 表示栈块（Stack Chunk），是延续执行栈的物理存储单元
 class jdk_internal_vm_StackChunk: AllStatic {
   friend class JavaClasses;
  private:

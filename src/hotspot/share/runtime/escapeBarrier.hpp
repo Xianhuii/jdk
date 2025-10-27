@@ -31,7 +31,7 @@
 #include "utilities/macros.hpp"
 
 class JavaThread;
-
+// JVM运行时的逃逸屏障（Escape Barrier）机制
 // EscapeBarriers should be put on execution paths where JVMTI agents can access object
 // references held by java threads.
 // They provide means to revert optimizations based on escape analysis in a well synchronized manner
@@ -40,11 +40,16 @@ class JavaThread;
 class EscapeBarrier : StackObj {
 
 #if COMPILER2_OR_JVMCI
+  // 触发屏障的线程
   JavaThread* const _calling_thread;
+  // 需要去优化的目标线程
   JavaThread* const _deoptee_thread;
+  // 屏障激活状态
   bool        const _barrier_active;
 
+  // 是否所有线程都在去优化
   static bool _deoptimizing_objects_for_all_threads;
+  // 是否正在进行自去优化
   static bool _self_deoptimization_in_progress;
 
   // Suspending is necessary because the target thread's stack must be walked and
@@ -53,12 +58,17 @@ class EscapeBarrier : StackObj {
   // cannot return to executing bytecodes. Acquiring a lock is ok. Leaving a
   // safepoint/handshake safe state is not ok.
   // See also JavaThread::wait_for_object_deoptimization().
+  // 同步并挂起单个线程
   void sync_and_suspend_one();
+  // 同步并挂起所有线程
   void sync_and_suspend_all();
+  // 恢复单个线程
   void resume_one();
+  // 恢复所有线程
   void resume_all();
 
   // Deoptimize the given frame and deoptimize objects with optimizations based on escape analysis.
+  // 内部去优化实现
   bool deoptimize_objects_internal(JavaThread* deoptee, intptr_t* fr_id);
 
   // Deoptimize objects, i.e. reallocate and relock them. The target frames are deoptimized.
@@ -69,6 +79,7 @@ class EscapeBarrier : StackObj {
 
 public:
   // Revert ea based optimizations for given deoptee thread
+  // 针对特定线程
   EscapeBarrier(bool barrier_active, JavaThread* calling_thread, JavaThread* deoptee_thread)
     : _calling_thread(calling_thread), _deoptee_thread(deoptee_thread),
       _barrier_active(barrier_active && (JVMCI_ONLY(EnableJVMCI) NOT_JVMCI(false)
@@ -78,6 +89,7 @@ public:
   }
 
   // Revert ea based optimizations for all java threads
+  // 针对所有线程
   EscapeBarrier(bool barrier_active, JavaThread* calling_thread)
     : _calling_thread(calling_thread), _deoptee_thread(nullptr),
       _barrier_active(barrier_active && (JVMCI_ONLY(EnableJVMCI) NOT_JVMCI(false)
@@ -98,6 +110,7 @@ public:
   // Deoptimize objects of frames of the target thread up to the given depth.
   // Deoptimize objects of caller frames if they passed references to ArgEscape objects as arguments.
   // Return false in the case of a reallocation failure and true otherwise.
+  // 按深度去优化
   bool deoptimize_objects(int depth) {
     return deoptimize_objects(0, depth);
   }
@@ -105,15 +118,19 @@ public:
   // Deoptimize objects of frames of the target thread at depth >= d1 and depth <= d2.
   // Deoptimize objects of caller frames if they passed references to ArgEscape objects as arguments.
   // Return false in the case of a reallocation failure and true otherwise.
+  // 按深度范围去优化
   bool deoptimize_objects(int d1, int d2)                      NOT_COMPILER2_OR_JVMCI_RETURN_(true);
 
   // Find and deoptimize non escaping objects and the holding frames on all stacks.
+  // 全局去优化
   bool deoptimize_objects_all_threads()                        NOT_COMPILER2_OR_JVMCI_RETURN_(true);
 
   // A java thread was added to the list of threads.
+  // 线程添加通知
   static void thread_added(JavaThread* jt)                     NOT_COMPILER2_OR_JVMCI_RETURN;
 
   // A java thread was removed from the list of threads.
+  // 线程移除通知
   static void thread_removed(JavaThread* jt)                   NOT_COMPILER2_OR_JVMCI_RETURN;
 
 #if COMPILER2_OR_JVMCI

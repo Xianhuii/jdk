@@ -28,30 +28,42 @@
 #include "utilities/globalDefinitions.hpp"
 
 // Timers for simple measurement.
-
+// 测量时间间隔类
 class elapsedTimer {
   friend class VMStructs;
  private:
+  // 累计的时间计数器（单位：底层时钟tick）
   jlong _counter;
+  // 计时起点tick值
   jlong _start_counter;
+  // 标记计时器是否处于活动状态
   bool  _active;
  public:
   elapsedTimer()             { _active = false; reset(); }
   void add(elapsedTimer t);
   void add_nanoseconds(jlong ns);
+  // 开始计时（记录当前tick）
   void start();
+  // 停止计时（将间隔tick累加到_counter）
   void stop();
+  // 将累计时间清零
   void reset()               { _counter = 0; }
+  // 返回累计时间的秒数（通过TimeHelper转换）
   double seconds() const;
+  // 返回累计时间的毫秒数
   jlong milliseconds() const;
+  // 返回原始累计tick值
   jlong ticks() const        { return _counter; }
+  // 返回活动状态下的tick增量
   jlong active_ticks() const;
   bool  is_active() const { return _active; }
 };
 
 // TimeStamp is used for recording when an event took place.
+// 记录事件发生时间点类
 class TimeStamp {
  private:
+  // 记录时间点的tick值（初始为0）
   jlong _counter;
  public:
   TimeStamp()  { _counter = 0; }
@@ -71,6 +83,7 @@ class TimeStamp {
   jlong ticks_since_update() const;
 };
 
+// 时间单位转换工具类
 class TimeHelper {
  public:
   static double counter_to_seconds(jlong counter);

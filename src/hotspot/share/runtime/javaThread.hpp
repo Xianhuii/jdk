@@ -82,6 +82,7 @@ typedef void (*ThreadFunction)(JavaThread*, TRAPS);
 
 class EventVirtualThreadPinned;
 
+// JavaThread继承自Thread类，表示正在执行 Java 代码的用户线程或守护线程
 class JavaThread: public Thread {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -97,7 +98,9 @@ class JavaThread: public Thread {
   // All references to Java objects managed via OopHandles. These
   // have to be released by the ServiceThread after the JavaThread has
   // terminated - see add_oop_handles_for_release().
+  // 存储 Java 层的 java.lang.Thread对象（可能为 null
   OopHandle      _threadObj;                     // The Java level thread object
+  // 虚拟线程（Virtual Thread）的引用（JEP 425）
   OopHandle      _vthread; // the value returned by Thread.currentThread(): the virtual thread, if mounted, otherwise _threadObj
   OopHandle      _jvmti_vthread;
   OopHandle      _scopedValueCache;
@@ -122,6 +125,7 @@ class JavaThread: public Thread {
 
   ThreadFunction _entry_point;
 
+  // JNI 接口指针，用于本地方法调用
   JNIEnv        _jni_environment;
 
   // Deopt support
@@ -221,6 +225,7 @@ class JavaThread: public Thread {
   };
 
   // various suspension related flags - atomically updated
+  // 原子化的线程挂起标志位（如 _obj_deopt表示因对象去优化挂起）
   volatile uint32_t _suspend_flags;
 
   inline void set_suspend_flag(SuspendFlags f);
@@ -253,7 +258,9 @@ class JavaThread: public Thread {
 
   // Safepoint support
  public:                                                        // Expose _thread_state for SafeFetchInt()
+  // 线程状态（如运行、阻塞、等待等）
   volatile JavaThreadState _thread_state;
+  // 安全点机制相关状态
   ThreadSafepointState*          _safepoint_state;              // Holds information about a thread during a safepoint
   address                        _saved_exception_pc;           // Saved pc of instruction where last implicit exception happened
   NOT_PRODUCT(bool               _requires_cross_modify_fence;) // State used by VerifyCrossModifyFence
@@ -1266,7 +1273,9 @@ public:
   bool get_and_clear_interrupted();
 
 private:
+  // 锁栈，记录线程持有的锁信息
   LockStack _lock_stack;
+  // 对象监视器缓存，加速锁竞争处理
   OMCache _om_cache;
 
 public:

@@ -33,12 +33,14 @@ class OopStorage;
 class Thread;
 
 // Interface for creating and resolving local/global JNI handles
-
+// 单例类，提供JNI句柄的创建、销毁、解析及类型检查功能
 class JNIHandles : AllStatic {
   friend class VMStructs;
  private:
   // These are used by the serviceability agent.
+  // 存储全局JNI句柄的OopStorage
   static OopStorage* _global_handles;
+  // 存储弱全局JNI句柄的OopStorage
   static OopStorage* _weak_global_handles;
   friend void jni_handles_init();
 
@@ -82,29 +84,38 @@ public:
   STATIC_ASSERT((TypeTag::global & tag_mask) == TypeTag::global);
 
   // Resolve handle into oop
+  // 将句柄解析为oop对象（可能触发垃圾回收）
   inline static oop resolve(jobject handle);
   // Resolve handle into oop, result guaranteed not to be null
+  // 确保解析结果非空
   inline static oop resolve_non_null(jobject handle);
   // Resolve externally provided handle into oop with some guards
+  // 外部调用时的安全解析
   static oop resolve_external_guard(jobject handle);
 
   // Check for equality without keeping objects alive
   static bool is_same_object(jobject handle1, jobject handle2);
 
   // Local handles
+  // 为当前线程或指定线程创建本地句柄
   static jobject make_local(oop obj);
   static jobject make_local(JavaThread* thread, oop obj,  // Faster version when current thread is known
                             AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
+  // 销毁本地句柄
   inline static void destroy_local(jobject handle);
 
   // Global handles
+  // 创建全局句柄
   static jobject make_global(Handle  obj,
                              AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
+  // 销毁全局句柄
   static void destroy_global(jobject handle);
 
   // Weak global handles
+  // 创建弱全局句柄
   static jweak make_weak_global(Handle obj,
                                 AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
+  // 销毁弱全局句柄
   static void destroy_weak_global(jweak handle);
   static bool is_weak_global_cleared(jweak handle); // Test jweak without resolution
 
@@ -119,6 +130,7 @@ public:
   static bool is_weak_global_handle(jobject handle);
 
   // precondition: handle != nullptr.
+  // 返回句柄类型（jobjectRefType）
   static jobjectRefType handle_type(JavaThread* thread, jobject handle);
 
   // Garbage collection support(global handles only, local handles are traversed from thread)
@@ -133,7 +145,7 @@ public:
 
 
 // JNI handle blocks holding local/global JNI handles
-
+// 表示存储JNI句柄的内存块，支持动态分配和垃圾回收
 class JNIHandleBlock : public CHeapObj<mtInternal> {
   friend class VMStructs;
   friend class ZeroInterpreter;
@@ -143,15 +155,20 @@ class JNIHandleBlock : public CHeapObj<mtInternal> {
     block_size_in_oops  = 32                    // Number of handles per handle block
   };
 
+  // 固定大小（默认32个）的句柄数组
   uintptr_t       _handles[block_size_in_oops]; // The handles
+  // 记录已分配的句柄数量
   int             _top;                         // Index of next unused handle
   int             _allocate_before_rebuild;     // Number of blocks to allocate before rebuilding free list
+  // 指向下一个JNIHandleBlock，形成链表
   JNIHandleBlock* _next;                        // Link to next block
 
   // The following instance variables are only used by the first block in a chain.
   // Having two types of blocks complicates the code and the space overhead in negligible.
+  // 首块记录最后一个使用的块（优化遍历）
   JNIHandleBlock* _last;                        // Last block in use
   JNIHandleBlock* _pop_frame_link;              // Block to restore on PopLocalFrame call
+  // 空闲句柄链表（仅首块使用
   uintptr_t*      _free_list;                   // Handle free list
 
   static int      _blocks_allocated;            // For debugging/printing
@@ -167,10 +184,13 @@ class JNIHandleBlock : public CHeapObj<mtInternal> {
 
  public:
   // Handle allocation
+  // 从当前块分配句柄，溢出时自动扩展
   jobject allocate_handle(JavaThread* caller, oop obj, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
 
   // Block allocation and block free list management
+  // 分配新块并加入链表
   static JNIHandleBlock* allocate_block(JavaThread* thread = nullptr, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM);
+  // 释放不再使用的块
   static void release_block(JNIHandleBlock* block, JavaThread* thread = nullptr);
 
   // JNI PushLocalFrame/PopLocalFrame support

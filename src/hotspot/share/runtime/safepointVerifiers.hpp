@@ -33,6 +33,7 @@
 // instantiated. A safepoint, will either be: an oop allocation, blocking
 // on a Mutex or JavaLock, or executing a VM operation.
 //
+// 确保在其生命周期内，当前线程无法进入安全点（如GC、锁阻塞等）。若违反，触发断言失败。
 class NoSafepointVerifier : public StackObj {
  friend class PauseNoSafepointVerifier;
 
@@ -45,7 +46,7 @@ class NoSafepointVerifier : public StackObj {
 
 // A PauseNoSafepointVerifier is used to temporarily pause the
 // behavior of a NoSafepointVerifier object.
-
+// 临时暂停NoSafepointVerifier的验证功能，允许线程安全点短暂生效。
 class PauseNoSafepointVerifier : public StackObj {
  private:
   NoSafepointVerifier* _nsv;

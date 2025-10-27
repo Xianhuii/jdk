@@ -32,7 +32,8 @@
 #else
 # include OS_HEADER(threadCrashProtection)
 #endif
-
+// 提供跨平台线程崩溃保护机制，允许用户通过回调接口在易崩溃代码段前后执行保护逻辑，增强程序健壮性。
+// 定义线程崩溃保护的回调接口
 class CrashProtectionCallback : public StackObj {
 public:
   virtual void call() = 0;

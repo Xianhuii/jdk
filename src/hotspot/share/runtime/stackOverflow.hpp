@@ -34,16 +34,19 @@ class JavaThread;
 // for each JavaThread that are used to detect stack overflow though explicit checks or through
 // checks in the signal handler when stack banging into guard pages causes a trap.
 // The state variables also record whether guard pages are enabled or disabled.
-
+// 通过精细的内存分区和管理策略，实现了高效且可靠的栈溢出检测与处理机制
 class StackOverflow {
   friend class JVMCIVMStructs;
   friend class JavaThread;
  public:
   // State of the stack guard pages for the containing thread.
   enum StackGuardState {
+    // 无需保护
     stack_guard_unused,         // not needed
     stack_guard_reserved_disabled,
+    // 黄区禁用（临时状态，如栈溢出后）
     stack_guard_yellow_reserved_disabled,// disabled (temporarily) after stack overflow
+    // 所有保护页启用
     stack_guard_enabled         // enabled
   };
 
@@ -69,12 +72,15 @@ class StackOverflow {
 
   // Precompute the limit of the stack as used in stack overflow checks.
   // We load it from here to simplify the stack overflow check in assembly.
+  // 栈溢出检测阈值
   address          _stack_overflow_limit;
   address          _reserved_stack_activation;
+  // 阴影区安全限、增长水印（用于优化检测频率）
   address          _shadow_zone_safe_limit;
   address          _shadow_zone_growth_watermark;
 
   // Support for stack overflow handling, copied down from thread.
+  // 栈的基址和当前栈顶
   address          _stack_base;
   address          _stack_end;
 
@@ -223,9 +229,14 @@ class StackOverflow {
  private:
   // These values are derived from flags StackRedPages, StackYellowPages,
   // StackReservedPages and StackShadowPages.
+  // [红区] → [黄区] → [保留区] → [阴影区] → [已用栈]
+  // 红区：不可恢复溢出区，触发崩溃。
   static size_t _stack_red_zone_size;
+  // 黄区：可恢复溢出区，抛出StackOverflowError。
   static size_t _stack_yellow_zone_size;
+  // 保留区：允许带@ReservedStackAccess注解的方法临时扩展。
   static size_t _stack_reserved_zone_size;
+  // 阴影区：动态检测区，提前触发保护页检查。
   static size_t _stack_shadow_zone_size;
 
  public:

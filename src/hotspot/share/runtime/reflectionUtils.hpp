@@ -33,9 +33,14 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/growableArray.hpp"
 
+// 过滤Java字段：在反射操作中隐藏特定字段（如合成字段或编译器生成的字段），提供符合Java语言规范的字段视图。
+
+// 表示一个被过滤的字段
 class FilteredField : public CHeapObj<mtInternal>  {
  private:
+  // 字段所属的类
   Klass* _klass;
+  // 字段在类中的内存偏移量
   int    _field_offset;
 
  public:
@@ -47,11 +52,15 @@ class FilteredField : public CHeapObj<mtInternal>  {
   int  field_offset() { return _field_offset; }
 };
 
+// 全局维护被过滤字段的映射表
 class FilteredFieldsMap : AllStatic {
  private:
+  // 存储所有被过滤的字段
   static GrowableArray<FilteredField *> *_filtered_fields;
  public:
+  // 初始化过滤字段映射表
   static void initialize();
+  // 检查给定类和偏移量的字段是否被过滤
   static bool is_filtered_field(Klass* klass, int field_offset) {
     for (int i=0; i < _filtered_fields->length(); i++) {
       if (klass == _filtered_fields->at(i)->klass() &&
@@ -61,6 +70,7 @@ class FilteredFieldsMap : AllStatic {
     }
     return false;
   }
+  // 统计被过滤字段的数量，支持仅统计当前类（local_only=true）或其子类
   static int  filtered_fields_count(Klass* klass, bool local_only) {
     int nflds = 0;
     for (int i=0; i < _filtered_fields->length(); i++) {

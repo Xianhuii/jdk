@@ -27,6 +27,7 @@
 
 #include <math.h>
 
+// 浮点数操作相关的底层工具
 // Used to access the lower/higher 32 bits of a double
 typedef union {
     double d;

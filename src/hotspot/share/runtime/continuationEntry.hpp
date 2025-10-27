@@ -37,6 +37,7 @@ class nmethod;
 class OopMap;
 class RegisterMap;
 
+// 延续的栈帧入口，用于管理协程或延续的栈帧元数据，支持栈帧的冻结、恢复和垃圾回收
 // Metadata stored in the continuation entry frame
 class ContinuationEntry {
   friend class JVMCIVMStructs;
@@ -64,26 +65,36 @@ class ContinuationEntry {
   static bool is_interpreted_call(address call_address);
 
  private:
+  // 保存关键 PC 地址（如返回地址、解冻调用地址
   static address _return_pc;
   static address _thaw_call_pc;
   static address _cleanup_pc;
+  // 编译后的特殊入口方法
   static nmethod* _enter_special;
+  // 解释执行入口的偏移量
   static int _interpreted_entry_offset;
 
  private:
+  // 指向父级 ContinuationEntry的指针，形成延续链
   ContinuationEntry* _parent;
+  // 指向延续对象（oopDesc类型）的指针
   oopDesc* _cont;
+  // 指向栈块（StackChunk）的指针，存储冻结的栈帧数据
   oopDesc* _chunk;
+  // 标志位（如是否为虚拟线程）
   int _flags;
   // Size in words of the stack arguments of the bottom frame on stack if compiled 0 otherwise.
   // The caller (if there is one) is the still frozen top frame in the StackChunk.
+  // 底层栈帧的参数大小（以字为单位）
   int _argsize;
+  // 快速访问父延续的指针（优化性能）
   intptr_t* _parent_cont_fastpath;
 #ifdef _LP64
-  int64_t   _parent_held_monitor_count;
+  int64_t   _parent_held_monitor_count; // 父线程持有的监视器数量
 #else
   int32_t   _parent_held_monitor_count;
 #endif
+  // 引用计数，防止栈帧被 GC 回收
   uint32_t _pin_count;
 
  public:

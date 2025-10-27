@@ -28,6 +28,8 @@
 #include "memory/allStatic.hpp"
 #include "utilities/debug.hpp"
 
+// 提供操作系统（OS）相关的静态信息，仅在JVM启动时初始化一次，后续不可修改。
+// 主要封装与内存管理相关的系统参数，如页面大小、内存分配粒度等。
 // Static information about the operating system. Initialized exactly once
 // at VM start-up and never changes again.
 class OSInfo : AllStatic {

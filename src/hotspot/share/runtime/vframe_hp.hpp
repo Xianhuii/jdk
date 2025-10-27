@@ -27,20 +27,28 @@
 
 #include "runtime/vframe.hpp"
 
+// JVM 编译后的虚拟帧（用于 JIT 编译后的代码执行上下文）
 class compiledVFrame: public javaVFrame {
 
   friend class EscapeBarrier;
 
  public:
   // JVM state
+  // 获取当前帧对应的方法及字节码索引
   Method*                      method()             const;
   int                          bci()                const;
+  // 判断是否需要在去优化后重新执行该帧
   bool                         should_reexecute()   const;
+  // 访问局部变量和表达式栈的值集合
   StackValueCollection*        locals()             const;
   StackValueCollection*        expressions()        const;
+  // 获取帧内锁（Monitor）信息列表
   GrowableArray<MonitorInfo*>* monitors()           const;
+  // 唯一标识该编译帧的 ID
   int                          vframe_id()          const { return _vframe_id; }
+  // 检查是否存在逃逸的局部变量
   bool                         has_ea_local_in_scope() const;
+  // 判断参数是否发生逃逸（在调用参数列表中）
   bool                         arg_escape()         const; // at call with arg escape in parameter list
 
   void set_locals(StackValueCollection* values) const;

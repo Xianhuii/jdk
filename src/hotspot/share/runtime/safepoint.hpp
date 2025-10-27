@@ -32,6 +32,8 @@
 #include "utilities/ostream.hpp"
 #include "utilities/waitBarrier.hpp"
 
+// JVM中安全点（SafePoint）同步机制的核心实现，主要用于协调JVM线程在全局操作（如垃圾回收）时的暂停与恢复。
+// 确保所有Java线程在特定时刻（如GC）暂停执行，进入安全状态，避免CPU执行敏感操作（如对象引用修改），以保证全局操作的原子性和一致性。
 //
 // Safepoint synchronization
 ////
@@ -48,6 +50,7 @@
 
 class ThreadSafepointState;
 
+// 通过safepoint_id和at_safepoint标志，辅助判断线程是否需要响应安全点请求
 class SafepointStateTracker {
   uint64_t _safepoint_id;
   bool     _at_safepoint;
@@ -75,10 +78,13 @@ class SafepointSynchronize : AllStatic {
   friend class SafepointStateTracker;
 
   // Threads might read this flag directly, without acquiring the Threads_lock:
+  // 跟踪同步状态（未同步、同步中、已同步）
   static volatile SynchronizeState _state;
   // Number of threads we are waiting for to block:
+  // 等待阻塞的线程数
   static int              _waiting_to_block;
   // Counts the number of active critical natives during the safepoint:
+  // 记录安全点期间活动的JNI原生方法数量
   static int              _current_jni_active_count;
 
   // This counter is used for fast versions of jni_Get<Primitive>Field.
@@ -102,6 +108,7 @@ class SafepointSynchronize : AllStatic {
 
   // Helper methods for safepoint procedure:
   static void arm_safepoint();
+  // 实际执行线程同步逻辑，通过条件变量和轮询机制阻塞线程
   static int synchronize_threads(jlong safepoint_limit_time, int nof_threads, int* initial_running);
   static void disarm_safepoint();
   static void increment_jni_active_count();
@@ -127,13 +134,16 @@ public:
   static void init(Thread* vmthread);
 
   // Roll all threads forward to safepoint. Must be called by the VMThread.
+  // 触发安全点同步，使所有Java线程进入安全点
   static void begin();
+  // 恢复所有被阻塞的线程
   static void end();                    // Start all suspended threads again...
 
   // The value for a not set safepoint id.
   static const uint64_t InactiveSafepointCounter;
 
   // Query
+  // 判断当前是否处于安全点
   static bool is_at_safepoint()                   { return _state == _synchronized; }
   static bool is_synchronizing()                  { return _state == _synchronizing; }
 
@@ -179,12 +189,16 @@ public:
   assert(!SafepointSynchronize::is_at_safepoint(), __VA_ARGS__)
 
 // State class for a thread suspended at a safepoint
+// 线程状态跟踪
 class ThreadSafepointState: public CHeapObj<mtThread> {
  private:
   // At polling page safepoint (NOT a poll return safepoint):
+  // 标识线程是否因安全点轮询而暂停
   volatile bool                   _at_poll_safepoint;
   JavaThread*                     _thread;
+  // 表示线程已安全抵达安全点
   bool                            _safepoint_safe;
+  // 关联到当前安全点实例的ID，用于状态验证
   volatile uint64_t               _safepoint_id;
 
   ThreadSafepointState*           _next;
@@ -200,7 +214,9 @@ class ThreadSafepointState: public CHeapObj<mtThread> {
   ThreadSafepointState** next_ptr() { return &_next; }
 
   // examine/restart
+  // 检查线程是否满足安全点条件
   void examine_state_of_thread(uint64_t safepoint_count);
+  // 恢复线程执行
   void restart();
 
   // Query
@@ -215,6 +231,7 @@ class ThreadSafepointState: public CHeapObj<mtThread> {
   bool is_at_poll_safepoint()           { return _at_poll_safepoint; }
   void set_at_poll_safepoint(bool val)  { _at_poll_safepoint = val; }
 
+  // 处理安全点轮询页面触发的异常
   void handle_polling_page_exception();
 
   // debugging
@@ -225,6 +242,7 @@ class ThreadSafepointState: public CHeapObj<mtThread> {
   static void destroy(JavaThread *thread);
 };
 
+// 统计与日志
 class SafepointTracing : public AllStatic {
 private:
   // Absolute

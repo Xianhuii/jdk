@@ -122,17 +122,31 @@
 class Thread;
 class outputStream;
 
+// 定义了Java虚拟机（JVM）中VM线程操作的基类框架，用于封装需在VM线程（JVM主线程）中执行的操作。
+// 这些操作通常涉及全局状态修改或需要暂停其他线程（如安全点操作）。
+
+// 操作执行流程
+//     发起操作：Java线程通过JVM接口（如JVM_GC）创建VM_Operation子类实例。
+//     入队等待：操作被提交到VM线程的任务队列。
+//     VM线程调度：VM线程从队列中取出操作，调用evaluate()。
+//     执行阶段：
+//         doit_prologue()：前置检查（可取消操作）。
+//         doit()：具体操作逻辑（子类实现）。
+//         doit_epilogue()：后置清理。
 class VM_Operation : public StackObj {
  public:
+  // VM操作类型枚举
   enum VMOp_Type {
-    VM_OPS_DO(VM_OP_ENUM)
-    VMOp_Terminating
+    VM_OPS_DO(VM_OP_ENUM) // 展开为所有具体操作
+    VMOp_Terminating // 终止标记
   };
 
  private:
+  // 调用该操作的线程
   Thread*         _calling_thread;
 
   // The VM operation name array
+  // 静态操作名称表
   static const char* _names[];
 
  public:
@@ -143,6 +157,7 @@ class VM_Operation : public StackObj {
   void set_calling_thread(Thread* thread);
 
   // Called by VM thread - does in turn invoke doit(). Do not override this
+  // VM线程调用，执行操作
   void evaluate();
 
   // evaluate() is called by the VMThread and in turn calls doit().
@@ -152,24 +167,31 @@ class VM_Operation : public StackObj {
   // If doit_prologue() returns true the VM operation will proceed, and
   // doit_epilogue() will be called by the JavaThread once the VM operation
   // completes. If doit_prologue() returns false the VM operation is cancelled.
+  // 子类必须实现的抽象方法
   virtual void doit()                            = 0;
+  // 操作前执行（可取消操作）
   virtual bool doit_prologue()                   { return true; };
+  // 操作后执行
   virtual void doit_epilogue()                   {};
 
   // Configuration. Override these appropriately in subclasses.
+  // 返回操作类型
   virtual VMOp_Type type() const = 0;
   virtual bool allow_nested_vm_operations() const { return false; }
 
   // VMOp_Type may belong to a category of the operation.
   // Override is_XX_operation() appropriately in subclasses.
+  // 是否为GC相关操作
   virtual bool is_gc_operation() const { return false; }
 
   // You may override skip_thread_oop_barriers to return true if the operation
   // does not access thread-private oops (including frames).
+  // 是否跳过线程对象屏障
   virtual bool skip_thread_oop_barriers() const { return false; }
 
   // An operation can either be done inside a safepoint
   // or concurrently with Java threads running.
+  // 是否需在安全点执行
   virtual bool evaluate_at_safepoint() const { return true; }
 
   // Debugging

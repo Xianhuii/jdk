@@ -35,6 +35,7 @@
 #include "runtime/threadWXSetters.inline.hpp"
 #include "utilities/macros.hpp"
 
+// 提供汇编例程的入口点，供编译代码和运行时系统调用。平台相关实现位于stubRoutines_<arch>.hpp，此处为平台无关的核心逻辑。
 // StubRoutines provides entry points to assembly routines used by
 // compiled code and the run-time system. Platform-specific entry
 // points are defined in the platform-specific inner class. Most
@@ -104,14 +105,17 @@
 //    stubGenerator_<arch>.cpp file and call the function in generate_all() of that file
 // 5. ensure the entry is generated in the right blob to satisfy initialization
 //    dependencies between it and other stubs or runtime components.
-
+// 管理内存操作的安全区域（如内联汇编中的内存屏障）
 class UnsafeMemoryAccess : public CHeapObj<mtCode> {
  private:
+  // 安全区域的起始/结束地址
   address _start_pc;
   address _end_pc;
+  // 出错时的退出地址
   address _error_exit_pc;
  public:
   static address           _common_exit_stub_pc;
+  // 存储所有安全区域，支持动态增长
   static UnsafeMemoryAccess* _table;
   static int               _table_length;
   static int               _table_max_length;
@@ -142,6 +146,7 @@ class UnsafeMemoryAccess : public CHeapObj<mtCode> {
   static void    create_table(int max_size);
 };
 
+// 栈上对象，用于自动管理UnsafeMemoryAccess的生命周期（类似RAII）
 class UnsafeMemoryAccessMark : public StackObj {
  private:
   UnsafeMemoryAccess*  _ucm_entry;
@@ -151,6 +156,8 @@ class UnsafeMemoryAccessMark : public StackObj {
   ~UnsafeMemoryAccessMark();
 };
 
+// Blob管理：通过宏定义（如DECLARE_BLOB_FIELD）声明多个BufferBlob实例，代表不同阶段的代码块。
+// 入口点管理：使用宏（如DECLARE_ENTRY_FIELD）声明函数指针，指向汇编生成的入口地址。
 class StubRoutines: AllStatic {
 
 public:

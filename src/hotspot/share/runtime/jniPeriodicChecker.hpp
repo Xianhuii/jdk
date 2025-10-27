@@ -33,7 +33,7 @@ class JniPeriodicCheckerTask;
  * hijacking, va 0x0 hijacking either by mmap or an OS error.
  */
 
-
+// Java Native Interface (JNI) 周期性检查器的头文件实现，主要用于在启用严格JNI检查时检测潜在的JNI调用问题
 class JniPeriodicChecker : AllStatic {
 
   friend class JniPeriodicCheckerTask;

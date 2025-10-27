@@ -31,7 +31,9 @@
 // diagnostic framework notifications. This thread is not hidden
 // from the external view to allow the debugger to stop at the
 // breakpoints inside registered MXBean notification listeners.
-
+// 处理低内存检测
+// 支持垃圾回收(GC)通知
+// 处理诊断框架的通知事件
 class NotificationThread : public JavaThread {
   friend class VMStructs;
  private:

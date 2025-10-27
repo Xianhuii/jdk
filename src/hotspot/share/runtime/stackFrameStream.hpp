@@ -31,6 +31,9 @@
 
 class JavaThread;
 
+// 遍历线程堆栈帧，从顶层帧开始，逐层向下访问。
+// 自动管理寄存器状态（若启用更新）和延迟 GC 处理（若启用）。
+// 支持安全点（Safepoint）场景下的全寄存器保存。
 //
 // StackFrameStream iterates through the frames of a thread starting from
 // top most frame. It automatically takes care of updating the location of
@@ -52,8 +55,11 @@ class JavaThread;
 //
 class StackFrameStream : public StackObj {
  private:
+  // 当前正在访问的堆栈帧对象
   frame       _fr;
+  // 记录寄存器与堆栈槽的映射关系，用于 GC 时追踪对象引用
   RegisterMap _reg_map;
+  // 标识迭代是否完成
   bool        _is_done;
  public:
   StackFrameStream(JavaThread *thread, bool update, bool process_frames, bool allow_missing_reg = false);

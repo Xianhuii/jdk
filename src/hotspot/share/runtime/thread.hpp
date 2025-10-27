@@ -69,14 +69,14 @@ class JavaThread;
 
 // Class hierarchy
 // - Thread
-//   - JavaThread
-//     - various subclasses eg CompilerThread, ServiceThread
-//   - NonJavaThread
-//     - NamedThread
-//       - VMThread
-//       - ConcurrentGCThread
-//       - WorkerThread
-//     - WatcherThread
+//   - JavaThread 执行Java代码的线程
+//     - various subclasses eg CompilerThread（JIT编译器线程）, ServiceThread（服务线程）
+//   - NonJavaThread 非Java执行线程
+//     - NamedThread 命名线程，如VMThread
+//       - VMThread JVM主线程
+//       - ConcurrentGCThread 并发GC线程
+//       - WorkerThread 工作线程
+//     - WatcherThread 监控线程
 //     - JfrThreadSampler
 //     - JfrCPUSamplerThread
 //     - LogAsyncWriter
@@ -106,6 +106,8 @@ class JavaThread;
 //     - this->thread_main_inner()  // extra call level to ensure correct stack calculations
 //       - this->entry_point()  // set differently for each kind of JavaThread
 
+// 定义JVM内部线程基类Thread，提供线程生命周期管理、资源分配、同步机制等核心功能。
+
 class Thread: public ThreadShadow {
   friend class VMError;
   friend class VMErrorCallbackMark;
@@ -120,6 +122,7 @@ class Thread: public ThreadShadow {
   // On AArch64, the high order 32 bits are used by a "patching epoch" number
   // which reflects if this thread has executed the required fences, after
   // an nmethod gets disarmed. The low order 32 bits denote the disarmed value.
+  // 方法去武装（disarmed）时的保护值，用于并发安全
   uint64_t _nmethod_disarmed_guard_value;
 
  public:
@@ -139,11 +142,13 @@ class Thread: public ThreadShadow {
   // Poll data is used in generated code for safepoint polls.
   // It is important for performance to put this at lower offset
   // in Thread. The accessors are in JavaThread.
+  // 安全点轮询数据（Safepoint机制）
   SafepointMechanism::ThreadData _poll_data;
 
   // Thread local data area available to the GC. The internal
   // structure and contents of this data area is GC-specific.
   // Only GC and GC barrier code should access this data area.
+  // 垃圾回收线程局部数据
   GCThreadLocalData _gc_data;
 
  public:
@@ -255,11 +260,14 @@ class Thread: public ThreadShadow {
   friend class GCLocker;
 
  private:
+  // 线程本地分配缓冲区（Thread-Local Allocation Buffer）
   ThreadLocalAllocBuffer _tlab;                 // Thread-local eden
+  // 累计分配的堆内存字节数
   jlong _allocated_bytes;                       // Cumulative number of bytes allocated on
                                                 // the Java heap
   ThreadHeapSampler _heap_sampler;              // For use when sampling the memory.
 
+  // 线程统计信息
   ThreadStatisticalInfo _statistical_info;      // Statistics about the thread
 
   JFR_ONLY(DEFINE_THREAD_LOCAL_FIELD_JFR;)      // Thread-local data for jfr
@@ -277,6 +285,7 @@ class Thread: public ThreadShadow {
 
  protected:
   // To be implemented by children.
+  // 执行线程主体逻辑（纯虚函数，由子类实现）
   virtual void run() = 0;
   virtual void pre_run() = 0;
   virtual void post_run() = 0;  // Note: Thread must not be deleted prior to calling this!
@@ -338,6 +347,7 @@ class Thread: public ThreadShadow {
   virtual const char* type_name() const { return "Thread"; }
 
   // Returns the current thread (ASSERTS if null)
+  // 获取当前线程实例（线程本地存储TLS）
   static inline Thread* current();
   // Returns the current thread, or null if not attached
   static inline Thread* current_or_null();
@@ -432,6 +442,7 @@ class Thread: public ThreadShadow {
   // Apply "cf->do_nmethod" (if !nullptr) to all nmethods active in frames
   virtual void oops_do_no_frames(OopClosure* f, NMethodClosure* cf);
   virtual void oops_do_frames(OopClosure* f, NMethodClosure* cf) {}
+  // 遍历线程根对象（垃圾回收遍历）
   void oops_do(OopClosure* f, NMethodClosure* cf);
 
   // Handles the parallel case for claim_threads_do.
@@ -526,6 +537,7 @@ protected:
 
  public:
   // Stack overflow support
+  // 设置线程栈基址
   address stack_base() const DEBUG_ONLY(;) NOT_DEBUG({ return _stack_base; })
   // Needed for code that can query a new thread before the stack has been set.
   address stack_base_or_null() const   { return _stack_base; }
@@ -592,6 +604,7 @@ protected:
   JFR_ONLY(DEFINE_THREAD_LOCAL_OFFSET_JFR;)
 
  public:
+  //用于对象监视器、JVMTI原始监视器的事件对象
   ParkEvent * volatile _ParkEvent;            // for Object monitors, JVMTI raw monitors,
                                               // and ObjectSynchronizer::read_stable_mark
 
@@ -601,12 +614,14 @@ protected:
   bool has_terminated()                       { return Atomic::load(&_ParkEvent) == nullptr; };
 
   jint _hashStateW;                           // Marsaglia Shift-XOR thread-local RNG
+  // 线程本地伪随机数生成器（Marsaglia XORShift算法）
   jint _hashStateX;                           // thread-specific hashCode generator state
   jint _hashStateY;
   jint _hashStateZ;
 
   // Low-level leaf-lock primitives used to implement synchronization.
   // Not for general synchronization use.
+  // 自旋锁操作（低级同步原语）
   static void SpinAcquire(volatile int * Lock);
   static void SpinRelease(volatile int * Lock);
 
@@ -624,6 +639,7 @@ protected:
 #endif // __APPLE__ && AARCH64
 
  private:
+  // 检查是否在AsyncGetCallTrace（AGCT）中
   bool _in_asgct = false;
  public:
   bool in_asgct() const { return _in_asgct; }
@@ -655,6 +671,7 @@ class ThreadInAsgct {
 };
 
 // Inline implementation of Thread::current()
+// 获取当前线程实例（线程本地存储TLS）
 inline Thread* Thread::current() {
   Thread* current = current_or_null();
   assert(current != nullptr, "Thread::current() called on detached thread");

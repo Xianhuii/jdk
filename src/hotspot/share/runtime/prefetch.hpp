@@ -36,9 +36,11 @@
 class Prefetch : AllStatic {
  public:
   // Prefetch anticipating read; must not fault, semantically a no-op
+  // 预取指定内存位置的数据供后续读取操作使用
   static void read(const void* loc, intx interval);
 
   // Prefetch anticipating write; must not fault, semantically a no-op
+  // 预取指定内存位置供后续写入操作使用
   static void write(void* loc, intx interval);
 };
 

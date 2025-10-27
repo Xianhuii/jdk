@@ -64,38 +64,54 @@
 // these data structures; they are fixed over in the serviceability
 // agent's Java code (for bootstrapping).
 
+// 描述非静态/静态字段的元数据
 typedef struct {
+  // 字段所属类型的名称（如Klass）
   const char* typeName;            // The type name containing the given field (example: "Klass")
+  // 字段名（如_name）
   const char* fieldName;           // The field name within the type           (example: "_name")
+  // 字段类型的字符串表示（如Symbol*）
   const char* typeString;          // Quoted name of the type of this field (example: "Symbol*";
                                    // parsed in Java to ensure type correctness
+  // 标志位（0=非静态，1=静态）
   int32_t  isStatic;               // Indicates whether following field is an offset or an address
+  // 非静态字段在结构体内的字节偏移量
   uint64_t offset;                 // Offset of field within structure; only used for nonstatic fields
+  // 静态字段的内存地址
   void* address;                   // Address of field; only used for static fields
                                    // ("offset" can not be reused because of apparent solstudio compiler bug
                                    // in generation of initializer data)
 } VMStructEntry;
 
+// 描述类型的元数据
 typedef struct {
+  // 类型名（如Method）
   const char* typeName;            // Type name (example: "Method")
+  // 父类名（如oopDesc）
   const char* superclassName;      // Superclass name, or null if none (example: "oopDesc")
+  // 是否为对象指针类型（如Klass*）
   int32_t isOopType;               // Does this type represent an oop typedef? (i.e., "Method*" or
                                    // "Klass*", but NOT "Method")
+  // 是否为整数类型
   int32_t isIntegerType;           // Does this type represent an integer type (of arbitrary size)?
   int32_t isUnsigned;              // If so, is it unsigned?
+  // 类型占用的字节数
   uint64_t size;                   // Size, in bytes, of the type
 } VMTypeEntry;
 
+// 整型常量（如线程状态标志_thread_in_native的值）
 typedef struct {
   const char* name;                // Name of constant (example: "_thread_in_native")
   int32_t value;                   // Value of constant
 } VMIntConstantEntry;
 
+// 长整型常量
 typedef struct {
   const char* name;                // Name of constant (example: "_thread_in_native")
   uint64_t value;                  // Value of constant
 } VMLongConstantEntry;
 
+// 函数或全局变量的地址（如SharedRuntime::register_finalizer的地址）
 typedef struct {
   const char* name;                // Name of address (example: "SharedRuntime::register_finalizer")
   void* value;                     // Value of address
@@ -103,16 +119,19 @@ typedef struct {
 
 // This class is a friend of most classes, to be able to access
 // private fields
+// 提供对静态数组的访问及初始化检查
 class VMStructs {
 public:
   // The last entry is identified over in the serviceability agent by
   // the fact that it has a null fieldName
+  // 存储所有VMStructEntry
   static VMStructEntry localHotSpotVMStructs[];
   // The function to get localHotSpotVMStructs length
   static size_t localHotSpotVMStructsLength() NOT_VM_STRUCTS_RETURN_(0);
 
   // The last entry is identified over in the serviceability agent by
   // the fact that it has a null typeName
+  // 存储所有VMTypeEntry
   static VMTypeEntry   localHotSpotVMTypes[];
   // The function to get localHotSpotVMTypes length
   static size_t localHotSpotVMTypesLength() NOT_VM_STRUCTS_RETURN_(0);
@@ -120,6 +139,7 @@ public:
   // Table of integer constants required by the serviceability agent.
   // The last entry is identified over in the serviceability agent by
   // the fact that it has a null typeName
+  // 存储整型常量
   static VMIntConstantEntry localHotSpotVMIntConstants[];
   // The function to get localHotSpotVMIntConstants length
   static size_t localHotSpotVMIntConstantsLength() NOT_VM_STRUCTS_RETURN_(0);
@@ -127,6 +147,7 @@ public:
   // Table of long constants required by the serviceability agent.
   // The last entry is identified over in the serviceability agent by
   // the fact that it has a null typeName
+  // 存储长整型常量
   static VMLongConstantEntry localHotSpotVMLongConstants[];
   // The function to get localHotSpotVMIntConstants length
   static size_t localHotSpotVMLongConstantsLength() NOT_VM_STRUCTS_RETURN_(0);
@@ -134,11 +155,13 @@ public:
   /**
    * Table of addresses.
    */
+  // 存储地址常量
   static VMAddressEntry localHotSpotVMAddresses[];
 
 #ifdef ASSERT
   // This is used to run any checking code necessary for validation of
   // the data structure (debug build only)
+  // 调试模式下验证数据结构的完整性（如类型匹配、偏移量有效性）
   static void init() NOT_VM_STRUCTS_RETURN;
 
 private:
@@ -156,10 +179,12 @@ private:
 //
 
 // This macro generates a VMStructEntry line for a nonstatic field
+// 为非静态字段生成VMStructEntry
 #define GENERATE_NONSTATIC_VM_STRUCT_ENTRY(typeName, fieldName, type)              \
  { QUOTE(typeName), QUOTE(fieldName), QUOTE(type), 0, offset_of(typeName, fieldName), nullptr },
 
 // This macro generates a VMStructEntry line for a static field
+// 为静态字段生成VMStructEntry
 #define GENERATE_STATIC_VM_STRUCT_ENTRY(typeName, fieldName, type)                 \
  { QUOTE(typeName), QUOTE(fieldName), QUOTE(type), 1, 0, &typeName::fieldName },
 

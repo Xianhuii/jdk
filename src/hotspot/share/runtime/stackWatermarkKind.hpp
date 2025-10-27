@@ -26,7 +26,7 @@
 #define SHARE_RUNTIME_STACKWATERMARKKIND_HPP
 
 enum class StackWatermarkKind {
-  gc
+  gc // 垃圾回收相关的水印事件
 };
 
 #endif // SHARE_RUNTIME_STACKWATERMARKKIND_HPP

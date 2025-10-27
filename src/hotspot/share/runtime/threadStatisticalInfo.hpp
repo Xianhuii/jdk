@@ -30,10 +30,12 @@
 #include "runtime/os.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-
+// 用于追踪线程的启动时间和动态类定义统计，适用于JVM内部性能监控或诊断场景。
 class ThreadStatisticalInfo {
   // The time stamp the thread was started.
+  // 线程启动时的时间戳（纳秒单位）
   const uint64_t _start_time_stamp;
+  // 记录线程定义的类数量
   uint64_t _define_class_count;
 
 public:

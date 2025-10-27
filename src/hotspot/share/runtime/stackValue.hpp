@@ -33,10 +33,16 @@ class frame;
 class RegisterMap;
 class ScopeValue;
 
+// StackValue类表示JVM运行时栈帧中的一个值，支持两种类型：整数（T_INT）和对象（T_OBJECT）。
+// 主要用于处理栈上数据的存储、转换及标量替换（Scalar Replacement）优化场景。
 class StackValue : public ResourceObj {
  private:
+  // 表示栈值的类型，决定后续操作的行为
   BasicType _type;
+  // 当类型为T_INT时，直接存储整数值
+  // 当类型为T_OBJECT且对象被标量替换时，存储原对象的地址（需满足特定条件）
   intptr_t  _integer_value; // Blank java stack slot value
+  // 当类型为T_OBJECT时，存储对象的强引用，确保对象生命周期管理
   Handle    _handle_value;  // Java stack slot value interpreted as a Handle
  public:
 

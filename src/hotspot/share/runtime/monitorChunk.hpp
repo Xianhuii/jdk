@@ -32,10 +32,13 @@ class OopClosure;
 
 // Data structure for holding monitors for one activation during
 // deoptimization.
-
+// MonitorChunk是 JVM 运行时用于存储去优化（deoptimization）期间激活方法（activation）的监视器（monitors）信息的数据结构。
+// 主要用于恢复方法从编译执行回退到解释执行时的锁状态。
 class MonitorChunk: public CHeapObj<mtSynchronizer> {
  private:
+  // 记录当前存储的监视器数量
   int              _number_of_monitors;
+  // 动态分配的 BasicObjectLock指针数组，每个元素对应一个对象锁的元数据（如锁状态、持有线程等）
   BasicObjectLock* _monitors;
   BasicObjectLock* monitors() const { return _monitors; }
  public:

@@ -36,25 +36,32 @@ class Handle;
 class outputStream;
 class RegisterMap;
 
+// 允许保存和恢复线程的执行上下文（栈帧），实现非阻塞式调度。
+// 用于支持Java协程（Coroutines）或异步编程模型。
 class Continuations : public AllStatic {
 public:
   static void init();
   static bool enabled();
 };
-
+// 初始化
 void continuations_init();
 
 class javaVFrame;
 class JavaThread;
 
+// 冻结状态枚举
 // should match Continuation.pinnedReason() in Continuation.java
 enum freeze_result {
+  // 成功冻结
   freeze_ok = 0,
   freeze_ok_bottom = 1,
+  // 因被锁定（如Monitor、Native代码）无法冻结
   freeze_pinned_cs = 2,
   freeze_pinned_native = 3,
   freeze_pinned_monitor = 4,
+  // 冻结过程中抛出异常
   freeze_exception = 5,
+  // 未挂载到线程
   freeze_not_mounted = 6,
   freeze_unsupported = 7
 };
@@ -62,11 +69,13 @@ enum freeze_result {
 class Continuation : AllStatic {
 public:
 
+  // 抢占类型（如因进入同步块 monitorenter或等待 wait触发冻结）
   enum preempt_kind {
     freeze_on_monitorenter,
     freeze_on_wait
   };
 
+  // 恢复类型（如从顶层恢复 thaw_top或通过返回屏障 thaw_return_barrier）
   enum thaw_kind {
     thaw_top = 0,
     thaw_return_barrier = 1,
@@ -85,17 +94,23 @@ public:
 
   static void init();
 
+  // 冻结的入口地址（原生方法）
   static address freeze_entry();
   static address freeze_preempt_entry();
+  // 准备恢复延续
   static int prepare_thaw(JavaThread* thread, bool return_barrier);
+  // 恢复的入口地址（原生方法）
   static address thaw_entry();
 
+  // 尝试抢占目标线程的延续
   static freeze_result try_preempt(JavaThread* target, oop continuation);
 
+  // 根据线程/SP/帧获取延续入口
   static ContinuationEntry* get_continuation_entry_for_continuation(JavaThread* thread, oop continuation);
   static ContinuationEntry* get_continuation_entry_for_sp(JavaThread* thread, intptr_t* const sp);
   static ContinuationEntry* get_continuation_entry_for_entry_frame(JavaThread* thread, const frame& f);
 
+  // 检查延续是否挂载到线程
   static bool is_continuation_mounted(JavaThread* thread, oop continuation);
 
   static bool is_cont_barrier_frame(const frame& f);
@@ -117,6 +132,7 @@ public:
 
   static bool is_in_usable_stack(address addr, const RegisterMap* map);
 
+  // 固定/解除固定延续，防止GC移动
   // pins/unpins the innermost mounted continuation; returns true on success or false if there's no continuation or the operation failed
   static bool pin(JavaThread* current);
   static bool unpin(JavaThread* current);
@@ -124,6 +140,7 @@ public:
   static frame continuation_bottom_sender(JavaThread* thread, const frame& callee, intptr_t* sender_sp);
   static address get_top_return_pc_post_barrier(JavaThread* thread, address pc);
   static void set_cont_fastpath_thread_state(JavaThread* thread);
+  // 在去优化（Deoptimization）时通知线程
   static void notify_deopt(JavaThread* thread, intptr_t* sp);
 
   // access frame data

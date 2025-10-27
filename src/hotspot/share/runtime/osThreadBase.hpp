@@ -38,7 +38,7 @@ class Monitor;
 
 // Note: the ThreadState is legacy code and is not correctly implemented.
 // Uses of ThreadState need to be replaced by the state in the JavaThread.
-
+// 定义了线程的8种状态（平台相关，可能不精确）
 enum ThreadState {
   ALLOCATED,                    // Memory has been allocated but not initialized
   INITIALIZED,                  // The thread has been initialized but yet started
@@ -53,10 +53,12 @@ enum ThreadState {
 
 typedef int (*OSThreadStartFunc)(void*);
 
+// 定义操作系统线程的基础类（OSThreadBase），用于管理线程状态和生命周期
 class OSThreadBase: public CHeapObj<mtThread> {
   friend class VMStructs;
   friend class JVMCIVMStructs;
  private:
+  // 线程状态（需多线程安全访问）
   volatile ThreadState _state;    // Thread state *hint*
 
   // Methods
@@ -78,6 +80,7 @@ class OSThreadBase: public CHeapObj<mtThread> {
 
 
 // Utility class for use with condition variables:
+// 在作用域内将线程状态设为OBJECT_WAIT或CONDVAR_WAIT，退出时恢复原状态。
 class OSThreadWaitState : public StackObj {
   OSThreadBase* _osthread;
   ThreadState _old_state;
@@ -98,6 +101,7 @@ class OSThreadWaitState : public StackObj {
 
 
 // Utility class for use with contended monitors:
+// 在作用域内将线程状态设为MONITOR_WAIT，退出时恢复原状态。
 class OSThreadContendState : public StackObj {
   OSThreadBase* _osthread;
   ThreadState _old_state;

@@ -27,6 +27,6 @@
 
 #include "utilities/macros.hpp"
 // The actual class declaration is platform specific.
-#include OS_HEADER(osThread)
+#include OS_HEADER(osThread) // 通过宏OS_HEADER实现平台差异化包含。实际的osThread类声明存在于平台特定文件中。
 
 #endif // SHARE_RUNTIME_OSTHREAD_HPP

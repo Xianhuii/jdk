@@ -40,13 +40,24 @@ class compiledVFrame;
 
 template<class E> class GrowableArray;
 
+// 实现了Java虚拟机的去优化（Deoptimization）机制，用于在运行时动态撤销已编译代码（如JIT生成的机器码），回退到解释器执行。
+// 1. 去优化触发流程
+// 标记阶段：当检测到需要去优化的条件（如类型不匹配）时，通过DeoptimizationScope::mark()标记相关编译方法。
+// 执行阶段：在安全点（Safe Point）时，调用deoptimize_all_marked()批量去优化已标记的方法。
+// 堆栈展开：通过fetch_unroll_info()生成UnrollBlock，保存原编译帧的上下文信息（如栈大小、PC地址）。
+// 帧重建：unpack_frames()根据UnrollBlock重建解释器帧，恢复局部变量和操作数栈状态。
+
+// 管理去优化的作用域，跟踪依赖关系
 class DeoptimizationScope {
  private:
   // What gen we have done the deopt handshake for.
+  // 已提交去优化的代际号
   static uint64_t _committed_deopt_gen;
   // What gen to mark a method with, hence larger than _committed_deopt_gen.
+  // 当前激活的去优化代际号
   static uint64_t _active_deopt_gen;
   // Indicate an in-progress deopt handshake.
+  // 标记是否正在进行去优化握手
   static bool     _committing_in_progress;
 
   // The required gen we need to execute/wait for
@@ -57,12 +68,15 @@ class DeoptimizationScope {
   DeoptimizationScope();
   ~DeoptimizationScope();
   // Mark a method, if already marked as dependent.
+  // 标记某个编译方法（nmethod）需去优化
   void mark(nmethod* nm, bool inc_recompile_counts = true);
   // Record this as a dependent method.
+  // 记录依赖关系
   void dependent(nmethod* nm);
 
   // Execute the deoptimization.
   // Make the nmethods not entrant, stackwalks and patch return pcs and sets post call nops.
+  // 执行所有已标记方法的去优化
   void deoptimize_marked();
 };
 
@@ -73,6 +87,7 @@ class Deoptimization : AllStatic {
  public:
   // What condition caused the deoptimization?
   // Note: Keep this enum in sync. with Deoptimization::_trap_reason_name.
+  // 触发去优化的原因
   enum DeoptReason {
     Reason_many = -1,             // indicates presence of several reasons
     Reason_none = 0,              // indicates absence of a relevant deopt.
@@ -141,6 +156,7 @@ class Deoptimization : AllStatic {
 
   // What action must be taken by the runtime?
   // Note: Keep this enum in sync. with Deoptimization::_trap_action_name.
+  // 去优化后采取的动作
   enum DeoptAction {
     Action_none,                  // just interpret, do not invalidate nmethod
     Action_maybe_recompile,       // recompile the nmethod; need not invalidate
@@ -181,6 +197,7 @@ class Deoptimization : AllStatic {
 
  public:
   // Deoptimizes a frame lazily. Deopt happens on return to the frame.
+  // 对指定帧执行去优化
   static void deoptimize(JavaThread* thread, frame fr, DeoptReason reason = Reason_constraint);
 
 #if INCLUDE_JVMCI

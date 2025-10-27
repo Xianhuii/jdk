@@ -34,6 +34,7 @@ class ObjectMonitorsView;
 
 // A hodge podge of commonly used VM Operations
 
+// 空操作基类，doit()无实际行为，用于无需执行操作的场景
 class VM_EmptyOperation : public VM_Operation {
 public:
   virtual void doit() final {}
@@ -49,12 +50,14 @@ class VM_Halt: public VM_EmptyOperation {
   VMOp_Type type() const { return VMOp_Halt; }
 };
 
+// 频繁触发安全点，用于测试安全点机制
 class VM_SafepointALot: public VM_EmptyOperation {
  public:
   VMOp_Type type() const { return VMOp_SafepointALot; }
 };
 
 // empty vm op, evaluated just to force a safepoint
+// 强制触发 JVM 安全点，确保所有线程暂停
 class VM_ForceSafepoint: public VM_EmptyOperation {
  public:
   VMOp_Type type() const { return VMOp_ForceSafepoint; }
@@ -62,6 +65,7 @@ class VM_ForceSafepoint: public VM_EmptyOperation {
 
 // used by whitebox API to emulate VM issues
 // when VM can't operate and doesn't respond to jcmd
+// 在安全点无限循环休眠，模拟 JVM 无响应（白盒测试使用）
 class VM_HangInSafepoint: public VM_Operation {
 public:
   VMOp_Type type() const { return VMOp_ForceSafepoint; }
@@ -72,6 +76,7 @@ public:
   }
 };
 
+// 清除内联缓存（Inline Caches），可选保留静态存根
 class VM_ClearICs: public VM_Operation {
  private:
   bool _preserve_static_stubs;
@@ -149,6 +154,7 @@ class VM_ZombieAll: public VM_Operation {
 };
 #endif // PRODUCT
 
+// 打印线程信息，支持输出并发锁、扩展信息及 JNI 句柄详情
 class VM_PrintThreads: public VM_Operation {
  private:
   outputStream* _out;
@@ -171,6 +177,7 @@ class VM_PrintThreads: public VM_Operation {
   void doit_epilogue();
 };
 
+// 打印类元数据（如常量池、字段表），支持缩放比例和格式控制
 class VM_PrintMetadata : public VM_Operation {
  private:
   outputStream* const _out;
@@ -186,6 +193,7 @@ class VM_PrintMetadata : public VM_Operation {
   void doit();
 };
 
+// 检测死锁，支持并发锁分析，返回死锁循环链表
 class DeadlockCycle;
 class VM_FindDeadlocks: public VM_Operation {
  private:
@@ -209,6 +217,7 @@ class ThreadDumpResult;
 class ThreadSnapshot;
 class ThreadConcurrentLocks;
 
+// 生成线程转储，可指定线程范围、堆栈深度及锁信息
 class VM_ThreadDump : public VM_Operation {
  private:
   ThreadDumpResult*              _result;
@@ -240,7 +249,7 @@ class VM_ThreadDump : public VM_Operation {
   void doit_epilogue();
 };
 
-
+// 退出 JVM，处理线程阻塞与资源清理
 class VM_Exit: public VM_Operation {
  private:
   int  _exit_code;

@@ -27,18 +27,21 @@
 
 #include "runtime/thread.hpp"
 
+// 非Java线程基类
 class NonJavaThread: public Thread {
   friend class VMStructs;
 
   NonJavaThread* volatile _next;
 
   class List;
+  // 维护全局线程链表_the_list，通过add_to_the_list/remove_from_the_list管理生命周期
   static List _the_list;
 
   void add_to_the_list();
   void remove_from_the_list();
 
  protected:
+  // 提供pre_run/post_run钩子方法（在子类中实现具体逻辑）
   virtual void pre_run();
   virtual void post_run();
 

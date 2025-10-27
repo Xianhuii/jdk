@@ -44,7 +44,7 @@ class vframeStream;
 // shared functionality such as exception forwarding (C++ to
 // Java exceptions), locking/unlocking mechanisms, statistical
 // information, etc.
-
+// 提供 JVM 运行时所需的基础功能，涵盖异常处理、方法调用解析、适配器生成、统计信息收集等。
 class SharedRuntime: AllStatic {
  private:
   // Declare shared stub fields
@@ -676,7 +676,7 @@ class SharedRuntime: AllStatic {
 // The native wrappers are stored in real nmethods instead of the BufferBlobs
 // used by the adapters.  The code generation happens here because it's very
 // similar to what the adapters have to do.
-
+// 管理方法调用的适配器入口点，支持解释器与编译器之间的参数传递
 class AdapterHandlerEntry : public MetaspaceObj {
   friend class AdapterHandlerLibrary;
 

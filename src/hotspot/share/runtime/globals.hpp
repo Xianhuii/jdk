@@ -34,6 +34,7 @@
 #include OS_HEADER(globals)
 #include OS_CPU_HEADER(globals)
 
+// 运行时全局标志定义文件，用于控制JVM的底层行为、性能调优和调试选项
 // develop flags are settable / visible only during development and are constant in the PRODUCT version
 // product flags are always settable / visible
 // develop_pd/product_pd flags are the same as develop/product, except that their default values
@@ -107,9 +108,13 @@
 
 // Default and minimum StringTable and SymbolTable size values
 // Must be powers of 2
+// 字符串表初始容量（64位默认65536，非64位1024）
 const size_t defaultStringTableSize = NOT_LP64(1024) LP64_ONLY(65536);
+// 字符串表最小容量（128）
 const size_t minimumStringTableSize = 128;
+// 符号表初始容量（32768）
 const size_t defaultSymbolTableSize = 32768; // 2^15
+// 符号表最小容量（1024）
 const size_t minimumSymbolTableSize = 1024;
 
 #ifdef _LP64

@@ -31,6 +31,7 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/sizes.hpp"
 
+// 基础锁
 class BasicLock {
   friend class VMStructs;
   friend class JVMCIVMStructs;
@@ -43,6 +44,7 @@ class BasicLock {
   // * For LM_LIGHTWEIGHT
   // Used as a cache of the ObjectMonitor* used when locking. Must either
   // be nullptr or the ObjectMonitor* used when locking.
+ // 锁元数据（模式依赖）
   volatile uintptr_t _metadata;
 
   uintptr_t get_metadata() const { return Atomic::load(&_metadata); }
@@ -52,23 +54,29 @@ class BasicLock {
  public:
   BasicLock() : _metadata(0) {}
 
-  // LM_MONITOR
+  // LM_MONITOR 重量级锁
+  // 设置异常去优化标记
   void set_bad_metadata_deopt() { set_metadata(badDispHeaderDeopt); }
 
-  // LM_LEGACY
+  // LM_LEGACY 传统锁
+  // 获取头信息
   inline markWord displaced_header() const;
+  // 设置头信息
   inline void set_displaced_header(markWord header);
   static int displaced_header_offset_in_bytes() { return metadata_offset_in_bytes(); }
 
-  // LM_LIGHTWEIGHT
+  // LM_LIGHTWEIGHT 轻量级锁
+  // 获取缓存的ObjectMonitor
   inline ObjectMonitor* object_monitor_cache() const;
+  // 清除缓存
   inline void clear_object_monitor_cache();
+  // 设置缓存
   inline void set_object_monitor_cache(ObjectMonitor* mon);
   static int object_monitor_cache_offset_in_bytes() { return metadata_offset_in_bytes(); }
 
   void print_on(outputStream* st, oop owner) const;
 
-  // move a basic lock (used during deoptimization)
+  // move a basic lock (used during deoptimization) 反优化时迁移锁
   void move_to(oop obj, BasicLock* dest);
 };
 
@@ -81,10 +89,13 @@ class BasicLock {
 // alignment of the embedded BasicLock objects on such machines, we
 // put the embedded BasicLock at the beginning of the struct.
 
+// 对象锁绑定
 class BasicObjectLock {
   friend class VMStructs;
  private:
+  // 锁（必须双字对齐）
   BasicLock _lock;                                    // the lock, must be double word aligned
+  // 关联的Java对象
   oop       _obj;                                     // object holds the lock;
 
  public:

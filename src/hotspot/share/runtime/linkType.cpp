@@ -29,9 +29,9 @@
 // library.
 
 bool is_vm_statically_linked(void) {
-#ifdef STATIC_BUILD
+#ifdef STATIC_BUILD // 静态链接（STATIC_BUILD定义时返回true）
   return true;
-#else
+#else // 动态链接（未定义时返回false）
   return false;
 #endif
 }

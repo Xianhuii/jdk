@@ -31,13 +31,14 @@
 
 #define FUNCTIONALITY_NOT_IMPLEMENTED -8
 
+// CPUInformation类
 class CPUInformation : public CHeapObj<mtInternal> {
  private:
-  int   _no_of_sockets;
-  int   _no_of_cores;
-  int   _no_of_hw_threads;
-  const char* _description;
-  const char* _name;
+  int   _no_of_sockets; // 物理插槽数量
+  int   _no_of_cores; // 物理核心数
+  int   _no_of_hw_threads; // 硬件线程数（如超线程）
+  const char* _description; // CPU 描述（如型号）
+  const char* _name; // CPU 名称（如 "Intel Core i7"）
 
  public:
   CPUInformation() :
@@ -88,13 +89,14 @@ class CPUInformation : public CHeapObj<mtInternal> {
   }
 };
 
+// 表示系统中的一个进程
 class SystemProcess : public CHeapObj<mtInternal> {
  private:
-  int   _pid;
-  char* _name;
-  char* _path;
-  char* _command_line;
-  SystemProcess* _next;
+  int   _pid; // 进程 ID
+  char* _name; // 进程名
+  char* _path; // 可执行文件路径
+  char* _command_line; // 启动命令行参数
+  SystemProcess* _next; // 链表指针（支持多进程管理
 
  public:
   SystemProcess() :
@@ -160,10 +162,10 @@ class SystemProcess : public CHeapObj<mtInternal> {
 
 class NetworkInterface : public ResourceObj {
  private:
-  char* _name;
-  uint64_t _bytes_in;
-  uint64_t _bytes_out;
-  NetworkInterface* _next;
+  char* _name; // 接口名称（如 "eth0"）
+  uint64_t _bytes_in; // 接收字节数
+  uint64_t _bytes_out; // 发送字节数
+  NetworkInterface* _next; // 链表指针（支持多接口管理）
 
   NONCOPYABLE(NetworkInterface);
 
@@ -197,6 +199,7 @@ class NetworkInterface : public ResourceObj {
   }
 };
 
+// 提供 CPU 信息的初始化与查询
 class CPUInformationInterface : public CHeapObj<mtInternal> {
  private:
   CPUInformation* _cpu_info;
@@ -207,6 +210,7 @@ class CPUInformationInterface : public CHeapObj<mtInternal> {
   int cpu_information(CPUInformation& cpu_info);
 };
 
+// 监控 CPU 性能指标
 class CPUPerformanceInterface : public CHeapObj<mtInternal> {
  private:
   class CPUPerformance;
@@ -224,6 +228,7 @@ class CPUPerformanceInterface : public CHeapObj<mtInternal> {
                         double* const psystemTotalLoad) const;
 };
 
+// 管理系统进程信息
 class SystemProcessInterface : public CHeapObj<mtInternal> {
  private:
    class SystemProcesses;
@@ -237,6 +242,7 @@ class SystemProcessInterface : public CHeapObj<mtInternal> {
   int system_processes(SystemProcess** system_procs, int* const no_of_sys_processes) const;
 };
 
+// 监控网络接口性能
 class NetworkPerformanceInterface : public CHeapObj<mtInternal> {
  private:
   class NetworkPerformance;

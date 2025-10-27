@@ -28,9 +28,10 @@
 #include "memory/allocation.hpp"
 #include "runtime/stackValue.hpp"
 #include "utilities/growableArray.hpp"
-
+// 用于管理栈值（StackValue）的动态集合类 StackValueCollection，主要用于存储和操作方法执行期间的局部变量、表达式结果等栈上数据。
 class StackValueCollection : public ResourceObj {
  private:
+  // 存储 StackValue对象的动态数组，通过指针管理生命周期
   GrowableArray<StackValue*>* _values;
 
  public:

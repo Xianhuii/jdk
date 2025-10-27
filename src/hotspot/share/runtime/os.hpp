@@ -39,6 +39,7 @@
 class frame;
 class JvmtiAgent;
 
+// 提供操作系统（OS）相关的抽象接口，支持跨平台移植。所有与 OS 交互的底层功能（如内存管理、线程控制、文件 I/O 等）均通过此层封装。
 // Rules for using and implementing methods declared in the "os" class
 // ===================================================================
 //
@@ -572,6 +573,7 @@ class os: AllStatic {
 
   // The "main thread", also known as "starting thread", is the thread
   // that loads/creates the JVM via JNI_CreateJavaVM.
+  // 创建主线程
   static bool create_main_thread(JavaThread* thread);
 
   // The primordial thread is the initial process thread. The java

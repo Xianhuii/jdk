@@ -36,6 +36,7 @@
 #include "runtime/stackValueCollection.hpp"
 #include "utilities/growableArray.hpp"
 
+// 虚拟栈帧（vframe）的核心实现
 // vframes are virtual stack frames representing source level activations.
 // A single frame may hold several source level activations in the case of
 // optimized code. The debugging stored with the optimized code enables
@@ -55,11 +56,17 @@
 class StackFrameStream;
 class ContinuationEntry;
 
+// 虚拟栈帧基类
+// 表示源代码级别的栈帧，用于展开优化代码中的物理帧
 class vframe: public ResourceObj {
  protected:
+  // 原始物理帧（frame对象）
   frame        _fr;      // Raw frame behind the virtual frame.
+  // 寄存器映射，处理保存的寄存器值
   RegisterMap  _reg_map; // Register map for the raw frame (used to handle callee-saved registers).
+  // 所属Java线程
   JavaThread*  _thread;  // The thread owning the raw frame.
+  // 栈块（stack chunk）句柄
   stackChunkHandle _chunk;
 
   vframe(const frame* fr, const RegisterMap* reg_map, JavaThread* thread);
@@ -79,9 +86,11 @@ class vframe: public ResourceObj {
   stackChunkOop      stack_chunk()  const { return _chunk(); /*_reg_map.stack_chunk();*/ }
 
   // Returns the sender vframe
+  // 获取发送者虚拟帧
   virtual vframe* sender() const;
 
   // Returns the next javaVFrame on the stack (skipping all other kinds of frame)
+  // 跳过非Java帧，获取下一个Java虚拟帧
   javaVFrame *java_sender() const;
 
   // Is the current frame the entry to a virtual thread's stack
@@ -89,6 +98,7 @@ class vframe: public ResourceObj {
 
   // Answers if the this is the top vframe in the frame, i.e., if the sender vframe
   // is in the caller frame
+  // 判断是否为栈顶帧
   virtual bool is_top() const { return true; }
 
   // Type testing operations
@@ -106,14 +116,20 @@ class vframe: public ResourceObj {
 
 class MonitorInfo;
 
+// Java方法虚拟帧
 class javaVFrame: public vframe {
  public:
   // JVM state
+  // 获取当前方法对象
   virtual Method*                      method()         const = 0;
+  // 获取字节码索引
   virtual int                          bci()            const = 0;
+  // 获取局部变量集合
   virtual StackValueCollection*        locals()         const = 0;
+  // 获取操作数栈集合
   virtual StackValueCollection*        expressions()    const = 0;
   // the order returned by monitors() is from oldest -> youngest#4418568
+  // 获取锁信息列表
   virtual GrowableArray<MonitorInfo*>* monitors()       const = 0;
 
   // Debugging support via JVMTI.
@@ -152,6 +168,7 @@ class javaVFrame: public vframe {
   friend class vframe;
 };
 
+// 解释执行帧
 class interpretedVFrame: public javaVFrame {
  public:
   // JVM state
@@ -187,7 +204,7 @@ class interpretedVFrame: public javaVFrame {
   friend class vframe;
 };
 
-
+// 表示非Java代码的栈帧（如JNI方法）
 class externalVFrame: public vframe {
  protected:
   externalVFrame(const frame* fr, const RegisterMap* reg_map, JavaThread* thread) : vframe(fr, reg_map, thread) {}
@@ -201,6 +218,7 @@ class externalVFrame: public vframe {
   friend class vframe;
 };
 
+// 从C代码进入Java的入口帧
 class entryVFrame: public externalVFrame {
  public:
   bool is_entry_frame() const { return true; }
@@ -221,12 +239,17 @@ class entryVFrame: public externalVFrame {
 // A MonitorInfo is a ResourceObject that describes the pair:
 // 1) the owner of the monitor
 // 2) the monitor lock
+// 描述对象锁的状态
 class MonitorInfo : public ResourceObj {
  private:
+  // 锁持有者对象（可能被标量替换）
   Handle     _owner; // the object owning the monitor
+  // 底层锁结构
   BasicLock* _lock;
   Handle     _owner_klass; // klass (mirror) if owner was scalar replaced
+  // 锁是否被消除
   bool       _eliminated;
+  // 持有者是否被标量替换
   bool       _owner_is_scalar_replaced;
  public:
   // Constructor
@@ -245,13 +268,19 @@ class MonitorInfo : public ResourceObj {
   bool owner_is_scalar_replaced()  const { return _owner_is_scalar_replaced; }
 };
 
+// 提供统一的栈帧遍历接口
 class vframeStreamCommon : StackObj {
  protected:
   // common
   frame        _frame;
   JavaThread*  _thread;
   RegisterMap  _reg_map;
-  enum { interpreted_mode, compiled_mode, at_end_mode } _mode;
+  // 遍历模式
+  enum {
+      interpreted_mode, // 解释模式
+      compiled_mode, // 编译模式
+      at_end_mode // 结束模式
+  } _mode;
 
   // For compiled_mode
   int _decode_offset;
@@ -301,13 +330,16 @@ class vframeStreamCommon : StackObj {
 
   const RegisterMap* reg_map() { return &_reg_map; }
 
+  // 转换为Java虚拟帧
   javaVFrame* asJavaVFrame();
 
   // Frame type
   inline bool is_interpreted_frame() const;
 
   // Iteration
+  // 移动到下一帧
   inline void next();
+  // 安全遍历（跳过安全检查相关帧）
   void security_next();
 
   bool at_end() const { return _mode == at_end_mode; }
@@ -317,9 +349,11 @@ class vframeStreamCommon : StackObj {
   void security_get_caller_frame(int depth);
 };
 
+// 具体栈帧流
 class vframeStream : public vframeStreamCommon {
  public:
   // Constructors
+  // 从线程、延续（continuation）或作用域启动遍历
   vframeStream(JavaThread* thread, bool stop_at_java_call_stub = false, bool process_frames = true, bool vthread_carrier = false);
 
   vframeStream(JavaThread* thread, Handle continuation_scope, bool stop_at_java_call_stub = false);

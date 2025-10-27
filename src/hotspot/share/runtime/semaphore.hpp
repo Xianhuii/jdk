@@ -37,21 +37,28 @@
 class JavaThread;
 
 // Implements the limited, platform independent Semaphore API.
+// 用于实现跨平台信号量（Semaphore），主要功能是为JVM提供线程同步机制。
 class Semaphore : public CHeapObj<mtSynchronizer> {
   SemaphoreImpl _impl;
 
   NONCOPYABLE(Semaphore);
 
  public:
+  // 构造函数，初始化信号量计数值，默认为0。
   Semaphore(uint value = 0) : _impl(value) {}
+  // 析构函数，释放资源。
   ~Semaphore() {}
 
+  // 增加信号量计数，允许最多count个线程继续执行。
   void signal(uint count = 1) { _impl.signal(count); }
 
+  // 阻塞当前线程，直到信号量计数大于0，然后减1。
   void wait()                 { _impl.wait(); }
 
+  // 尝试立即获取信号量（非阻塞），成功返回true，失败返回false。
   bool trywait()              { return _impl.trywait(); }
 
+  // 安全点检查下的等待，需传入JavaThread指针，用于JVM内部线程协调。
   void wait_with_safepoint_check(JavaThread* thread);
 };
 

@@ -88,6 +88,11 @@ class ThreadsList;
 //
 // SMR Support for the Threads class.
 //
+// 线程安全内存回收（Thread-Safe Memory Reclamation, SMR）的核心实现，主要用于在并发环境下安全地管理JavaThread对象的生命周期
+// 线程安全：在多线程环境中，确保对JavaThread对象的操作（如遍历、修改、删除）不会因其他线程的并发操作（如线程退出）导致数据竞争或悬空指针。
+// 高效性：减少全局锁（如Threads_lock）的使用，通过轻量级机制（如Hazard Pointers）实现并发控制，提升性能
+
+// 协调线程列表的引用计数、删除操作及统计信息
 class ThreadsSMRSupport : AllStatic {
   friend class VMStructs;
   friend class SafeThreadsListPtr;  // for _nested_thread_list_max, delete_notify(), release_stable_list_wake_up() access
@@ -95,6 +100,7 @@ class ThreadsSMRSupport : AllStatic {
   // The coordination between ThreadsSMRSupport::release_stable_list() and
   // ThreadsSMRSupport::smr_delete() uses the delete_lock in order to
   // reduce the traffic on the Threads_lock.
+  // 通过delete_lock()（Monitor类型）协调线程列表的释放操作，减少锁竞争
   static Monitor* delete_lock() { return ThreadsSMRDelete_lock; }
 
   // The '_cnt', '_max' and '_times" fields are enabled via
@@ -110,6 +116,7 @@ class ThreadsSMRSupport : AllStatic {
   static volatile uint         _deleted_thread_time_max;
   static volatile uint         _deleted_thread_times;
   static ThreadsList           _bootstrap_list;
+  // 当前活跃的JavaThread列表
   static ThreadsList* volatile _java_thread_list;
   static uint64_t              _java_thread_list_alloc_cnt;
   static uint64_t              _java_thread_list_free_cnt;
@@ -118,6 +125,7 @@ class ThreadsSMRSupport : AllStatic {
   static volatile uint         _tlh_cnt;
   static volatile uint         _tlh_time_max;
   static volatile uint         _tlh_times;
+  // 待删除的线程列表，需在安全时机释放
   static ThreadsList*          _to_delete_list;
   static uint                  _to_delete_list_cnt;
   static uint                  _to_delete_list_max;
@@ -140,13 +148,17 @@ class ThreadsSMRSupport : AllStatic {
   static ThreadsList* xchg_java_thread_list(ThreadsList* new_list);
 
  public:
+  // 添加JavaThread到全局列表
   static void add_thread(JavaThread *thread);
   static ThreadsList* get_java_thread_list();
   static bool is_a_protected_JavaThread(JavaThread *thread);
   static bool is_a_protected_JavaThread_with_lock(JavaThread *thread);
+  // 等待线程不再被保护
   static void wait_until_not_protected(JavaThread *thread);
   static bool is_bootstrap_list(ThreadsList* list);
+  // 移除JavaThread到全局列表
   static void remove_thread(JavaThread *thread);
+  // 安全删除线程，确保引用计数为零后释放
   static void smr_delete(JavaThread *thread);
   static void update_tlh_stats(uint millis);
 
@@ -158,7 +170,7 @@ class ThreadsSMRSupport : AllStatic {
 };
 
 // A fast list of JavaThreads.
-//
+// 维护一个可变的JavaThread数组，支持动态扩展
 class ThreadsList : public CHeapObj<mtThread> {
   enum { THREADS_LIST_MAGIC = (int)(('T' << 24) | ('L' << 16) | ('S' << 8) | 'T') };
   friend class VMStructs;
@@ -239,6 +251,7 @@ public:
 // An abstract safe ptr to a ThreadsList comprising either a stable hazard ptr
 // for leaves, or a retained reference count for nested uses. The user of this
 // API does not need to know which mechanism is providing the safety.
+// 通过引用计数或Hazard Pointers保护线程列表，确保在作用域内列表有效，析构时自动释放资源
 class SafeThreadsListPtr {
   friend class ThreadsListHandleTest;  // for access to the fields
   friend class ThreadsListSetter;
@@ -299,7 +312,7 @@ public:
 
 // This stack allocated ThreadsListHandle keeps all JavaThreads in the
 // ThreadsList from being deleted until it is safe.
-//
+// 栈上对象，构造时获取线程列表引用，析构时释放。
 class ThreadsListHandle : public StackObj {
   friend class ThreadsListHandleTest;  // for _list_ptr access
 

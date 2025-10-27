@@ -29,39 +29,58 @@
 #include "oops/method.hpp"
 #include "utilities/bytes.hpp"
 
+// 实现Java方法字节码的动态重定位机制，用于在运行时调整代码结构（如插入指令、扩展操作码、修复跳转偏移等），
+// 并维护相关元数据（异常表、行号表、局部变量表等）的一致性。通过监听器模式通知外部模块代码变更事件。
 // This code has been converted from the 1.1E java virtual machine
 // Thanks to the JavaTopics group for using the code
 
 class ChangeItem;
 
 // Callback object for code relocations
+// 回调接口
+// 在代码重定位过程中接收通知，允许外部模块响应代码变更。
 class RelocatorListener : public StackObj {
  public:
+  // bci：字节码索引（Bytecode Index）
+  // delta：代码块的位移量（正值表示向后移动，负值向前）
+  // new_method_size：调整后方法的总长度
   virtual void relocated(int bci, int delta, int new_method_size) = 0;
 };
 
-
+// 核心重定位器
+// 管理方法字节码的插入、扩展、收缩及关联元数据的调整。
 class Relocator : public ResourceObj {
  public:
+  // 初始化重定位上下文，绑定目标方法和监听器。
   Relocator(const methodHandle& method, RelocatorListener* listener);
+  // 在指定bci位置插入space长度的字节码，使用inst_buffer提供新指令，并触发重定位流程。
   methodHandle insert_space_at(int bci, int space, u_char inst_buffer[], TRAPS);
 
   // Callbacks from ChangeItem's
+  // 主入口，协调所有变更处理逻辑。
   bool handle_code_changes();
+  // 处理指令扩展（如将短跳转改为长跳转）
   bool handle_widen       (int bci, int new_ilen, u_char inst_buffer[]);  // handles general instructions
   void push_jump_widen  (int bci, int delta, int new_delta);    // pushes jumps
+  // 专门处理跳转指令的扩展。
   bool handle_jump_widen  (int bci, int delta);     // handles jumps
+  // 调整tableswitch/lookupswitch的填充字节。
   bool handle_switch_pad  (int bci, int old_pad, bool is_lookup_switch); // handles table and lookup switches
 
  private:
+  // 原始字节码数组
   unsigned char* _code_array;
   int            _code_array_length;
+  // 有效字节码长度
   int            _code_length;
   unsigned char* _compressed_line_number_table;
   int            _compressed_line_number_table_size;
+  // 关联的Method对象句柄
   methodHandle   _method;
+  // 临时存储被覆盖的字节（用于指令缩短时的回滚）
   u_char         _overwrite[3];             // stores overwritten bytes for shrunken instructions
 
+  // 记录代码变更事件的列表
   GrowableArray<ChangeItem*>* _changes;
 
   unsigned char* code_array() const         { return _code_array; }
