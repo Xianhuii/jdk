@@ -301,6 +301,7 @@ void SafepointSynchronize::arm_safepoint() {
   // We must never miss a thread with correct safepoint id, so we must make sure we arm
   // the wait barrier for the next safepoint id/counter.
   // Arming must be done after resetting _current_jni_active_count, _waiting_to_block.
+  // 设置栅栏，阻塞线程
   _wait_barrier->arm(static_cast<int>(_safepoint_counter + 1));
 
   assert((_safepoint_counter & 0x1) == 0, "must be even");
@@ -309,6 +310,7 @@ void SafepointSynchronize::arm_safepoint() {
 
   // We are synchronizing
   OrderAccess::storestore(); // Ordered with _safepoint_counter
+  // 设置状态为正在同步安全点
   _state = _synchronizing;
 
   // Arming the per thread poll while having _state != _not_synchronized means safepointing
@@ -326,6 +328,7 @@ void SafepointSynchronize::arm_safepoint() {
 }
 
 // Roll all threads forward to a safepoint and suspend them all
+// 将所有线程滚动到安全点，并挂起线程
 void SafepointSynchronize::begin() {
   assert(Thread::current()->is_VM_thread(), "Only VM thread may execute a safepoint");
 
@@ -336,10 +339,12 @@ void SafepointSynchronize::begin() {
 
   // By getting the Threads_lock, we assure that no threads are about to start or
   // exit. It is released again in SafepointSynchronize::end().
+  // 线程全局锁：加锁
   Threads_lock->lock();
 
   assert( _state == _not_synchronized, "trying to safepoint synchronize with wrong state");
 
+  // 当前线程数量
   int nof_threads = Threads::number_of_threads();
 
   _nof_threads_hit_polling_page = 0;
@@ -350,6 +355,7 @@ void SafepointSynchronize::begin() {
   _current_jni_active_count = 0;
 
   // Set number of threads to wait for
+  // 设置等待线程数量
   _waiting_to_block = nof_threads;
 
   jlong safepoint_limit_time = 0;
@@ -367,6 +373,7 @@ void SafepointSynchronize::begin() {
   arm_safepoint();
 
   // Will spin until all threads are safe.
+  // 自旋，等待所有线程到达安全点
   int iterations = synchronize_threads(safepoint_limit_time, nof_threads, &initial_running);
   assert(_waiting_to_block == 0, "No thread should be running");
 
@@ -392,6 +399,7 @@ void SafepointSynchronize::begin() {
   assert(Threads_lock->owned_by_self(), "must hold Threads_lock");
 
   // Record state
+  // 更新状态为_synchronized：所有线程到达安全点
   _state = _synchronized;
 
   OrderAccess::fence();
@@ -436,6 +444,7 @@ void SafepointSynchronize::disarm_safepoint() {
 
     // Change state first to _not_synchronized.
     // No threads should see _synchronized when running.
+    // 设置状态为普通
     _state = _not_synchronized;
 
     // Set the next dormant (even) safepoint id.
@@ -450,20 +459,24 @@ void SafepointSynchronize::disarm_safepoint() {
       DEBUG_ONLY(current->reset_visited_for_critical_count(active_safepoint_counter);)
       ThreadSafepointState* cur_state = current->safepoint_state();
       assert(!cur_state->is_running(), "Thread not suspended at safepoint");
+      // 恢复运行
       cur_state->restart(); // TSS _running
       assert(cur_state->is_running(), "safepoint state has not been reset");
     }
   } // ~JavaThreadIteratorWithHandle
 
   // Release threads lock, so threads can be created/destroyed again.
+  // 释放线程锁
   Threads_lock->unlock();
 
   // Wake threads after local state is correctly set.
+  // 唤醒线程
   _wait_barrier->disarm();
 }
 
 // Wake up all threads, so they are ready to resume execution after the safepoint
 // operation has been carried out
+// 结束安全定机制，唤醒所有线程
 void SafepointSynchronize::end() {
   assert(Threads_lock->owned_by_self(), "must hold Threads_lock");
   SafepointTracing::leave();
@@ -577,6 +590,7 @@ void SafepointSynchronize::block(JavaThread *thread) {
   // Load in wait barrier should not float up
   thread->set_thread_state_fence(_thread_blocked);
 
+  // 阻塞等待
   _wait_barrier->wait(static_cast<int>(safepoint_id));
   assert(_state != _synchronized, "Can't be");
 

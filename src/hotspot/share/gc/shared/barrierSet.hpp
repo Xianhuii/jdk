@@ -42,7 +42,7 @@ class JavaThread;
 
 // This class provides the interface between a barrier implementation and
 // the rest of the system.
-
+// 屏障接口
 class BarrierSet: public CHeapObj<mtGC> {
   friend class VMStructs;
 

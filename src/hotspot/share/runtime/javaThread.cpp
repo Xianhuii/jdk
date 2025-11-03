@@ -148,6 +148,7 @@ void JavaThread::smr_delete() {
 }
 
 // Initialized by VMThread at vm_global_init
+// 静态全局的线程OopStorage
 OopStorage* JavaThread::_thread_oop_storage = nullptr;
 
 OopStorage* JavaThread::thread_oop_storage() {
@@ -221,6 +222,7 @@ void JavaThread::clear_scopedValueBindings() {
   }
 }
 
+// 初始化Java线程对象
 void JavaThread::allocate_threadObj(Handle thread_group, const char* thread_name,
                                     bool daemon, TRAPS) {
   assert(thread_group.not_null(), "thread group should be specified");
@@ -717,8 +719,10 @@ void JavaThread::pre_run() {
 // The main routine called by a new Java thread. This isn't overridden
 // by subclasses, instead different subclasses define a different "entry_point"
 // which defines the actual logic for that kind of thread.
+// 运行线程
 void JavaThread::run() {
   // initialize thread-local alloc buffer related fields
+  // 初始化TLAB
   initialize_tlab();
 
   _stack_overflow_state.create_stack_guard_pages();
@@ -770,6 +774,7 @@ void JavaThread::thread_main_inner() {
       this->set_native_thread_name(this->name());
     }
     HandleMark hm(this);
+    // 执行
     this->entry_point()(this, this);
   }
 

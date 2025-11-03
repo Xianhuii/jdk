@@ -66,6 +66,7 @@ void NonJavaThread::Iterator::step() {
   _current = Atomic::load_acquire(&_current->_next);
 }
 
+// 构造函数
 NonJavaThread::NonJavaThread() : Thread(), _next(nullptr) {
   assert(BarrierSet::barrier_set() != nullptr, "NonJavaThread created too soon!");
 }
@@ -121,6 +122,7 @@ void NonJavaThread::post_run() {
 
 // NamedThread --  non-JavaThread subclasses with multiple
 // uniquely named instances should derive from this.
+// 构造函数
 NamedThread::NamedThread() :
   NonJavaThread(),
   _name(nullptr),

@@ -115,6 +115,7 @@ VMOperationTimeoutTask* VMThread::_timeout_task = nullptr;
  */
 void VMThread::create() {
   assert(vm_thread() == nullptr, "we can only allocate one VMThread");
+  // 创建VMThread，设置到静态变量
   _vm_thread = new VMThread();
 
   if (AbortVMOnVMOperationTimeout) {
@@ -134,7 +135,7 @@ void VMThread::create() {
 
   _terminate_lock = new Monitor(Mutex::nosafepoint, "VMThreadTerminate_lock");
 
-  if (UsePerfData) {
+  if (UsePerfData) { // 开启性能监控
     // jvmstat performance counters
     JavaThread* THREAD = JavaThread::current(); // For exception macros.
     _perf_accumulated_vm_operation_time =
@@ -144,6 +145,7 @@ void VMThread::create() {
   }
 }
 
+// 构造函数：执行基类NamedThread的构造函数，将_is_running设置为false
 VMThread::VMThread() : NamedThread(), _is_running(false) {
   set_name("VM Thread");
 }
@@ -154,20 +156,24 @@ void VMThread::destroy() {
 
 static VM_Halt halt_op;
 
+// 运行逻辑
 void VMThread::run() {
   assert(this == vm_thread(), "check");
 
   // Notify_lock wait checks on is_running() to rewait in
   // case of spurious wakeup, it should wait on the last
   // value set prior to the notify
+  // 设置为运行中
   Atomic::store(&_is_running, true);
 
   {
+    // 获取全局Notify_lock，唤醒线程
     MutexLocker ml(Notify_lock);
     Notify_lock->notify();
   }
   // Notify_lock is destroyed by Threads::create_vm()
 
+  // 设置优先级
   int prio = (VMThreadPriority == -1)
     ? os::java_to_os_priority[NearMaxPriority]
     : VMThreadPriority;
@@ -177,6 +183,7 @@ void VMThread::run() {
   os::set_native_priority( this, prio );
 
   // Wait for VM_Operations until termination
+  // 循环执行，等待VM_Operations任务
   this->loop();
 
   // Note the intention to exit before safepointing.
@@ -239,6 +246,7 @@ void VMThread::run() {
 void VMThread::wait_for_vm_thread_exit() {
   assert(JavaThread::current()->is_terminated(), "Should be terminated");
   {
+    // VMOperation_lock唤醒线程
     MonitorLocker mu(VMOperation_lock);
     _should_terminate = true;
     mu.notify_all();
@@ -254,6 +262,7 @@ void VMThread::wait_for_vm_thread_exit() {
   // at a very delicate time (VM shutdown) and we are operating in non- VM
   // thread at Safepoint. It's safer to not share lock with other threads.
   {
+    // 等待VMThread停止任务
     MonitorLocker ml(_terminate_lock, Mutex::_no_safepoint_check_flag);
     while (!VMThread::is_terminated()) {
       ml.wait();
@@ -327,6 +336,7 @@ bool VMThread::handshake_or_safepoint_alot() {
   return false;
 }
 
+// 设置下一个待执行的VM_Operation
 bool VMThread::set_next_operation(VM_Operation *op) {
   if (_next_vm_operation != nullptr) {
     return false;
@@ -341,6 +351,7 @@ bool VMThread::set_next_operation(VM_Operation *op) {
   return true;
 }
 
+// 提交VM_Operation任务，等待执行
 void VMThread::wait_until_executed(VM_Operation* op) {
   MonitorLocker ml(VMOperation_lock,
                    Thread::current()->is_Java_thread() ?
@@ -372,6 +383,7 @@ void VMThread::wait_until_executed(VM_Operation* op) {
   }
 }
 
+// 停止jvm
 static void self_destruct_if_needed() {
   // Support for self destruction
   if ((SelfDestructTimer != 0.0) && !VMError::is_error_reported() &&
@@ -381,7 +393,7 @@ static void self_destruct_if_needed() {
   }
 }
 
-// 执行任务
+// 执行VM_Operation
 void VMThread::inner_execute(VM_Operation* op) {
   assert(Thread::current()->is_VM_thread(), "Must be the VM thread");
 
@@ -395,9 +407,11 @@ void VMThread::inner_execute(VM_Operation* op) {
             op->name(), _cur_vm_operation->name());
     }
     op->set_calling_thread(_cur_vm_operation->calling_thread());
+    // 记录旧的VM_Operation
     prev_vm_operation = _cur_vm_operation;
   }
 
+  // 替换当前的VM_Operation
   _cur_vm_operation = op;
 
   HandleMark hm(VMThread::vm_thread());
@@ -417,8 +431,10 @@ void VMThread::inner_execute(VM_Operation* op) {
 
   bool end_safepoint = false;
   bool has_timeout_task = (_timeout_task != nullptr);
+  // 需要在安全点执行
   if (_cur_vm_operation->evaluate_at_safepoint() &&
       !SafepointSynchronize::is_at_safepoint()) {
+    // 开启安全点同步机制，等待所有业务线程到达安全点
     SafepointSynchronize::begin();
     if (has_timeout_task) {
       _timeout_task->arm(_cur_vm_operation->name());
@@ -426,19 +442,22 @@ void VMThread::inner_execute(VM_Operation* op) {
     end_safepoint = true;
   }
 
-  // 执行任务
+  // 执行VM_Operation
   evaluate_operation(_cur_vm_operation);
 
   if (end_safepoint) {
     if (has_timeout_task) {
       _timeout_task->disarm();
     }
+    // 停止安全点同步机制，通知所有业务线程继续执行
     SafepointSynchronize::end();
   }
 
+  // 恢复旧的VM_Operation
   _cur_vm_operation = prev_vm_operation;
 }
 
+// 循环等待直到有任务需要执行
 void VMThread::wait_for_operation() {
   assert(Thread::current()->is_VM_thread(), "Must be the VM thread");
   MonitorLocker ml_op_lock(VMOperation_lock, Mutex::_no_safepoint_check_flag);
@@ -491,9 +510,11 @@ void VMThread::loop() {
 
   while (true) {
     if (should_terminate()) break;
+    // 等待直到有任务执行
     wait_for_operation();
     if (should_terminate()) break;
     assert(_next_vm_operation != nullptr, "Must have one");
+    // 执行任务
     inner_execute(_next_vm_operation);
   }
 }

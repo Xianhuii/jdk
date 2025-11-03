@@ -57,7 +57,7 @@ THREAD_LOCAL Thread* Thread::_thr_current = nullptr;
 // ======= Thread ========
 // Base class for all threads: VMThread, WatcherThread, ConcurrentMarkSweepThread,
 // JavaThread
-
+// 构造函数
 Thread::Thread(MemTag mem_tag) {
 
   DEBUG_ONLY(_run_state = PRE_CALL_RUN;)
@@ -126,6 +126,7 @@ Thread::Thread(MemTag mem_tag) {
   // to BarrierSet::set_barrier_set().
   BarrierSet* const barrier_set = BarrierSet::barrier_set();
   if (barrier_set != nullptr) {
+    // 触发屏障回调，注册当前线程
     barrier_set->on_thread_create(this);
   } else {
     // Only the main thread should be created before the barrier set
@@ -157,17 +158,17 @@ void Thread::initialize_tlab() {
 
 // 回收TLAB
 void Thread::retire_tlab(ThreadLocalAllocStats* stats) {
-  // Sampling and serviceability support
+  // Sampling and serviceability support 记录当前tlab的统计数据
   if (tlab().end() != nullptr) {
     incr_allocated_bytes(tlab().used_bytes());
     heap_sampler().retire_tlab(tlab().top());
   }
 
-  // Retire the TLAB
+  // Retire the TLAB 回收tlab
   tlab().retire(stats);
 }
 
-// 将分配好的内存填充到TLAB
+// 将分配好的内存填充到TLAB（设置内存的地址范围）
 void Thread::fill_tlab(HeapWord* start, size_t pre_reserved, size_t new_size) {
   // Thread allocation sampling support
   heap_sampler().set_tlab_top_at_sample_start(start);
@@ -176,6 +177,7 @@ void Thread::fill_tlab(HeapWord* start, size_t pre_reserved, size_t new_size) {
   tlab().fill(start, start + pre_reserved, new_size);
 }
 
+// 设置当前线程引用
 void Thread::initialize_thread_current() {
   assert(_thr_current == nullptr, "Thread::current already initialized");
   _thr_current = this;
@@ -184,6 +186,7 @@ void Thread::initialize_thread_current() {
   assert(Thread::current() == ThreadLocalStorage::thread(), "TLS mismatch!");
 }
 
+// 移除当前线程引用
 void Thread::clear_thread_current() {
   assert(Thread::current() == ThreadLocalStorage::thread(), "TLS mismatch!");
   _thr_current = nullptr;
@@ -215,6 +218,7 @@ void Thread::unregister_thread_stack_with_NMT() {
   MemTracker::release_thread_stack(stack_end(), stack_size());
 }
 
+// 执行run方法
 void Thread::call_run() {
   DEBUG_ONLY(_run_state = CALL_RUN;)
 
@@ -239,10 +243,12 @@ void Thread::call_run() {
 
   // Perform <ChildClass> initialization actions
   DEBUG_ONLY(_run_state = PRE_RUN;)
+  // 触发pre_run
   this->pre_run();
 
   // Invoke <ChildClass>::run()
   DEBUG_ONLY(_run_state = RUN;)
+  // 执行run
   this->run();
   // Returned from <ChildClass>::run(). Thread finished.
 
@@ -253,6 +259,7 @@ void Thread::call_run() {
 
   // Perform <ChildClass> tear-down actions
   DEBUG_ONLY(_run_state = POST_RUN;)
+  // 触发post_run
   this->post_run();
 
   // Note: at this point the thread object may already have deleted itself,
@@ -280,6 +287,7 @@ Thread::~Thread() {
   // set might not be available if we encountered errors during bootstrapping.
   BarrierSet* const barrier_set = BarrierSet::barrier_set();
   if (barrier_set != nullptr) {
+    // // 触发屏障回调，移除当前线程
     barrier_set->on_thread_destroy(this);
   }
 
@@ -393,13 +401,14 @@ bool Thread::is_JavaThread_protected_by_TLH(const JavaThread* target) {
   return false;
 }
 
+// 设置线程优先级
 void Thread::set_priority(Thread* thread, ThreadPriority priority) {
   DEBUG_ONLY(check_for_dangling_thread_pointer(thread);)
   // Can return an error!
   (void)os::set_priority(thread, priority);
 }
 
-
+// 启动线程
 void Thread::start(Thread* thread) {
   // Start is different from resume in that its safety is guaranteed by context or
   // being called from a Java method synchronized on the Thread object.
@@ -408,6 +417,7 @@ void Thread::start(Thread* thread) {
     // Can not set it after the thread started because we do not know the
     // exact thread state at that time. It could be in MONITOR_WAIT or
     // in SLEEPING or some other state.
+    // Java线程时设置对应的状态
     java_lang_Thread::set_thread_status(JavaThread::cast(thread)->threadObj(),
                                         JavaThreadStatus::RUNNABLE);
   }
@@ -457,6 +467,7 @@ public:
   }
 };
 
+// 遍历线程对象
 void Thread::oops_do(OopClosure* f, NMethodClosure* cf) {
   // Record JavaThread to GC thread
   RememberProcessedThread rpt(this);
@@ -562,6 +573,7 @@ bool Thread::is_starting_thread(const Thread* t) {
 }
 #endif // ASSERT
 
+// 设置启动main线程
 bool Thread::set_as_starting_thread(JavaThread* jt) {
   assert(jt != nullptr, "invariant");
   assert(_starting_thread == nullptr, "already initialized: "
@@ -576,8 +588,9 @@ bool Thread::set_as_starting_thread(JavaThread* jt) {
 // We employ a spin lock _only for low-contention, fixed-length
 // short-duration critical sections where we're concerned
 // about native mutex_t or HotSpot Mutex:: latency.
-
+// 获取自旋锁
 void Thread::SpinAcquire(volatile int * adr) {
+  // cas，把adr的值从0变成1，返回的旧值是0
   if (Atomic::cmpxchg(adr, 0, 1) == 0) {
     return;   // normal fast-path return
   }
@@ -603,6 +616,7 @@ void Thread::SpinAcquire(volatile int * adr) {
   }
 }
 
+// 释放自旋锁，将adr设置为0
 void Thread::SpinRelease(volatile int * adr) {
   assert(*adr != 0, "invariant");
   OrderAccess::fence();      // guarantee at least release consistency.

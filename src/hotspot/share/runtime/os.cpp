@@ -842,8 +842,9 @@ int os::random() {
 // we are working on it.  Non-Java threads that start Java threads either have
 // to do so in a context in which races are impossible, or should do appropriate
 // locking.
-
+// 启动线程
 void os::start_thread(Thread* thread) {
+  // 操作系统线程
   OSThread* osthread = thread->osthread();
   osthread->set_state(RUNNABLE);
   pd_start_thread(thread);

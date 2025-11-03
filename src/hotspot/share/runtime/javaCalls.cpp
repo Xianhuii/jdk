@@ -164,12 +164,13 @@ static BasicType runtime_type_from(JavaValue* result) {
 }
 
 // ============ Virtual calls ============
-
+// 执行多态方法
 void JavaCalls::call_virtual(JavaValue* result, Klass* spec_klass, Symbol* name, Symbol* signature, JavaCallArguments* args, TRAPS) {
   CallInfo callinfo;
   Handle receiver = args->receiver();
   Klass* recvrKlass = receiver.is_null() ? (Klass*)nullptr : receiver->klass();
   LinkInfo link_info(spec_klass, name, signature);
+  // 查找实际方法
   LinkResolver::resolve_virtual_call(
           callinfo, receiver, recvrKlass, link_info, true, CHECK);
   methodHandle method(THREAD, callinfo.selected_method());
@@ -207,6 +208,7 @@ void JavaCalls::call_virtual(JavaValue* result, Handle receiver, Klass* spec_kla
 void JavaCalls::call_special(JavaValue* result, Klass* klass, Symbol* name, Symbol* signature, JavaCallArguments* args, TRAPS) {
   CallInfo callinfo;
   LinkInfo link_info(klass, name, signature);
+  // 查找特殊方法
   LinkResolver::resolve_special_call(callinfo, args->receiver(), link_info, CHECK);
   methodHandle method(THREAD, callinfo.selected_method());
   assert(method.not_null(), "should have thrown exception");
@@ -242,6 +244,7 @@ void JavaCalls::call_special(JavaValue* result, Handle receiver, Klass* klass, S
 void JavaCalls::call_static(JavaValue* result, Klass* klass, Symbol* name, Symbol* signature, JavaCallArguments* args, TRAPS) {
   CallInfo callinfo;
   LinkInfo link_info(klass, name, signature);
+  // 查找静态方法
   LinkResolver::resolve_static_call(callinfo, link_info, true, CHECK);
   methodHandle method(THREAD, callinfo.selected_method());
   assert(method.not_null(), "should have thrown exception");
@@ -323,6 +326,7 @@ void JavaCalls::call(JavaValue* result, const methodHandle& method, JavaCallArgu
   os::os_exception_wrapper(call_helper, result, method, args, THREAD);
 }
 
+// 执行java方法
 void JavaCalls::call_helper(JavaValue* result, const methodHandle& method, JavaCallArguments* args, TRAPS) {
 
   JavaThread* thread = THREAD;
@@ -412,6 +416,7 @@ void JavaCalls::call_helper(JavaValue* result, const methodHandle& method, JavaC
 #endif
         }
       }
+      // 执行
       StubRoutines::call_stub()(
         (address)&link,
         // (intptr_t*)&(result->_value), // see NOTE above (compiler problem)

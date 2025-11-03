@@ -105,6 +105,7 @@ class JavaThread: public Thread {
   OopHandle      _jvmti_vthread;
   OopHandle      _scopedValueCache;
 
+  // 静态全局的线程OopStorage
   static OopStorage* _thread_oop_storage;
 
 #ifdef ASSERT
@@ -260,7 +261,7 @@ class JavaThread: public Thread {
  public:                                                        // Expose _thread_state for SafeFetchInt()
   // 线程状态（如运行、阻塞、等待等）
   volatile JavaThreadState _thread_state;
-  // 安全点机制相关状态
+  // 安全点状态
   ThreadSafepointState*          _safepoint_state;              // Holds information about a thread during a safepoint
   address                        _saved_exception_pc;           // Saved pc of instruction where last implicit exception happened
   NOT_PRODUCT(bool               _requires_cross_modify_fence;) // State used by VerifyCrossModifyFence

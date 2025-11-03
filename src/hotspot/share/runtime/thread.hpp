@@ -117,6 +117,7 @@ class Thread: public ThreadShadow {
  private:
 
   // Current thread is maintained as a thread-local variable
+  // 在线程本地变量中保存当前线程引用
   static THREAD_LOCAL Thread* _thr_current;
 
   // On AArch64, the high order 32 bits are used by a "patching epoch" number
@@ -519,6 +520,7 @@ class Thread: public ThreadShadow {
 
 protected:
   // OS data associated with the thread
+  // 操作系统的线程
   OSThread* _osthread;  // Platform-specific thread information
 
   // Thread local resource area for temporary allocation within the VM
